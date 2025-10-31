@@ -6,5 +6,9 @@ import gdufs.yixiu.pojo.Users;
 public interface UsersService {
     String registerByPhone(UsersRegisterDto userDto);
     String loginByPhone(UsersRegisterDto userDto, Integer userId);
+    String registerByEmail(UsersRegisterDto userDto);
+    String loginByEmail(UsersRegisterDto userDto, Integer userId);
     Users queryUserByPhoneAndRole(String phone, String role);
+    Users queryUserByEmailAndRole(String email, String role);
+    void updateUserLoginTime(int userId);
 }

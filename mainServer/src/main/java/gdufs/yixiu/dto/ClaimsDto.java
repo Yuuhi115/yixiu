@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClaimsPhoneDto {
+public class ClaimsDto {
     int id;
     String phone;
+    String email;
     String role;
 }

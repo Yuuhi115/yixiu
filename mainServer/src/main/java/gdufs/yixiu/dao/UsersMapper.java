@@ -10,4 +10,6 @@ public interface UsersMapper {
     int addUserByOpenid(Users users);
     Users findUserById(Integer userId);
     Users findUserByPhoneAndRole(String phone, String role);
+    Users findUserByEmailAndRole(String email, String role);
+    int updateUser(Users users);
 }

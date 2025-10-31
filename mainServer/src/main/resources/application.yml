@@ -2,9 +2,41 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/yixiu?characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/yixiu?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
     username: root
     password: gw_yixiu_123456
+  mail:
+    host: smtp.163.com
+    username: 13712871903@163.com
+    password: QHuQCunYFcrLUpU6
+    default-encoding: UTF-8
+    port: 465
+    protocol: smtps
+    properties:
+      mail:
+        stmp:
+          ssl:
+            enable: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  session:
+    timeout: 3600
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+#      password: # 如果没有密码则留空
+      database: 0
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
 
 mybatis:
   #  mapper-locations: classpath:com/example/mapper/*.xml    #指定sql配置文件的位置
@@ -14,6 +46,7 @@ mybatis:
     map-underscore-to-camel-case: true # 开启驼峰映射
     auto-mapping-behavior: full # 开启多表查询全映射
   #log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
 
 jwt:
   secret: yixiuAssistant22
@@ -26,4 +59,7 @@ sms:
   appcode: 0f84c9de1f75436f9a32c15addb182ff #appcode
   host: https://smsv2.market.alicloudapi.com #这个是简单认证请求地址，示例中为调试地址
   path: /sms/sendv2
+
+resources-path:
+  avatar: D:/ideaProject/yixiuAssist/image/avatar/
 

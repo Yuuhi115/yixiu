@@ -1,0 +1,7 @@
+package gdufs.yixiu.service;
+
+import org.springframework.web.multipart.MultipartFile;
+
+public interface ImgUploadService {
+    String uploadAvatar (MultipartFile file, int id);
+}

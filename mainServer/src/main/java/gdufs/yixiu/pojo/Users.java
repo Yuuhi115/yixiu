@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Timestamp;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,7 +23,7 @@ public class Users {
     private String wxAvatar;
     private String role;
     private String status;
-    private String createTime;
-    private String updateTime;
-    private String lastLogin;
+    private Timestamp createTime;
+    private Timestamp updateTime;
+    private Timestamp lastLogin;
 }

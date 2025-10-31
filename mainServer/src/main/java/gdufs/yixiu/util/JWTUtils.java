@@ -2,7 +2,7 @@ package gdufs.yixiu.util;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import gdufs.yixiu.dto.ClaimsPhoneDto;
+import gdufs.yixiu.dto.ClaimsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,23 +20,40 @@ public class JWTUtils {
         JWTUtils.secretKey = secretKey;
     }
 
-    public String generateTokenByPhone(int id, String phone, String role) {
+    public String generateToken(int id, String role, String verificationCode) {
         Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("id", id);
-        claims.put("phone", phone);
         claims.put("role", role);
+        claims.put("verificationCode", verificationCode);
         return JWT.create()
                 .withClaim("claims",claims)
                 .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 一周有效期
                 .sign(Algorithm.HMAC256(secretKey));
     }
+//    public String generateTokenByEmail(int id, String email, String role) {
+//        Map<String, Object> claims = new HashMap<String, Object>();
+//        claims.put("id", id);
+//        claims.put("email", email);
+//        claims.put("role", role);
+//        return JWT.create()
+//                .withClaim("claims",claims)
+//                .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 一周有效期
+//                .sign(Algorithm.HMAC256(secretKey));
+//    }
 
-    public ClaimsPhoneDto getInfoFromToken(String token) {
+    public ClaimsDto getInfoFromToken(String token) {
         Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
-        ClaimsPhoneDto claimsDto = new ClaimsPhoneDto();
-        claimsDto.setPhone((String)userMap.get("phone"));
+        ClaimsDto claimsDto = new ClaimsDto();
         claimsDto.setId((Integer)userMap.get("id"));
         claimsDto.setRole((String)userMap.get("role"));
         return claimsDto;
     }
+//    public ClaimsDto getInfoFromTokenByEmail(String token) {
+//        Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
+//        ClaimsDto claimsDto = new ClaimsDto();
+//        claimsDto.setEmail((String)userMap.get("email"));
+//        claimsDto.setId((Integer)userMap.get("id"));
+//        claimsDto.setRole((String)userMap.get("role"));
+//        return claimsDto;
+//    }
 }

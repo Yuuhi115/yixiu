@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UsersRegisterDto {
     String phone;
+    String email;
     String verificationCode;
     String role;
 }
