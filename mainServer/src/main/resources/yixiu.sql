@@ -11,7 +11,7 @@
  Target Server Version : 80033 (8.0.33)
  File Encoding         : 65001
 
- Date: 30/10/2025 17:48:08
+ Date: 31/10/2025 15:36:54
 */
 
 SET NAMES utf8mb4;
@@ -77,6 +77,7 @@ CREATE TABLE `repair_assignment`  (
   `assign_id` bigint NOT NULL AUTO_INCREMENT COMMENT '分配编号',
   `request_id` bigint NOT NULL COMMENT '报修单号',
   `volunteer_id` bigint NOT NULL COMMENT '维修志愿者编号',
+  `is_leader` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为队长（1=是，0=否）',
   `assigned_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '分配时间',
   `status` enum('in_progress','done','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'in_progress' COMMENT '任务状态',
   `remarks` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '备注说明',
@@ -98,7 +99,8 @@ CREATE TABLE `repair_log`  (
   `volunteer_id` bigint NOT NULL COMMENT '维修队员',
   `request_id` bigint NOT NULL COMMENT '报修单编号',
   `log_content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '维修详细内容',
-  `solution_summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '解决方案摘要',
+  `repair_duration` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '维修耗时（例如：2小时30分钟）',
+  `solution_summary` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '解决方案摘要',
   `upload_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
   PRIMARY KEY (`log_id`) USING BTREE,
   INDEX `fk_log_volunteer`(`volunteer_id` ASC) USING BTREE,
@@ -106,6 +108,20 @@ CREATE TABLE `repair_log`  (
   CONSTRAINT `fk_log_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_log_volunteer` FOREIGN KEY (`volunteer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修日志表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for repair_log_img
+-- ----------------------------
+DROP TABLE IF EXISTS `repair_log_img`;
+CREATE TABLE `repair_log_img`  (
+  `img_id` bigint NOT NULL AUTO_INCREMENT COMMENT '图片编号',
+  `log_id` bigint NOT NULL COMMENT '关联的维修日志编号',
+  `img_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '维修过程图片URL',
+  `upload_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+  PRIMARY KEY (`img_id`) USING BTREE,
+  INDEX `idx_log_img_log_id`(`log_id` ASC) USING BTREE,
+  CONSTRAINT `fk_log_img_log` FOREIGN KEY (`log_id`) REFERENCES `repair_log` (`log_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修日志图片表（存放维修过程照片）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for repair_request
@@ -131,6 +147,20 @@ CREATE TABLE `repair_request`  (
   INDEX `idx_request_status`(`status` ASC) USING BTREE,
   CONSTRAINT `fk_request_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for repair_request_img
+-- ----------------------------
+DROP TABLE IF EXISTS `repair_request_img`;
+CREATE TABLE `repair_request_img`  (
+  `img_id` bigint NOT NULL AUTO_INCREMENT COMMENT '图片编号',
+  `request_id` bigint NOT NULL COMMENT '关联的报修单编号',
+  `img_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '图片URL地址',
+  `upload_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+  PRIMARY KEY (`img_id`) USING BTREE,
+  INDEX `idx_request_img_request_id`(`request_id` ASC) USING BTREE,
+  CONSTRAINT `fk_request_img_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求图片表（每个报修单可对应多张故障图片）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for users

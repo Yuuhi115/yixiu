@@ -1,6 +1,8 @@
 package gdufs.yixiu.service.impl;
 
+import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.pojo.RepairRequestImg;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.util.Result;
@@ -21,10 +23,17 @@ import java.nio.file.StandardCopyOption;
 public class ImgUploadServiceImpl implements ImgUploadService {
 
     private String avatarPath;
+    private String requestPath;
+    @Autowired
+    private TaskMapper taskMapper;
 
     @Value("${resources-path.avatar}")
     public void setAvatarPath(String avatarPath) {
         this.avatarPath = avatarPath;
+    }
+    @Value("${resources-path.request}")
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
     }
     @Autowired
     private UsersMapper userMapper;
@@ -60,5 +69,37 @@ public class ImgUploadServiceImpl implements ImgUploadService {
         }
         log.info("No.{} user update avatar success", id);
         return avatarPath + fileName;
+    }
+
+    @Override
+    public String uploadRequestImg(MultipartFile file, Integer requestId, Integer number) {
+        log.info("Uploading No.{} request's img to {}", requestId, requestPath);
+        String originalFilename = file.getOriginalFilename();
+
+        // 显示文件大小（以MB为单位）
+        long fileSizeInBytes = file.getSize();
+        double fileSizeInMB = fileSizeInBytes / (1024.0 * 1024.0);
+        String formattedFileSize = String.format("%.2f", fileSizeInMB);
+        log.info("requestId:{}, imgNumber:{}, file size: {} MB",requestId, number, formattedFileSize);
+        String fileName = "request_" + requestId + "_img_" + number + "." + originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+
+        Path uploadPath = Paths.get(requestPath);
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            RepairRequestImg img = new RepairRequestImg();
+            img.setRequestId(requestId);
+            img.setImgUrl("/request/" + fileName);
+            taskMapper.addRequestImg(img);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return "/request/" + fileName;
     }
 }

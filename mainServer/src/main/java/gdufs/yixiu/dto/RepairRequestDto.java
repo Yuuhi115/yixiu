@@ -1,19 +1,20 @@
-package gdufs.yixiu.pojo;
+package gdufs.yixiu.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.sql.Timestamp;
-
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class RepairRequest {
-    private Integer requestId;
+@NoArgsConstructor
+public class RepairRequestDto {
     private Integer userId;
+    private String username;
+    private String realName;
     private String contactType;
     private String contactInfo;
+
+    private Integer requestId;
     private String deviceType;
     private String deviceSystem;
     private String deviceModel;
@@ -23,7 +24,4 @@ public class RepairRequest {
     private String appointmentTime;
     private String remarks;
     private String status;
-    private Timestamp createTime;
-    private Timestamp updateTime;
-    private Timestamp completeTime;
 }

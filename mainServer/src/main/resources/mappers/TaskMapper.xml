@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.TaskMapper">
+    <!-- SQL映射语句在此定义 -->
+    <insert id="addTask" useGeneratedKeys="true" keyColumn="request_id" keyProperty="requestId">
+        insert into repair_request (user_id,contact_type,contact_info,device_type,device_system,device_model,problem_description,campus,repair_location,appointment_time,remarks)
+        values (#{userId},#{contactType},#{contactInfo},#{deviceType},#{deviceSystem},#{deviceModel},#{problemDescription},#{campus},#{repairLocation},#{appointmentTime},#{remarks})
+    </insert>
+    <insert id="addRequestImg" parameterType="gdufs.yixiu.pojo.RepairRequestImg">
+        insert into repair_request_img (request_id,img_url) values (#{requestId},#{imgUrl})
+    </insert>
+    <update id="updateTask">
+        update repair_request
+        <set>
+            <if test="contactType != null">
+                contact_type = #{contactType},
+            </if>
+            <if test="contactInfo != null">
+                contact_info = #{contactInfo},
+            </if>
+            <if test="deviceType != null">
+                device_type = #{deviceType},
+            </if>
+            <if test="deviceSystem != null">
+                device_system = #{deviceSystem},
+            </if>
+            <if test="deviceModel != null">
+                device_model = #{deviceModel},
+            </if>
+            <if test="problemDescription != null">
+                problem_description = #{problemDescription},
+            </if>
+            <if test="campus != null">
+                campus = #{campus},
+            </if>
+            <if test="repairLocation != null">
+                repair_location = #{repairLocation},
+            </if>
+            <if test="appointmentTime != null">
+                appointment_time = #{appointmentTime},
+            </if>
+            <if test="remarks != null">
+                remarks = #{remarks},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        <where>
+            request_id = #{requestId}
+        </where>
+    </update>
+    <delete id="deleteTaskImgByRequestId" parameterType="java.lang.Integer">
+        delete from repair_request_img where request_id = #{requestId}
+    </delete>
+    <select id="findTaskById" resultType="gdufs.yixiu.pojo.RepairRequest" parameterType="java.lang.Integer">
+        select * from repair_request where request_id = #{requestId}
+    </select>
+    <select id="findAllTask" resultType="gdufs.yixiu.pojo.RepairRequest">
+        select * from repair_request
+    </select>
+    <select id="findTaskByUserId" resultType="gdufs.yixiu.pojo.RepairRequest"
+            parameterType="java.lang.Integer">
+        select * from repair_request where user_id = #{userId}
+    </select>
+    <select id="findTaskByStatus" resultType="gdufs.yixiu.pojo.RepairRequest" parameterType="java.lang.String">
+        select * from repair_request where status = #{status}
+    </select>
+    <select id="findRequestImgByRequestId" resultType="gdufs.yixiu.pojo.RepairRequestImg"
+            parameterType="java.lang.Integer">
+        select * from repair_request_img where request_id = #{requestId}
+    </select>
+</mapper>
