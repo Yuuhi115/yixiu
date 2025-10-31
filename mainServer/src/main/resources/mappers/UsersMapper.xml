@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.UsersMapper">
+    <!-- SQL映射语句在此定义 -->
+    <insert id="addUserByPhone" parameterType="gdufs.yixiu.pojo.Users" useGeneratedKeys="true" keyProperty="userId" keyColumn="user_id">
+        insert into users(phone,username,role,avatar,last_login)
+        values(#{phone},#{username},#{role},"default_avatar.jpg",NOW())
+    </insert>
+    <insert id="addUserByEmail" parameterType="gdufs.yixiu.pojo.Users" useGeneratedKeys="true" keyProperty="userId" keyColumn="user_id">
+        insert into users(email,username,role,avatar,last_login)
+        values(#{email},#{username},#{role},"default_avatar.jpg",NOW())
+    </insert>
+    <insert id="addUserByOpenid" parameterType="gdufs.yixiu.pojo.Users"></insert>
+    <select id="findUserById" resultType="gdufs.yixiu.pojo.Users" parameterType="java.lang.Integer">
+        select * from users where user_id = #{userId}
+    </select>
+    <select id="findUserByPhoneAndRole" resultType="gdufs.yixiu.pojo.Users">
+        select * from users where phone = #{phone} and role = #{role}
+    </select>
+    <select id="findUserByEmailAndRole" resultType="gdufs.yixiu.pojo.Users">
+        select * from users where email = #{email} and role = #{role}
+    </select>
+    <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
+        update users
+        <set>
+            <if test="username != null">
+                username = #{username},
+            </if>
+            <if test="phone != null">
+                phone = #{phone},
+            </if>
+            <if test="email != null">
+                email = #{email},
+            </if>
+            <if test="avatar != null">
+                avatar = #{avatar},
+            </if>
+            <if test="lastLogin != null">
+                last_login = #{lastLogin},
+            </if>
+        </set>
+        <where>
+            user_id = #{userId}
+        </where>
+    </update>
+</mapper>
