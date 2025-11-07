@@ -1,0 +1,8 @@
+docker run \
+-d \
+--name redis \
+-p 6379:6379 \
+-v /usr/docker/redis/data:/data \
+-v /usr/docker/redis/conf/redis.conf:/etc/redis/redis.conf \
+redis:7.2.11 /etc/redis/redis.conf \
+--appendonly yes

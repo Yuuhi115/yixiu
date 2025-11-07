@@ -1,0 +1,5 @@
+docker run -d -p 8080:8080 \
+  -v /usr/yixiuAssist/ROOT.war:/usr/local/tomcat/webapps/ROOT.war \
+  -v /usr/yixiuAssist/image:/usr/yixiuAssist/image \
+  --name yixiu-server \
+  tomcat:11-jre21
