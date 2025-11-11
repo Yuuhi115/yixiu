@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
-@RequestMapping("/send")
+@RequestMapping("/api/v1/send")
 public class SendController {
     @Autowired
     private MessageUtils messageUtils;

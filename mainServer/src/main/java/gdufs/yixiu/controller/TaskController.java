@@ -24,7 +24,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/task")
+@RequestMapping("/api/v1/task")
 public class TaskController {
     @Autowired
     private TaskService taskService;

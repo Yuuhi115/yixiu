@@ -1,12 +1,14 @@
 package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.JWTUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +23,13 @@ public class UsersServiceImpl implements UsersService {
     private JWTUtils jwtUtils;
     @Autowired
     private RedisTemplate redisTemplate;
+
+    private String avatarPath;
+
+    @Value("${resources-path.service-avatar-url}")
+    public void setAvatarPath(String avatarPath) {
+        this.avatarPath = avatarPath;
+    }
 
     @Override
     public String registerByPhone(UsersRegisterDto userDto) {
@@ -87,7 +96,24 @@ public class UsersServiceImpl implements UsersService {
     public void updateUserLoginTime(int userId) {
         Users user = new Users();
         user.setUserId(userId);
-        user.setLastLogin(new java.sql.Timestamp(System.currentTimeMillis()));
+        java.sql.Timestamp timestamp = new java.sql.Timestamp(System.currentTimeMillis());
+        user.setLastLogin(new java.sql.Date(timestamp.getTime()));
         usersMapper.updateUser(user);
+    }
+
+    @Override
+    public UserBasicInfoDto queryUserById(Integer userId) {
+        Users user = usersMapper.findUserById(userId);
+        UserBasicInfoDto userBasicInfoDto = new UserBasicInfoDto();
+        userBasicInfoDto.setUserId(user.getUserId());
+        userBasicInfoDto.setUsername(user.getUsername());
+        userBasicInfoDto.setRealName(user.getRealName());
+        userBasicInfoDto.setPhone(user.getPhone());
+        userBasicInfoDto.setEmail(user.getEmail());
+        userBasicInfoDto.setAvatar(avatarPath + user.getAvatar());
+        userBasicInfoDto.setRole(user.getRole());
+        userBasicInfoDto.setStatus(user.getStatus());
+        userBasicInfoDto.setLastLogin(user.getLastLogin());
+        return userBasicInfoDto;
     }
 }

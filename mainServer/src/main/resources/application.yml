@@ -4,6 +4,12 @@ spring:
     url: jdbc:mysql://8.148.253.180:3306/yixiu?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
     username: root
     password: gw_yixiu_123456
+    hikari:
+      max-lifetime: 1800000     # 30分钟，小于MySQL wait_timeout
+      idle-timeout: 600000      # 10分钟
+      keepalive-time: 300000    # 5分钟
+      validation-timeout: 3000  # 3秒
+
   mail:
     host: smtp.163.com
     username: 13712871903@163.com
@@ -65,3 +71,7 @@ resources-path:
   linux_avatar: /usr/yixiuAssist/image/avatar/
   linux_request: /usr/yixiuAssist/image/request/
 
+  service-avatar-url: http://localhost:8080/users/avatar/
+  service-request-url: http://localhost:8080/task/requestImg/
+  service-linux-avatar-url: http://8.148.253.180:8080/users/avatar/
+  service-linux-request-url: http://8.148.253.180:8080/task/requestImg/

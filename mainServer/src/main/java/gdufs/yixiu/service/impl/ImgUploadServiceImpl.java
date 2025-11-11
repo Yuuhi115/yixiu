@@ -27,13 +27,13 @@ public class ImgUploadServiceImpl implements ImgUploadService {
     @Autowired
     private TaskMapper taskMapper;
 
-//    @Value("${resources-path.avatar}")
-    @Value("${resources-path.linux_avatar}")
+    @Value("${resources-path.avatar}")
+//    @Value("${resources-path.linux_avatar}")
     public void setAvatarPath(String avatarPath) {
         this.avatarPath = avatarPath;
     }
-//    @Value("${resources-path.request}")
-    @Value("${resources-path.linux_request}")
+    @Value("${resources-path.request}")
+//    @Value("${resources-path.linux_request}")
     public void setRequestPath(String requestPath) {
         this.requestPath = requestPath;
     }

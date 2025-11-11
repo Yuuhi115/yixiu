@@ -22,10 +22,10 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-//        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:D:\\ideaProject\\yixiuAssist\\image\\avatar\\");
-//        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:D:\\ideaProject\\yixiuAssist\\image\\request\\");
+        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:D:\\ideaProject\\yixiuAssist\\image\\avatar\\");
+        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:D:\\ideaProject\\yixiuAssist\\image\\request\\");
 
-        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:/usr/yixiuAssist/image/avatar/");
-        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:/usr/yixiuAssist/image/request/");
+//        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:/usr/yixiuAssist/image/avatar/");
+//        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:/usr/yixiuAssist/image/request/");
     }
 }

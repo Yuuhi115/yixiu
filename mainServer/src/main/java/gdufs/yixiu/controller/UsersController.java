@@ -2,6 +2,7 @@ package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
@@ -18,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 public class UsersController {
     @Autowired
     private UsersService usersService;
@@ -59,10 +60,7 @@ public class UsersController {
         }
         Users user = usersService.queryUserByEmailAndRole(userDto.getEmail(), userDto.getRole());
         if (user == null) {
-            log.info("邮箱用户{}-{}-正在进行注册", userDto.getEmail(), userDto.getRole());
-            String token = usersService.registerByEmail(userDto);
-            redisTemplate.delete("email_code:" + userDto.getEmail());
-            return Result.success(token);
+            return Result.fail("该邮箱未注册");
         }else {
             log.info("邮箱用户{}-{}-正在登录", userDto.getEmail(), user.getRole());
             String token = usersService.loginByEmail(userDto, user.getUserId());
@@ -72,6 +70,27 @@ public class UsersController {
         }
     }
 
+    @PassToken
+    @PostMapping("/registerByEmail")
+    public Result registerByEmail(@RequestBody UsersRegisterDto userDto) {
+        String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+        if (verificationCode == null) {
+            return Result.fail("验证码未发送或已过期");
+        }
+        if (!verificationCode.equals(userDto.getVerificationCode())) {
+            return Result.fail("验证码错误");
+        }
+        Users user = usersService.queryUserByEmailAndRole(userDto.getEmail(), userDto.getRole());
+        if (user != null){
+            return Result.fail("该邮箱已注册");
+        }
+        log.info("邮箱用户{}-{}-正在进行注册", userDto.getEmail(), userDto.getRole());
+        String token = usersService.registerByEmail(userDto);
+        redisTemplate.delete("email_code:" + userDto.getEmail());
+        return Result.success(token);
+    }
+
+
     @UserLoginToken
     @PutMapping("/avatar")
     public Result updateUserAvatar(@RequestParam("avatar") MultipartFile file, HttpServletRequest request) {
@@ -79,6 +98,15 @@ public class UsersController {
         int id = jwtUtils.getInfoFromToken(token).getId();
         String avatar = imgUploadService.uploadAvatar(file, id);
         return Result.success(avatar);
+    }
+
+    @UserLoginToken
+    @GetMapping("/userInfo")
+    public Result getUserInfo(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int id = jwtUtils.getInfoFromToken(token).getId();
+        UserBasicInfoDto user = usersService.queryUserById(id);
+        return Result.success(user);
     }
 
 }
