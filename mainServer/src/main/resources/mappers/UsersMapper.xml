@@ -21,11 +21,17 @@
     <select id="findUserByEmailAndRole" resultType="gdufs.yixiu.pojo.Users">
         select * from users where email = #{email} and role = #{role}
     </select>
+    <select id="findSuperAdmin" resultType="gdufs.yixiu.pojo.Users">
+        select * from users where role = "super_admin"
+    </select>
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>
             <if test="username != null">
                 username = #{username},
+            </if>
+            <if test="realName != null">
+                real_name = #{realName},
             </if>
             <if test="phone != null">
                 phone = #{phone},

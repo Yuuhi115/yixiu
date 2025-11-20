@@ -78,6 +78,17 @@
 /*    background-color: #f9f9f9;*/
 /*  }*/
 /*}*/
+.right-aligned-text {
+    float: right;
+    margin-right: 10px;
+}
+.clickable-title {
+    cursor: pointer;
+}
+
+.clickable-title:hover {
+    color: #409eff; /* 可选：悬停时改变颜色 */
+}
 .common-layout{
     height: 100vh;
     margin: 0;

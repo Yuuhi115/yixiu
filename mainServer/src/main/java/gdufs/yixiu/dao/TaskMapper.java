@@ -16,6 +16,7 @@ public interface TaskMapper {
     List<RepairRequest> findTaskByUserId(Integer userId);
     List<RepairRequest> findTaskByStatus(String status);
     List<RepairRequestImg> findRequestImgByRequestId(Integer requestId);
+    List<String> findRequestImgUrlByRequestId(Integer requestId);
     int deleteTaskImgByRequestId(Integer requestId);
 
 }

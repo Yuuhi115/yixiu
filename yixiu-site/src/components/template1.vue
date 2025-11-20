@@ -5,6 +5,7 @@ import {onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import {getUserInfo} from "../../api/userApi.js";
 import {ElMessage} from "element-plus";
+import router from "../router/index.js";
 
 const userInfoRef = ref()
 
@@ -44,7 +45,7 @@ const queryUserInfo = async () => {
         <el-row :gutter="20">
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
-              <h3 class="mb-3" style="margin-right: 100px">Light义修帮</h3>
+              <h3 class="clickable-title" style="margin-right: 100px" @click="() => router.push('/')">Light义修帮</h3>
             </div>
           </el-col>
           <el-col :span="12">
@@ -119,7 +120,7 @@ const queryUserInfo = async () => {
 
   border: snow 8px solid;
   border-radius: 30px;
-  box-shadow: silver 0 0 10px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   --el-box-shadow: ;
   background: white;
 }

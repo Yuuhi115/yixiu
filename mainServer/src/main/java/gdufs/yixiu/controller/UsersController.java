@@ -3,6 +3,7 @@ package gdufs.yixiu.controller;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UserBasicInfoDto;
+import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
@@ -107,6 +108,16 @@ public class UsersController {
         int id = jwtUtils.getInfoFromToken(token).getId();
         UserBasicInfoDto user = usersService.queryUserById(id);
         return Result.success(user);
+    }
+
+    @UserLoginToken
+    @PutMapping("/userInfo")
+    public Result updateUserInfo(@RequestBody UserModifyDto userModifyDto, HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int id = jwtUtils.getInfoFromToken(token).getId();
+        userModifyDto.setUserId(id);
+        usersService.updateUserBasicInfo(userModifyDto);
+        return Result.success("更新成功");
     }
 
 }

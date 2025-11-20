@@ -32,20 +32,20 @@ public class TaskController {
     private JWTUtils jwtUtils;
     @Autowired
     private ImgUploadService imgUploadService;
+
     @UserLoginToken
     @PostMapping("/add")
     public Result addTask(@RequestBody RepairRequestDto repairRequestDto,
                           HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        if (!userId.equals(repairRequestDto.getUserId())){
-            return Result.fail("用户信息错误");
-        }
+        repairRequestDto.setUserId(userId);
         String requestId = taskService.addTask(repairRequestDto);
         Map<String, String> map = new HashMap<>();
         map.put("requestId", requestId);
         return Result.success(map);
     }
+
     @UserLoginToken
     @PostMapping("/uploadRequestImg")
     public Result uploadRequestImg(@RequestParam("requestId") Integer requestId,
@@ -57,10 +57,10 @@ public class TaskController {
         List<String> imgUrls = new ArrayList<>();
         log.info("用户No.{} 上传报修单No.{} 的图片数量为 {}", userId, requestId, files.length);
         Integer originalImgNum = taskService.queryImgByRequestId(requestId).size();
-        if (originalImgNum != 0){
+        if (originalImgNum != 0) {
             taskService.deleteTaskImgByRequestId(requestId);
         }
-        for (MultipartFile file : files){
+        for (MultipartFile file : files) {
             String imgUrl = imgUploadService.uploadRequestImg(file, requestId, count);
             imgUrls.add(imgUrl);
             count++;
@@ -69,6 +69,7 @@ public class TaskController {
         map.put("imgUrls", imgUrls);
         return Result.success(map);
     }
+
     @UserLoginToken
     @GetMapping("/getByRid")
     public Result getTaskByRequestId(@RequestParam("requestId") Integer requestId,
@@ -77,7 +78,7 @@ public class TaskController {
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 查询报修单No.{}", userId, requestId);
         RepairRequestDto repairRequestDto = taskService.queryTaskById(requestId);
-        if (repairRequestDto == null){
+        if (repairRequestDto == null) {
             return Result.fail("没有此报修单");
         }
         return Result.success(repairRequestDto);
@@ -91,10 +92,22 @@ public class TaskController {
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 查询状态为 {} 的报修单", userId, status);
         List<RepairRequestDto> repairRequestDtos = taskService.queryTaskByStatus(status);
-        if (repairRequestDtos == null){
+        if (repairRequestDtos == null) {
             return Result.fail("没有此状态的报修单");
         }
         return Result.success(repairRequestDtos);
     }
 
+    @UserLoginToken
+    @GetMapping("/getByUserId")
+    public Result getTaskByUserId(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 获取自己的报修单", userId);
+        List<RepairRequestDto> repairRequestDtos = taskService.queryTaskByUserId(userId);
+        if (repairRequestDtos == null) {
+            return Result.fail("没有此用户报修单");
+        }
+        return Result.success(repairRequestDtos);
+    }
 }

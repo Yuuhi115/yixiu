@@ -57,6 +57,10 @@ const handleOpen = (key, keyPath) => {
 const handleClose = (key, keyPath) => {
   console.log(key, keyPath)
 }
+const logout = async () => {
+  Cookie.remove('Authorization')
+  await router.push('/login')
+}
 </script>
 
 <template>
@@ -87,6 +91,9 @@ const handleClose = (key, keyPath) => {
                   <el-button style="margin-bottom: 10px" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
+              <div class="component-center">
+                <el-button type="danger" @click="logout">退出登录</el-button>
+              </div>
             </div>
           </el-col>
         </el-row>
@@ -97,18 +104,47 @@ const handleClose = (key, keyPath) => {
         <!--侧栏-->
         <el-aside class="aside_container">
           <el-menu
-              default-active="2"
               class="el-menu-vertical-demo"
               @open="handleOpen"
               @close="handleClose"
           >
-            <el-menu-item index="1">
-              <el-icon>
-                <icon-menu/>
-              </el-icon>
-              <span>申请义修服务</span>
-            </el-menu-item>
-            <el-sub-menu index="2">
+            <el-sub-menu index="1" v-if="userInfo.role === 'student'">
+              <template #title>
+                <el-icon>
+                  <icon-menu />
+                </el-icon>
+                <span>义修服务</span>
+              </template>
+              <el-menu-item index="1-1" @click="() => router.push('/repair/form')">
+                填写预约问卷
+              </el-menu-item>
+              <el-menu-item index="1-2" @click="() => router.push('/user/basicInfo')">
+                预约信息模板管理
+              </el-menu-item>
+              <el-menu-item index="1-3" @click="() => router.push('/repair/history')">
+                预约历史
+              </el-menu-item>
+            </el-sub-menu>
+            <el-sub-menu index="2" v-if="userInfo.role === 'admin' || userInfo.role === 'super_admin'">
+              <template #title>
+                <el-icon>
+                  <icon-menu />
+                </el-icon>
+                <span>队伍管理</span>
+              </template>
+              <el-menu-item index="2-1" @click="() => router.push('/admin/memberManage')">
+                成员管理
+              </el-menu-item>
+            </el-sub-menu>
+            <el-sub-menu index="3" v-if="userInfo.role !== 'student'">
+              <template #title>
+                <el-icon>
+                  <icon-menu />
+                </el-icon>
+                <span>任务中心</span>
+              </template>
+            </el-sub-menu>
+            <el-sub-menu index="4">
               <template #title>
                 <el-icon>
                   <location/>
@@ -116,27 +152,26 @@ const handleClose = (key, keyPath) => {
                 <span>个人中心</span>
               </template>
               <!--            <el-menu-item-group title="Group One">-->
-              <el-menu-item index="1-1" @click="() => router.push('/user/basicInfo')">
+              <el-menu-item index="4-1" @click="() => router.push('/user/basicInfo')">
                 基本信息
               </el-menu-item>
-              <el-menu-item index="1-2">申请历史</el-menu-item>
               <!--            </el-menu-item-group>-->
               <!--            <el-menu-item-group title="Group Two">-->
-              <el-menu-item index="1-3">我的收藏</el-menu-item>
+              <el-menu-item index="4-2">我的收藏</el-menu-item>
               <!--            </el-menu-item-group>-->
-              <el-menu-item index="1-4">
+              <el-menu-item index="4-3">
 <!--                <template #title>item four</template>-->
 <!--                <el-menu-item index="1-4-1">item one</el-menu-item>-->
                 消息中心
               </el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="3">
+            <el-menu-item index="5">
               <el-icon>
                 <document/>
               </el-icon>
               <span>义修社区</span>
             </el-menu-item>
-            <el-menu-item index="4">
+            <el-menu-item index="6">
               <el-icon>
                 <setting/>
               </el-icon>
@@ -146,9 +181,9 @@ const handleClose = (key, keyPath) => {
         </el-aside>
         <el-container>
           <!--主栏-->
-          <el-main>Main</el-main>
+          <el-main></el-main>
           <!--底部栏-->
-          <el-footer>Footer</el-footer>
+<!--          <el-footer>Footer</el-footer>-->
         </el-container>
       </el-container>
     </el-container>
@@ -157,6 +192,16 @@ const handleClose = (key, keyPath) => {
 
 
 <style scoped>
+.el-menu-item {
+  background-color: snow;
+}
+.el-main {
+  background-image: url('../assets/login_backgroud.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .el-menu-vertical-demo {
   border-right: 0;
   background-color: snow;

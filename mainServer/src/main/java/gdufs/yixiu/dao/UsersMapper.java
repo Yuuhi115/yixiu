@@ -11,5 +11,6 @@ public interface UsersMapper {
     Users findUserById(Integer userId);
     Users findUserByPhoneAndRole(String phone, String role);
     Users findUserByEmailAndRole(String email, String role);
+    Users findSuperAdmin(String email);
     int updateUser(Users users);
 }

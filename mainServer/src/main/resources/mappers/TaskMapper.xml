@@ -71,4 +71,7 @@
             parameterType="java.lang.Integer">
         select * from repair_request_img where request_id = #{requestId}
     </select>
+    <select id="findRequestImgUrlByRequestId" resultType="string">
+        select img_url from repair_request_img where request_id = #{requestId}
+    </select>
 </mapper>

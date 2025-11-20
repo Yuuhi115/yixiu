@@ -22,7 +22,7 @@ public class RepairRequest {
     private String repairLocation;
     private String appointmentTime;
     private String remarks;
-    private String status;
+    private Integer status;
     private Timestamp createTime;
     private Timestamp updateTime;
     private Timestamp completeTime;

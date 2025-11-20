@@ -9,6 +9,7 @@ import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -21,7 +22,11 @@ public class TaskServiceImpl implements TaskService {
     private TaskMapper taskMapper;
     @Autowired
     private UsersMapper usersMapper;
-
+    private String serviceRequestUrl;
+    @Value("${resources-path.service-request-url}")
+    private void setServiceRequestUrl(String serviceRequestUrl) {
+        this.serviceRequestUrl = serviceRequestUrl;
+    }
     @Override
     public String addTask(RepairRequestDto repairRequestDto) {
         RepairRequest repairRequest = new RepairRequest();
@@ -88,6 +93,13 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public RepairRequestDto RepairRequestPojoToDto(Users users, RepairRequest repairRequest) {
         RepairRequestDto repairRequestDto = new RepairRequestDto();
+        List<String> imgUrls = taskMapper.findRequestImgUrlByRequestId(repairRequest.getRequestId());
+        List<String> modifyImgUrls = new ArrayList<>();
+        for (String url : imgUrls){
+            url = serviceRequestUrl + url;
+            modifyImgUrls.add(url);
+        }
+
         repairRequestDto.setUserId(users.getUserId());
         repairRequestDto.setUsername(users.getUsername());
         repairRequestDto.setRealName(users.getRealName());
@@ -104,6 +116,10 @@ public class TaskServiceImpl implements TaskService {
         repairRequestDto.setAppointmentTime(repairRequest.getAppointmentTime());
         repairRequestDto.setRemarks(repairRequest.getRemarks());
         repairRequestDto.setStatus(repairRequest.getStatus());
+        repairRequestDto.setImgUrl(modifyImgUrls);
+        repairRequestDto.setCreateTime(repairRequest.getCreateTime());
+        repairRequestDto.setUpdateTime(repairRequest.getUpdateTime());
+        repairRequestDto.setCompleteTime(repairRequest.getCompleteTime());
         return repairRequestDto;
     }
 

@@ -97,11 +97,11 @@ public class ImgUploadServiceImpl implements ImgUploadService {
             Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             RepairRequestImg img = new RepairRequestImg();
             img.setRequestId(requestId);
-            img.setImgUrl("/request/" + fileName);
+            img.setImgUrl("request/" + fileName);
             taskMapper.addRequestImg(img);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return "/request/" + fileName;
+        return "request/" + fileName;
     }
 }

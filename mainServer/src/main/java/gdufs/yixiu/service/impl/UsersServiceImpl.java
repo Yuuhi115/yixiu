@@ -2,6 +2,7 @@ package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
+import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.UsersService;
@@ -27,6 +28,7 @@ public class UsersServiceImpl implements UsersService {
     private String avatarPath;
 
     @Value("${resources-path.service-avatar-url}")
+//    @Value("${resources-path.service-linux-avatar-url}")
     public void setAvatarPath(String avatarPath) {
         this.avatarPath = avatarPath;
     }
@@ -98,6 +100,15 @@ public class UsersServiceImpl implements UsersService {
         user.setUserId(userId);
         java.sql.Timestamp timestamp = new java.sql.Timestamp(System.currentTimeMillis());
         user.setLastLogin(new java.sql.Date(timestamp.getTime()));
+        usersMapper.updateUser(user);
+    }
+
+    @Override
+    public void updateUserBasicInfo(UserModifyDto userModifyDto) {
+        Users user = new Users();
+        user.setUserId(userModifyDto.getUserId());
+        user.setUsername(userModifyDto.getUsername());
+        user.setRealName(userModifyDto.getRealName());
         usersMapper.updateUser(user);
     }
 

@@ -1,6 +1,7 @@
 package gdufs.yixiu.service;
 
 import gdufs.yixiu.dto.UserBasicInfoDto;
+import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 
@@ -12,5 +13,6 @@ public interface UsersService {
     Users queryUserByPhoneAndRole(String phone, String role);
     Users queryUserByEmailAndRole(String email, String role);
     void updateUserLoginTime(int userId);
+    void updateUserBasicInfo(UserModifyDto userBasicInfoDto);
     UserBasicInfoDto queryUserById(Integer userId);
 }

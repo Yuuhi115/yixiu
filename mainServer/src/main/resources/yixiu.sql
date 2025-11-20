@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : docker 8.0.33
+ Source Server         : 阿里云mysql8
  Source Server Type    : MySQL
  Source Server Version : 80033 (8.0.33)
- Source Host           : localhost:3306
+ Source Host           : 8.148.253.180:3306
  Source Schema         : yixiu
 
  Target Server Type    : MySQL
  Target Server Version : 80033 (8.0.33)
  File Encoding         : 65001
 
- Date: 31/10/2025 15:36:54
+ Date: 20/11/2025 15:23:53
 */
 
 SET NAMES utf8mb4;
@@ -31,7 +31,7 @@ CREATE TABLE `ai_knowledge_base`  (
   `created_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`knowledge_id`) USING BTREE,
   INDEX `idx_knowledge_category`(`category` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI义修助手知识库表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI义修助手知识库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for ai_query_log
@@ -49,7 +49,7 @@ CREATE TABLE `ai_query_log`  (
   INDEX `fk_query_knowledge`(`related_knowledge_id` ASC) USING BTREE,
   CONSTRAINT `fk_query_knowledge` FOREIGN KEY (`related_knowledge_id`) REFERENCES `ai_knowledge_base` (`knowledge_id`) ON DELETE SET NULL ON UPDATE RESTRICT,
   CONSTRAINT `fk_query_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI问答记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI问答记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for feedback
@@ -67,7 +67,7 @@ CREATE TABLE `feedback`  (
   INDEX `fk_feedback_user`(`user_id` ASC) USING BTREE,
   CONSTRAINT `fk_feedback_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_feedback_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修反馈表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修反馈表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for repair_assignment
@@ -88,7 +88,7 @@ CREATE TABLE `repair_assignment`  (
   INDEX `idx_assign_status`(`status` ASC) USING BTREE,
   CONSTRAINT `fk_assign_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_assign_volunteer` FOREIGN KEY (`volunteer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修任务分配表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修任务分配表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for repair_log
@@ -107,7 +107,7 @@ CREATE TABLE `repair_log`  (
   INDEX `fk_log_request`(`request_id` ASC) USING BTREE,
   CONSTRAINT `fk_log_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_log_volunteer` FOREIGN KEY (`volunteer_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修日志表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修日志表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for repair_log_img
@@ -130,6 +130,8 @@ DROP TABLE IF EXISTS `repair_request`;
 CREATE TABLE `repair_request`  (
   `request_id` bigint NOT NULL AUTO_INCREMENT COMMENT '报修编号',
   `user_id` bigint NOT NULL COMMENT '报修人',
+  `contact_type` enum('wechat','phone','email') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系方式类型（wechat: 微信, phone: 手机号, email: 邮箱）',
+  `contact_info` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '联系账号或号码',
   `device_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '设备类型',
   `device_system` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '设备系统',
   `device_model` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '设备型号',
@@ -138,7 +140,7 @@ CREATE TABLE `repair_request`  (
   `repair_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '维修地点',
   `appointment_time` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预约维修时间',
   `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-  `status` enum('pending','assigned','completed','cancelled','self_resolved') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'pending' COMMENT '报修状态',
+  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '报修状态（0:已提交待审核，1:审核通过，2:已被接收，3:已完成，4:已取消，5:用户自行解决）',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `complete_time` datetime NULL DEFAULT NULL COMMENT '完成时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
@@ -146,7 +148,7 @@ CREATE TABLE `repair_request`  (
   INDEX `fk_request_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_request_status`(`status` ASC) USING BTREE,
   CONSTRAINT `fk_request_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for repair_request_img
@@ -160,7 +162,7 @@ CREATE TABLE `repair_request_img`  (
   PRIMARY KEY (`img_id`) USING BTREE,
   INDEX `idx_request_img_request_id`(`request_id` ASC) USING BTREE,
   CONSTRAINT `fk_request_img_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求图片表（每个报修单可对应多张故障图片）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求图片表（每个报修单可对应多张故障图片）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for users
@@ -187,7 +189,7 @@ CREATE TABLE `users`  (
   UNIQUE INDEX `uk_openid`(`openid` ASC) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE,
   INDEX `idx_user_role`(`role` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Triggers structure for table repair_assignment

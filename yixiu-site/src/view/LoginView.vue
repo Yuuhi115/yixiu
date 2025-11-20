@@ -1,14 +1,25 @@
-<script setup>import { reactive, ref, computed, onUnmounted } from 'vue'
+<script setup>import { reactive, ref, computed, onUnmounted, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Iphone, Message, Lock, Key } from '@element-plus/icons-vue'
 import { sendLREmailVerificationCode,
   loginByEmailVerification } from '../api/userApi.js'
 import Cookie from "js-cookie"
 import router from "../router/index.js";
+import { ElLoading } from 'element-plus'
 
 const formRef = ref()
 const loginMethod = ref('email')
 const authMethod = ref('captcha')
+
+onMounted(async () => {
+  // 获取用户角色，并设置登录方式
+  const token = Cookie.get('Authorization')
+  if (token) {
+      ElMessage.success('已登录，正在跳转至主页面...')
+      await router.replace('/')
+    }
+  }
+)
 
 const form = reactive({
   role: 'student',
@@ -90,7 +101,9 @@ const sendCaptcha = async () => {
   if (countdown.value > 0) return // 如果正在倒计时，则不执行
 
   if (loginMethod.value === 'email') {
+    const loadingInstance = ElLoading.service()
     let loginResult = await sendLREmailVerificationCode(form.email);
+    loadingInstance.close()
     startCountdown() // 启动倒计时
     if (loginResult.code === 200) {
       ElMessage.success('验证码已发送')

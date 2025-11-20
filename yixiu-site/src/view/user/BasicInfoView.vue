@@ -4,9 +4,10 @@ import { VueCropper } from 'vue-cropper'
 import { Message } from "@element-plus/icons-vue";
 import { onMounted, reactive, ref } from "vue";
 import Cookie from "js-cookie";
-import {getUserInfo, updateAvatar} from "../../api/userApi.js";
+import {getUserInfo, updateAvatar, updateUserInfo} from "../../api/userApi.js";
 import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
+import router from "../../router/index.js";
 
 /*头像剪裁*/
 const cropperRef = ref()
@@ -47,8 +48,113 @@ const queryUserInfo = async () => {
   console.log(userInfo)
 }
 
+// 基本信息修改用户名和名字
+const editProfileDialogVisible = ref(false)
+const editProfileForm = reactive({
+  username: '',
+  realName: ''
+})
+const editProfileRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' }
+  ],
+  realName: [
+    { required: true, message: '请输入姓名', trigger: 'blur' }
+  ]
+}
+const editProfileFormRef = ref()
+
 const editProfile = () => {
-  ElMessage.info('编辑功能待实现')
+  // 初始化表单数据
+  editProfileForm.username = userInfo.username
+  editProfileForm.realName = userInfo.realName
+  // 显示对话框
+  editProfileDialogVisible.value = true
+}
+
+const saveProfileEdit = async () => {
+  editProfileFormRef.value.validate(async (valid) => {
+    if (valid) {
+      // 调用更新用户信息的API
+      const response = await updateUserInfo(editProfileForm)
+      if (response.code === 200) {
+        // 更新成功后更新本地数据
+        userInfo.username = editProfileForm.username
+        userInfo.realName = editProfileForm.realName
+        ElMessage.success('修改成功')
+      } else {
+        ElMessage.error(response.msg)
+      }
+      editProfileDialogVisible.value = false
+    }
+  })
+}
+
+
+/*电话和邮箱更新*/
+const editDialogVisible = ref(false)
+const editFieldType = ref('') // 'phone' 或 'email'
+const editForm = reactive({
+  newValue: '',
+  captcha: ''
+})
+
+// 打开编辑对话框
+const openEditDialog = (fieldType) => {
+  editFieldType.value = fieldType
+  editForm.newValue = ''
+  editForm.captcha = ''
+  editDialogVisible.value = true
+}
+
+// 发送验证码
+const sendCaptcha = async () => {
+  if (!editForm.newValue) {
+    ElMessage.warning('请输入新值')
+    return
+  }
+
+  // 验证手机号或邮箱格式
+  if (editFieldType.value === 'phone' && !/^1[3-9]\d{9}$/.test(editForm.newValue)) {
+    ElMessage.error('手机号格式不正确')
+    return
+  }
+
+  if (editFieldType.value === 'email' && !/^\w+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(editForm.newValue)) {
+    ElMessage.error('邮箱格式不正确')
+    return
+  }
+
+  // 调用发送验证码API
+  // await sendLREmailVerificationCode(editForm.newValue)
+  ElMessage.success('验证码已发送')
+}
+
+// 保存修改
+const saveEdit = async () => {
+  if (!editForm.newValue || !editForm.captcha) {
+    ElMessage.warning('请填写完整信息')
+    return
+  }
+
+  // 调用更新API
+  // const token = Cookie.get('Authorization')
+  // const response = await updateUserInfo(token, {
+  //   [editFieldType.value]: editForm.newValue,
+  //   captcha: editForm.captcha
+  // })
+
+  // if (response.code === 200) {
+  //   userInfo[editFieldType.value] = editForm.newValue
+  //   editDialogVisible.value = false
+  //   ElMessage.success('修改成功')
+  // } else {
+  //   ElMessage.error(response.msg)
+  // }
+
+  userInfo[editFieldType.value] = editForm.newValue
+  editDialogVisible.value = false
+  ElMessage.success('修改成功')
 }
 
 // 点击头像更换
@@ -154,7 +260,7 @@ const uploadAvatar = async (file) => {
         <el-row :gutter="20">
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
-              <h3 class="mb-3" style="margin-right: 100px">Light义修帮</h3>
+              <h3 class="clickable-title" style="margin-right: 100px" @click="() => router.push('/')">Light义修帮</h3>
             </div>
           </el-col>
           <el-col :span="12">
@@ -167,9 +273,8 @@ const uploadAvatar = async (file) => {
                   :ellipsis="false"
               >
                 <el-menu-item index="1">基本信息</el-menu-item>
-                <el-menu-item index="2">申请历史</el-menu-item>
-                <el-menu-item index="3">我的收藏</el-menu-item>
-                <el-menu-item index="4">消息中心</el-menu-item>
+                <el-menu-item index="2">我的收藏</el-menu-item>
+                <el-menu-item index="3">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -217,7 +322,13 @@ const uploadAvatar = async (file) => {
                       {{ userInfo.status === 'active' ? '在线' : '离线' }}
                     </el-tag>
                   </p>
-                  <p>身份: {{userInfo.role === 'volunteer' ? '志愿者' : '普通用户'}}</p>
+                  <p>
+                    {{
+                      userInfo.role === 'super_admin' ? '超级管理员' :
+                      userInfo.role === 'admin' ? '管理员' :
+                      userInfo.role === 'volunteer' ? '志愿者' : '普通用户'
+                    }}
+                  </p>
                   <p>最后登录: {{ userInfo.lastLogin }}</p>
                 </div>
               </el-card>
@@ -236,8 +347,18 @@ const uploadAvatar = async (file) => {
                   <el-descriptions-item label="用户ID">{{ userInfo.userId }}</el-descriptions-item>
                   <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
                   <el-descriptions-item label="真实姓名">{{ userInfo.realName }}</el-descriptions-item>
-                  <el-descriptions-item label="手机号">{{ userInfo.phone }}</el-descriptions-item>
-                  <el-descriptions-item label="邮箱">{{ userInfo.email }}</el-descriptions-item>
+                  <el-descriptions-item label="手机号">
+                    {{ userInfo.phone }}
+                    <el-link :underline="false" type="primary" class="right-aligned-text" @click="openEditDialog('phone')">
+                      修改
+                    </el-link>
+                  </el-descriptions-item>
+                  <el-descriptions-item label="邮箱">
+                    {{ userInfo.email }}
+                    <el-link :underline="false" type="primary" class="right-aligned-text" @click="openEditDialog('email')">
+                      修改
+                    </el-link>
+                  </el-descriptions-item>
                   <el-descriptions-item label="角色">
                     {{ userInfo.role === 'volunteer' ? '志愿者' : '普通用户' }}
                   </el-descriptions-item>
@@ -312,6 +433,55 @@ const uploadAvatar = async (file) => {
         </span>
       </template>
     </el-dialog>
+
+    <!--修改手机号和邮箱dialog-->
+    <el-dialog v-model="editDialogVisible" :title="editFieldType === 'phone' ? '修改手机号' : '修改邮箱'" width="500px" center>
+      <el-form :model="editForm" label-width="80px">
+        <el-form-item :label="editFieldType === 'phone' ? '新手机号' : '新邮箱'">
+          <el-input v-model="editForm.newValue" :placeholder="editFieldType === 'phone' ? '请输入新手机号' : '请输入新邮箱'" />
+        </el-form-item>
+        <el-form-item label="验证码">
+          <el-row :gutter="10">
+            <el-col :span="16">
+              <el-input v-model="editForm.captcha" placeholder="请输入验证码" />
+            </el-col>
+            <el-col :span="8">
+              <el-button @click="sendCaptcha">发送</el-button>
+            </el-col>
+          </el-row>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+    <span class="dialog-footer">
+      <el-button @click="editDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="saveEdit">确定</el-button>
+    </span>
+      </template>
+    </el-dialog>
+
+    <!-- 修改用户名和名字dialog -->
+    <el-dialog v-model="editProfileDialogVisible" title="编辑基本信息" width="500px" center>
+      <el-form
+          ref="editProfileFormRef"
+          :model="editProfileForm"
+          :rules="editProfileRules"
+          label-width="80px"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="editProfileForm.username" placeholder="请输入用户名" />
+        </el-form-item>
+        <el-form-item label="真实姓名" prop="realName">
+          <el-input v-model="editProfileForm.realName" placeholder="若不方便透露，可填写(姓氏+同学)，例如张同学" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="editProfileDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProfileEdit">确定</el-button>
+      </span>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -345,8 +515,8 @@ const uploadAvatar = async (file) => {
   flex-direction: column;
   padding: 20px;
   border: snow 8px solid;
-  border-radius: 30px;
-  box-shadow: silver 0 0 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   background: white;
 }
 
@@ -426,8 +596,6 @@ const uploadAvatar = async (file) => {
 .status-info p {
   margin: 10px 0;
 }
-
-
 
 /* 新增头像剪裁相关样式 */
 .cropper-area {
