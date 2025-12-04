@@ -143,7 +143,8 @@ const handleLogin = () => {
         return
       }
       let token = loginResult.data;
-      Cookie.set('Authorization', token)
+      Cookie.set('Authorization', token, { expires: 7 })
+      localStorage.setItem('role', form.role)
       ElMessage.success('登录成功！')
       await router.replace('/')
     } else {

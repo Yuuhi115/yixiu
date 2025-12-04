@@ -1,5 +1,6 @@
 import request from "../request/request.js";
 import Cookie from "js-cookie";
+import qs from 'qs';
 /*邮箱验证码登录*/
 export function loginByEmailVerification(loginForm) {
     let data = {
@@ -8,7 +9,7 @@ export function loginByEmailVerification(loginForm) {
         verificationCode : loginForm.captcha
     }
     console.log(data)
-    let result = null
+    let result
     if (data.role === "admin") {
         result = request.post("/admin/loginByEmail", data)
     }
@@ -56,4 +57,11 @@ export function submitRepairFormImg(data) {
 /*获取报修单By用户id*/
 export function getRepairFormByUserId() {
     return request.get("/task/getByUserId", {headers: {Authorization: Cookie.get("Authorization")}})
+}
+/*更新报修单状态*/
+export function updateRepairFormStatus(requestId, status) {
+    return request.put("/task/updateStatus",
+        { requestId: requestId, status: status },
+        { headers: { Authorization: Cookie.get("Authorization") } }
+    )
 }

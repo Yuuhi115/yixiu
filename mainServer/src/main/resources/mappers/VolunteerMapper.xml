@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.VolunteerMapper">
+    <!-- SQL映射语句在此定义 -->
+    <insert id="addVolunteerInfo" parameterType="gdufs.yixiu.pojo.VolunteerInfo" useGeneratedKeys="true" keyProperty="volunteerId" keyColumn="volunteer_id">
+        insert into volunteer_info(user_id, student_number, major_class, grade)
+        values(#{userId}, #{studentNumber}, #{majorClass}, #{grade})
+    </insert>
+    <update id="updateVolunteerInfo" parameterType="gdufs.yixiu.pojo.VolunteerInfo">
+        update volunteer_info
+        <set>
+            <if test="studentNumber != null">
+                student_number = #{studentNumber},
+            </if>
+            <if test="majorClass != null">
+                major_class = #{majorClass},
+            </if>
+            <if test="grade != null">
+                grade = #{grade},
+            </if>
+        </set>
+        where user_id = #{userId}
+    </update>
+    <select id="findIsExistVolunteerByEmail" resultType="java.lang.Integer" parameterType="java.lang.String">
+        select count(1) from users
+        <where>
+            email = #{email}
+            AND role IN ('volunteer', 'admin', 'super_admin')
+        </where>
+    </select>
+    <select id="findVolunteerInfoByUserId" resultType="gdufs.yixiu.pojo.VolunteerInfo">
+        select * from volunteer_info
+        <where>
+            user_id = #{userId}
+        </where>
+    </select>
+</mapper>

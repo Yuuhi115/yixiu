@@ -7,10 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UsersRegisterDto {
-    String phone;
-    String email;
-    String verificationCode;
-    String role;
-    String inviteCode;
+public class VolunteerModifyDto {
+    private Integer userId;
+    private String studentNumber;
+    private String majorClass;
+    private String grade;
 }

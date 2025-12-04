@@ -1,10 +1,12 @@
 package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
+import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.JWTUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class UsersServiceImpl implements UsersService {
     @Autowired
     private UsersMapper usersMapper;
+    @Autowired
+    private VolunteerMapper volunteerMapper;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -125,6 +129,8 @@ public class UsersServiceImpl implements UsersService {
         userBasicInfoDto.setRole(user.getRole());
         userBasicInfoDto.setStatus(user.getStatus());
         userBasicInfoDto.setLastLogin(user.getLastLogin());
+        VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(userId);
+        userBasicInfoDto.setVolunteerInfo(volunteerInfo);
         return userBasicInfoDto;
     }
 }

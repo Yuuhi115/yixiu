@@ -56,6 +56,7 @@ const statusOptions = [
   { label: '已完成', value: 3 },
   { label: '已取消', value: 4 },
   { label: '用户自行解决', value: 5 },
+  { label: '已被拒绝', value: 6 },
 ]
 
 // 下拉菜单相关
@@ -125,6 +126,7 @@ const getStatusType = (status) => {
     case 3: return 'success'   // 已完成
     case 4: return 'danger'    // 已取消
     case 5: return 'success'  // 用户自行解决
+    case 6: return 'danger' //已被拒绝
   }
 }
 

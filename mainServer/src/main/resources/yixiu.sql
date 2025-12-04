@@ -11,7 +11,7 @@
  Target Server Version : 80033 (8.0.33)
  File Encoding         : 65001
 
- Date: 20/11/2025 15:23:53
+ Date: 30/11/2025 17:07:36
 */
 
 SET NAMES utf8mb4;
@@ -31,7 +31,7 @@ CREATE TABLE `ai_knowledge_base`  (
   `created_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`knowledge_id`) USING BTREE,
   INDEX `idx_knowledge_category`(`category` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI义修助手知识库表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = 'AI义修助手知识库表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for ai_query_log
@@ -79,7 +79,7 @@ CREATE TABLE `repair_assignment`  (
   `volunteer_id` bigint NOT NULL COMMENT '维修志愿者编号',
   `is_leader` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为队长（1=是，0=否）',
   `assigned_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '分配时间',
-  `status` enum('in_progress','done','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'in_progress' COMMENT '任务状态',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '任务状态：0待进行，1维修中，2维修完成，3未解决已完成，4任务取消',
   `remarks` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '备注说明',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
   PRIMARY KEY (`assign_id`) USING BTREE,
@@ -140,7 +140,7 @@ CREATE TABLE `repair_request`  (
   `repair_location` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '维修地点',
   `appointment_time` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '预约维修时间',
   `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '备注',
-  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '报修状态（0:已提交待审核，1:审核通过，2:已被接收，3:已完成，4:已取消，5:用户自行解决）',
+  `status` tinyint(1) NOT NULL DEFAULT 0 COMMENT '报修状态（0:已提交待审核，1:审核通过，2:已被接收，3:已完成，4:已取消，5:用户自行解决，6:已被拒绝）',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `complete_time` datetime NULL DEFAULT NULL COMMENT '完成时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '最后更新时间',
@@ -180,8 +180,8 @@ CREATE TABLE `users`  (
   `unionid` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '微信UnionID（跨平台唯一，可选）',
   `wx_nickname` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '微信昵称',
   `wx_avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '微信头像URL',
-  `role` enum('student','volunteer','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'student' COMMENT '角色类型',
-  `status` enum('active','disabled') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'active' COMMENT '账号状态',
+  `role` enum('student','volunteer','admin','super_admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'student' COMMENT '角色类型',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '账号状态：0离线，1正常，2退队，3退休，4冻结',
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
   `update_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '更新时间',
   `last_login` datetime NULL DEFAULT NULL COMMENT '最近登录时间',
@@ -189,7 +189,25 @@ CREATE TABLE `users`  (
   UNIQUE INDEX `uk_openid`(`openid` ASC) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE,
   INDEX `idx_user_role`(`role` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 13 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Table structure for volunteer_info
+-- ----------------------------
+DROP TABLE IF EXISTS `volunteer_info`;
+CREATE TABLE `volunteer_info`  (
+  `volunteer_id` bigint NOT NULL AUTO_INCREMENT COMMENT '志愿者ID',
+  `user_id` bigint NOT NULL COMMENT '关联的用户ID',
+  `student_number` char(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '学号（11位数字，唯一）',
+  `major_class` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '班级',
+  `grade` char(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '年级（四位年份）',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`volunteer_id`) USING BTREE,
+  UNIQUE INDEX `uk_student_number`(`student_number` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  CONSTRAINT `fk_volunteer_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '志愿者信息表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Triggers structure for table repair_assignment

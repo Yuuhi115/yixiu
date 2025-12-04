@@ -1,10 +1,11 @@
 <script setup>
-import { Message, Edit, Delete } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import {Message, Edit, Delete, Search, Plus} from "@element-plus/icons-vue";
+import {onMounted, reactive, ref, computed} from "vue";
 import Cookie from "js-cookie";
-import { getUserInfo } from "../../api/userApi.js";
-import { ElMessage, ElMessageBox } from "element-plus";
+import {getUserInfo} from "../../api/userApi.js";
+import {ElMessage, ElMessageBox} from "element-plus";
 import router from "../../router/index.js";
+import {inviteVolunteer} from "../../api/adminApi.js";
 
 const userInfoRef = ref()
 
@@ -44,26 +45,26 @@ const volunteerForm = reactive({
 
 // 身份选项
 const roleOptions = [
-  { label: '普通用户', value: 'student' },
-  { label: '管理员', value: 'admin' },
-  { label: '志愿者', value: 'volunteer' }
+  {label: '普通用户', value: 'student'},
+  {label: '管理员', value: 'admin'},
+  {label: '志愿者', value: 'volunteer'}
 ]
 
 // 状态选项
 const statusOptions = [
-  { label: '正常', value: 1 },
-  { label: '退队', value: 2 },
-  { label: '退休', value: 3 },
-  { label: '冻结', value: 4 }
+  {label: '正常', value: 1},
+  {label: '退队', value: 2},
+  {label: '退休', value: 3},
+  {label: '冻结', value: 4}
 ]
 
 // 表单验证规则
 const formRules = {
   role: [
-    { required: true, message: '请选择身份', trigger: 'change' }
+    {required: true, message: '请选择身份', trigger: 'change'}
   ],
   status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
+    {required: true, message: '请选择状态', trigger: 'change'}
   ]
 }
 
@@ -223,12 +224,136 @@ const getStatusLabel = (status) => {
 // 获取状态标签类型
 const getStatusTagType = (status) => {
   switch (status) {
-    case 1: return 'success'  // 正常
-    case 2: return 'warning'  // 退队
-    case 3: return 'info'     // 退休
-    case 4: return 'danger'   // 冻结
-    default: return 'info'
+    case 1:
+      return 'success'  // 正常
+    case 2:
+      return 'warning'  // 退队
+    case 3:
+      return 'info'     // 退休
+    case 4:
+      return 'danger'   // 冻结
+    default:
+      return 'info'
   }
+}
+
+/*志愿者邀请注册相关*/
+// 在现有数据属性中添加邀请方式相关属性
+const inviteMethod = ref('email') // 'email' 或 'phone'
+
+const inviteDialogVisible = ref(false)
+const inviteFormRef = ref()
+const inviteLoading = ref(false)
+
+const inviteForm = reactive({
+  email: '',
+  phone: ''
+})
+
+const inviteValue = computed({
+  get() {
+    return inviteMethod.value === 'email' ? inviteForm.email : inviteForm.phone
+  },
+  set(value) {
+    if (inviteMethod.value === 'email') {
+      inviteForm.email = value
+    } else {
+      inviteForm.phone = value
+    }
+  }
+})
+
+const inviteRules = computed(() => ({
+  email: [
+    {
+      required: inviteMethod.value === 'email',
+      message: '请输入邮箱',
+      trigger: 'blur'
+    },
+    {
+      pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+      message: '邮箱格式不正确',
+      trigger: 'blur'
+    }
+  ],
+  phone: [
+    {
+      required: inviteMethod.value === 'phone',
+      message: '请输入手机号',
+      trigger: 'blur'
+    },
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '手机号格式不正确',
+      trigger: 'blur'
+    }
+  ]
+}))
+
+
+
+const showAddDialog = () => {
+  inviteDialogVisible.value = true
+}
+
+const submitInviteForm = () => {
+  inviteFormRef.value.validate(async (valid) => {
+    if (valid) {
+      // 构造确认消息
+      const inviteTarget = inviteMethod.value === 'email'
+          ? `邮箱 ${inviteForm.email}`
+          : `手机号 ${inviteForm.phone}`
+
+      ElMessageBox.confirm(
+          `确定要向${inviteTarget}发送邀请吗？`,
+          '确认邀请',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+      ).then(async () => {
+        inviteLoading.value = true
+        try {
+          // 根据邀请方式调用不同的API参数
+          let response
+          if (inviteMethod.value === 'email') {
+            response = await inviteVolunteer(inviteForm.email)
+          } else {
+            // 如果后端API支持手机号邀请，需要相应调整
+            ElMessage.info("手机号邀请功能开发中")
+          }
+
+          if (response.code === 200) {
+            ElMessage.success('邀请码已发送')
+            inviteDialogVisible.value = false
+            resetInviteForm()
+          } else {
+            ElMessage.error(response.msg || '发送失败')
+          }
+        } catch (error) {
+          ElMessage.error('发送失败: ' + error.message)
+        } finally {
+          inviteLoading.value = false
+        }
+      })
+    }
+  })
+}
+
+// 添加重置邀请字段函数
+const resetInviteField = () => {
+  inviteForm.email = ''
+  inviteForm.phone = ''
+  if (inviteFormRef.value) {
+    inviteFormRef.value.clearValidate()
+  }
+}
+
+// 更新重置表单函数
+const resetInviteForm = () => {
+  inviteMethod.value = 'email'
+  resetInviteField()
 }
 </script>
 
@@ -278,6 +403,9 @@ const getStatusTagType = (status) => {
         <div class="main-content">
           <!-- 操作栏 -->
           <div class="toolbar">
+            <el-button type="primary" :icon="Plus" @click="showAddDialog">
+              邀请志愿者
+            </el-button>
             <el-input
                 v-model="searchKeyword"
                 placeholder="搜索用户名或姓名"
@@ -286,7 +414,11 @@ const getStatusTagType = (status) => {
                 @keyup.enter="fetchVolunteers"
             >
               <template #append>
-                <el-button icon="Search" @click="fetchVolunteers" />
+                <el-button @click="fetchVolunteers">
+                  <el-icon>
+                    <Search/>
+                  </el-icon>
+                </el-button>
               </template>
             </el-input>
           </div>
@@ -299,16 +431,16 @@ const getStatusTagType = (status) => {
               stripe
               border
           >
-            <el-table-column prop="userId" label="用户ID" width="100" />
+            <el-table-column prop="userId" label="用户ID" width="100"/>
             <el-table-column label="头像" width="80">
               <template #default="scope">
-                <el-avatar :size="40" :src="scope.row.avatar" />
+                <el-avatar :size="40" :src="scope.row.avatar"/>
               </template>
             </el-table-column>
-            <el-table-column prop="realName" label="真实姓名" width="120" />
-            <el-table-column prop="username" label="用户名" width="120" />
-            <el-table-column prop="email" label="邮箱" width="180" />
-            <el-table-column prop="phone" label="手机号" width="120" />
+            <el-table-column prop="realName" label="真实姓名" width="120"/>
+            <el-table-column prop="username" label="用户名" width="120"/>
+            <el-table-column prop="email" label="邮箱" width="180"/>
+            <el-table-column prop="phone" label="手机号" width="120"/>
             <el-table-column prop="role" label="身份" width="100">
               <template #default="scope">
                 <el-tag>{{ getRoleLabel(scope.row.role) }}</el-tag>
@@ -321,7 +453,7 @@ const getStatusTagType = (status) => {
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="lastLogin" label="最后登录" width="180" />
+            <el-table-column prop="lastLogin" label="最后登录" width="180"/>
             <el-table-column label="操作" width="120" fixed="right">
               <template #default="scope">
                 <el-button
@@ -355,7 +487,7 @@ const getStatusTagType = (status) => {
               style="margin-top: 20px; justify-content: center;"
           />
 
-          <!-- 编辑对话框 -->
+          <!-- 志愿者编辑对话框 -->
           <el-dialog
               v-model="dialogVisible"
               title="编辑志愿者"
@@ -398,6 +530,52 @@ const getStatusTagType = (status) => {
               </span>
             </template>
           </el-dialog>
+
+          <!--邀请注册对话框-->
+          <el-dialog
+              v-model="inviteDialogVisible"
+              title="邀请志愿者"
+              width="500px"
+              @close="resetInviteForm"
+          >
+            <el-form
+                ref="inviteFormRef"
+                :model="inviteForm"
+                :rules="inviteRules"
+                label-width="80px"
+            >
+              <el-form-item label="邀请方式">
+                <el-radio-group v-model="inviteMethod" @change="resetInviteField">
+                  <el-radio label="email">邮箱邀请</el-radio>
+                  <el-radio label="phone">手机号邀请</el-radio>
+                </el-radio-group>
+              </el-form-item>
+
+              <el-form-item
+                  :label="inviteMethod === 'email' ? '邮箱' : '手机号'"
+                  prop="inviteValue"
+              >
+                <el-input
+                    v-model="inviteValue"
+                    :placeholder="inviteMethod === 'email' ? '请输入邮箱地址' : '请输入手机号'"
+                    clearable
+                />
+              </el-form-item>
+            </el-form>
+
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="inviteDialogVisible = false">取消</el-button>
+                  <el-button
+                      type="primary"
+                      @click="submitInviteForm"
+                      :loading="inviteLoading"
+                  >
+                    发送邀请
+                  </el-button>
+              </span>
+            </template>
+          </el-dialog>
         </div>
       </el-main>
     </el-container>
@@ -412,16 +590,19 @@ const getStatusTagType = (status) => {
   display: flex;
   justify-content: center;
 }
+
 .el-menu-item {
   padding-left: 50px;
   padding-right: 50px;
 }
+
 .el-main {
   background-image: url('../../assets/login_backgroud.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
+
 .main-content {
   height: 100vh;
   width: 800px;
@@ -435,10 +616,10 @@ const getStatusTagType = (status) => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   background: white;
 }
+
 .toolbar {
   display: flex;
-  align-items: center;
   margin-bottom: 20px;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 </style>

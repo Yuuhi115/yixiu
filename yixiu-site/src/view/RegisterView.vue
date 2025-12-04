@@ -2,7 +2,10 @@
 import { reactive, ref, computed, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Iphone, Message, Key, Unlock } from '@element-plus/icons-vue'
-import { sendLREmailVerificationCode, registerByEmailVerification } from '../api/userApi.js'
+import { sendLREmailVerificationCode,
+  registerByEmailVerification,
+} from '../api/userApi.js'
+import { volunteerRegisterByEmailVerification } from '../api/volunteerApi.js';
 import router from "../router/index.js";
 import Cookie from "js-cookie";
 
@@ -105,7 +108,13 @@ const handleRegister = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
       console.log('提交注册数据:', form)
-      let registerResult = await registerByEmailVerification(form);
+      let registerResult;
+      if (form.role === 'volunteer'){
+        registerResult = await volunteerRegisterByEmailVerification(form);
+      }
+      else{
+        registerResult = await registerByEmailVerification(form);
+      }
       if (registerResult.code !== 200) {
         ElMessage.error(registerResult.msg)
         return

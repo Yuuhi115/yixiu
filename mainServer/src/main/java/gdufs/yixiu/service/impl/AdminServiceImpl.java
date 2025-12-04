@@ -5,6 +5,7 @@ import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.AdminService;
 import gdufs.yixiu.service.UsersService;
+import gdufs.yixiu.util.EmailUtils;
 import gdufs.yixiu.util.JWTUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,8 @@ public class AdminServiceImpl implements AdminService {
     private JWTUtils jwtUtils;
     @Autowired
     private RedisTemplate redisTemplate;
+    @Autowired
+    private EmailUtils emailUtils;
 
     private String avatarPath;
 
@@ -62,5 +65,14 @@ public class AdminServiceImpl implements AdminService {
     @Override
     public String loginByPhone(UsersRegisterDto userDto) {
         return "";
+    }
+
+    @Override
+    public String sendInviteCode(String email) {
+        String code = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
+        redisTemplate.opsForValue().set("inviteCode:email:" + email, code, 24, TimeUnit.HOURS);
+        emailUtils.sendCustomVerifyCode(email, "广外义修帮志愿者注册邀请码","【广外义修帮】您的注册邀请码是" + code + "。邀请码有效期为24小时，请尽快登录网站进行注册。如遇邀请码过期，请联系管理员重新发送");
+        log.info("邀请码{}已发送至{}",code, email);
+        return code;
     }
 }

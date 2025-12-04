@@ -2,9 +2,10 @@
 import 'vue-cropper/dist/index.css'
 import { VueCropper } from 'vue-cropper'
 import { Message } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, computed } from "vue";
 import Cookie from "js-cookie";
 import {getUserInfo, updateAvatar, updateUserInfo} from "../../api/userApi.js";
+import {updateVolunteerInfo} from "../../api/volunteerApi.js";
 import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
 import router from "../../router/index.js";
@@ -30,10 +31,21 @@ const userInfo = reactive({
   role: "",
   status: "",
   lastLogin: "",
+  volunteerInfo: {
+    volunteerId: "",
+    studentNumber: "",
+    majorClass: "",
+    grade: ""
+  }
 })
 
 onMounted(async () => {
   await queryUserInfo()
+})
+
+// 计算属性获取角色信息
+const userRole = computed(() => {
+  return localStorage.getItem('role')
 })
 
 const queryUserInfo = async () => {
@@ -86,6 +98,44 @@ const saveProfileEdit = async () => {
         ElMessage.error(response.msg)
       }
       editProfileDialogVisible.value = false
+    }
+  })
+}
+
+// 志愿者信息编辑相关
+const editVolunteerDialogVisible = ref(false)
+const editVolunteerForm = reactive({
+  volunteerId: '',
+  studentNumber: '',
+  majorClass: '',
+  grade: ''
+})
+const editVolunteerFormRef = ref()
+
+const editVolunteerInfo = () => {
+  // 初始化表单数据（示例数据）
+  editVolunteerForm.userId = userInfo.userId
+  editVolunteerForm.volunteerId = userInfo.volunteerInfo.volunteerId
+  editVolunteerForm.studentNumber = userInfo.volunteerInfo.studentNumber
+  editVolunteerForm.majorClass = userInfo.volunteerInfo.majorClass
+  editVolunteerForm.grade = userInfo.volunteerInfo.grade
+  // 显示对话框
+  editVolunteerDialogVisible.value = true
+}
+
+const saveVolunteerEdit = async () => {
+  editVolunteerFormRef.value.validate?.(async (valid) => {
+    if (valid) {
+      const response = await updateVolunteerInfo(editVolunteerForm)
+      if (response.code !== 200) {
+        ElMessage.error(response.msg)
+        return
+      }
+      userInfo.volunteerInfo.studentNumber = editVolunteerForm.studentNumber
+      userInfo.volunteerInfo.majorClass = editVolunteerForm.majorClass
+      userInfo.volunteerInfo.grade = editVolunteerForm.grade
+      ElMessage.success('志愿者信息修改成功')
+      editVolunteerDialogVisible.value = false
     }
   })
 }
@@ -318,8 +368,8 @@ const uploadAvatar = async (file) => {
                 </template>
                 <div class="status-info">
                   <p>状态:
-                    <el-tag :type="userInfo.status === 'active' ? 'success' : 'danger'">
-                      {{ userInfo.status === 'active' ? '在线' : '离线' }}
+                    <el-tag :type="userInfo.status === '1' ? 'success' : 'danger'">
+                      {{ userInfo.status === '1' ? '在线' : '离线' }}
                     </el-tag>
                   </p>
                   <p>
@@ -343,7 +393,7 @@ const uploadAvatar = async (file) => {
                   </div>
                 </template>
 
-                <el-descriptions :column="1" border>
+                <el-descriptions :column="1" border class="uniform-descriptions">
                   <el-descriptions-item label="用户ID">{{ userInfo.userId }}</el-descriptions-item>
                   <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
                   <el-descriptions-item label="真实姓名">{{ userInfo.realName }}</el-descriptions-item>
@@ -360,8 +410,29 @@ const uploadAvatar = async (file) => {
                     </el-link>
                   </el-descriptions-item>
                   <el-descriptions-item label="角色">
-                    {{ userInfo.role === 'volunteer' ? '志愿者' : '普通用户' }}
+                    {{
+                      userInfo.role === 'super_admin' ? '超级管理员' :
+                      userInfo.role === 'admin' ? '管理员' :
+                      userInfo.role === 'volunteer' ? '志愿者' : '普通用户'
+                    }}
                   </el-descriptions-item>
+                </el-descriptions>
+              </el-card>
+
+              <!-- 志愿者信息卡片 -->
+              <el-card class="info-card" v-if="userRole !== 'student'">
+                <template #header>
+                  <div class="card-header">
+                    <span>志愿者信息</span>
+                    <el-button type="primary" @click="editVolunteerInfo">编辑信息</el-button>
+                  </div>
+                </template>
+
+                <el-descriptions :column="1" border class="uniform-descriptions">
+                  <el-descriptions-item label="志愿者ID">{{ userInfo.volunteerInfo.volunteerId }}</el-descriptions-item>
+                  <el-descriptions-item label="学号">{{ userInfo.volunteerInfo.studentNumber }}</el-descriptions-item>
+                  <el-descriptions-item label="专业班级">{{ userInfo.volunteerInfo.majorClass }}</el-descriptions-item>
+                  <el-descriptions-item label="年级">{{ userInfo.volunteerInfo.grade }}</el-descriptions-item>
                 </el-descriptions>
               </el-card>
             </el-col>
@@ -478,6 +549,34 @@ const uploadAvatar = async (file) => {
       <span class="dialog-footer">
         <el-button @click="editProfileDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="saveProfileEdit">确定</el-button>
+      </span>
+      </template>
+    </el-dialog>
+
+    <!-- 志愿者信息编辑对话框 -->
+    <el-dialog v-model="editVolunteerDialogVisible" title="编辑志愿者信息" width="500px" center>
+      <el-form
+          ref="editVolunteerFormRef"
+          :model="editVolunteerForm"
+          label-width="80px"
+      >
+        <el-form-item label="志愿者ID">
+          <el-input v-model="editVolunteerForm.volunteerId" disabled />
+        </el-form-item>
+        <el-form-item label="学号">
+          <el-input v-model="editVolunteerForm.studentNumber" />
+        </el-form-item>
+        <el-form-item label="专业班级">
+          <el-input v-model="editVolunteerForm.majorClass" />
+        </el-form-item>
+        <el-form-item label="年级">
+          <el-input v-model="editVolunteerForm.grade" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="editVolunteerDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveVolunteerEdit">确定</el-button>
       </span>
       </template>
     </el-dialog>
@@ -653,5 +752,9 @@ const uploadAvatar = async (file) => {
   margin-top: 10px;
   color: #909399;
   font-size: 12px;
+}
+
+.uniform-descriptions :deep(.el-descriptions__label) {
+  width: 120px; /* 信息展示表格固定标签宽度 */
 }
 </style>

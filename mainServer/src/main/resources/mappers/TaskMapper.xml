@@ -10,6 +10,10 @@
     <insert id="addRequestImg" parameterType="gdufs.yixiu.pojo.RepairRequestImg">
         insert into repair_request_img (request_id,img_url) values (#{requestId},#{imgUrl})
     </insert>
+    <insert id="addTaskAssignment" parameterType="gdufs.yixiu.pojo.RepairAssignment" useGeneratedKeys="true" keyProperty="assignId" keyColumn="assign_id">
+        insert into repair_assignment (request_id,volunteer_id,is_leader,remarks)
+        values (#{requestId},#{volunteerId},#{isLeader},#{remarks})
+    </insert>
     <update id="updateTask">
         update repair_request
         <set>
@@ -58,14 +62,14 @@
         select * from repair_request where request_id = #{requestId}
     </select>
     <select id="findAllTask" resultType="gdufs.yixiu.pojo.RepairRequest">
-        select * from repair_request
+        select * from repair_request order by create_time desc
     </select>
     <select id="findTaskByUserId" resultType="gdufs.yixiu.pojo.RepairRequest"
             parameterType="java.lang.Integer">
-        select * from repair_request where user_id = #{userId}
+        select * from repair_request where user_id = #{userId} order by create_time desc
     </select>
     <select id="findTaskByStatus" resultType="gdufs.yixiu.pojo.RepairRequest" parameterType="java.lang.String">
-        select * from repair_request where status = #{status}
+        select * from repair_request where status = #{status} order by create_time desc
     </select>
     <select id="findRequestImgByRequestId" resultType="gdufs.yixiu.pojo.RepairRequestImg"
             parameterType="java.lang.Integer">
@@ -73,5 +77,33 @@
     </select>
     <select id="findRequestImgUrlByRequestId" resultType="string">
         select img_url from repair_request_img where request_id = #{requestId}
+    </select>
+
+    <select id="findTaskByFilterDto" resultType="gdufs.yixiu.pojo.RepairRequest">
+        SELECT * FROM repair_request
+        <where>
+            <if test="createStartTime != null and createEndTime != null">
+                AND create_time BETWEEN #{createStartTime} AND #{createEndTime}
+            </if>
+            <if test="updateStartTime != null and updateEndTime != null">
+                AND update_time BETWEEN #{updateStartTime} AND #{updateEndTime}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+        </where>
+    </select>
+    <select id="findIsExist" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select count(1) from repair_request where request_id = #{requestId}
+    </select>
+    <select id="findIsExistAssignment" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select count(1) from repair_assignment where request_id = #{requestId}
+    </select>
+    <select id="findTaskAssignmentByRequestId" resultType="gdufs.yixiu.pojo.RepairAssignment"
+            parameterType="java.lang.Integer">
+        select * from repair_assignment where request_id = #{requestId}
     </select>
 </mapper>

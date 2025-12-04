@@ -2,7 +2,10 @@ package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dto.RepairAssignmentDto;
 import gdufs.yixiu.dto.RepairRequestDto;
+import gdufs.yixiu.dto.TaskFilterDto;
+import gdufs.yixiu.pojo.RepairAssignment;
 import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.pojo.RepairRequestImg;
 import gdufs.yixiu.pojo.Users;
@@ -50,6 +53,46 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public String addTaskAssignment(RepairAssignmentDto repairAssignmentDto) {
+        RepairAssignment repairAssignment = new RepairAssignment();
+        RepairRequest repairRequest = new RepairRequest();
+        repairRequest.setRequestId(repairAssignmentDto.getRequestId());
+        repairRequest.setStatus(2);
+        int assignNum = taskMapper.findIsExistAssignment(repairAssignmentDto.getRequestId());
+        if (assignNum > 0) {
+            repairAssignment.setIsLeader(0);
+        }else {
+            repairAssignment.setIsLeader(1);
+        }
+        repairAssignment.setRequestId(repairAssignmentDto.getRequestId());
+        repairAssignment.setVolunteerId(repairAssignmentDto.getVolunteerId());
+        repairAssignment.setRemarks(repairAssignmentDto.getRemarks());
+        int rows = taskMapper.addTaskAssignment(repairAssignment);
+        int rows2 = taskMapper.updateTask(repairRequest);
+        log.info("志愿者No.{} 添加报修分配单成功，分配id为：{}，任务id为：{}",repairAssignmentDto.getVolunteerId(), repairAssignment.getAssignId(), repairAssignmentDto.getRequestId());
+        return rows > 0 && rows2 > 0 ? "success" : null;
+    }
+
+    @Override
+    public boolean updateTask(RepairRequestDto repairRequestDto) {
+        RepairRequest repairRequest = new RepairRequest();
+        repairRequest.setRequestId(repairRequestDto.getRequestId());
+        repairRequest.setContactType(repairRequestDto.getContactType());
+        repairRequest.setContactInfo(repairRequestDto.getContactInfo());
+        repairRequest.setDeviceType(repairRequestDto.getDeviceType());
+        repairRequest.setDeviceSystem(repairRequestDto.getDeviceSystem());
+        repairRequest.setDeviceModel(repairRequestDto.getDeviceModel());
+        repairRequest.setProblemDescription(repairRequestDto.getProblemDescription());
+        repairRequest.setCampus(repairRequestDto.getCampus());
+        repairRequest.setRepairLocation(repairRequestDto.getRepairLocation());
+        repairRequest.setAppointmentTime(repairRequestDto.getAppointmentTime());
+        repairRequest.setRemarks(repairRequestDto.getRemarks());
+        repairRequest.setStatus(repairRequestDto.getStatus());
+        int rows = taskMapper.updateTask(repairRequest);
+        return rows > 0;
+    }
+
+    @Override
     public RepairRequestDto queryTaskById(Integer requestId) {
         RepairRequest repairRequest = taskMapper.findTaskById(requestId);
         if (repairRequest == null) {
@@ -57,7 +100,7 @@ public class TaskServiceImpl implements TaskService {
         }
         Integer userId = repairRequest.getUserId();
         Users users = usersMapper.findUserById(userId);
-        return RepairRequestPojoToDto(users, repairRequest);
+        return repairRequestPojoToDto(users, repairRequest);
     }
 
     @Override
@@ -69,7 +112,7 @@ public class TaskServiceImpl implements TaskService {
         }
         List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
         for (RepairRequest repairRequest : repairRequests) {
-            RepairRequestDto repairRequestDto = RepairRequestPojoToDto(user, repairRequest);
+            RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
             repairRequestDtos.add(repairRequestDto);
         }
         return repairRequestDtos;
@@ -84,14 +127,45 @@ public class TaskServiceImpl implements TaskService {
         List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
         for (RepairRequest repairRequest : repairRequests) {
             Users user = usersMapper.findUserById(repairRequest.getUserId());
-            RepairRequestDto repairRequestDto = RepairRequestPojoToDto(user, repairRequest);
+            RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
             repairRequestDtos.add(repairRequestDto);
         }
         return repairRequestDtos;
     }
 
     @Override
-    public RepairRequestDto RepairRequestPojoToDto(Users users, RepairRequest repairRequest) {
+    public List<RepairRequestDto> queryAllTask() {
+        List<RepairRequest> repairRequests = taskMapper.findAllTask();
+        if (repairRequests == null) {
+            return null;
+        }
+        List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
+        for (RepairRequest repairRequest : repairRequests) {
+            Users user = usersMapper.findUserById(repairRequest.getUserId());
+            RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
+            repairRequestDtos.add(repairRequestDto);
+        }
+        return repairRequestDtos;
+    }
+
+    @Override
+    public List<RepairRequestDto> queryTaskByFilter(TaskFilterDto taskFilterDto) {
+        TaskFilterDto newTaskFilterDto = transformEndTime(taskFilterDto);
+        List<RepairRequest> repairRequests = taskMapper.findTaskByFilterDto(newTaskFilterDto);
+        if (repairRequests == null) {
+            return null;
+        }
+        List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
+        for (RepairRequest repairRequest : repairRequests) {
+            Users user = usersMapper.findUserById(repairRequest.getUserId());
+            RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
+            repairRequestDtos.add(repairRequestDto);
+        }
+        return repairRequestDtos;
+    }
+
+    @Override
+    public RepairRequestDto repairRequestPojoToDto(Users users, RepairRequest repairRequest) {
         RepairRequestDto repairRequestDto = new RepairRequestDto();
         List<String> imgUrls = taskMapper.findRequestImgUrlByRequestId(repairRequest.getRequestId());
         List<String> modifyImgUrls = new ArrayList<>();
@@ -99,7 +173,8 @@ public class TaskServiceImpl implements TaskService {
             url = serviceRequestUrl + url;
             modifyImgUrls.add(url);
         }
-
+        List<RepairAssignment> repairAssignments = taskMapper.findTaskAssignmentByRequestId(repairRequest.getRequestId());
+        repairRequestDto.setRepairAssignment(repairAssignments);
         repairRequestDto.setUserId(users.getUserId());
         repairRequestDto.setUsername(users.getUsername());
         repairRequestDto.setRealName(users.getRealName());
@@ -122,6 +197,18 @@ public class TaskServiceImpl implements TaskService {
         repairRequestDto.setCompleteTime(repairRequest.getCompleteTime());
         return repairRequestDto;
     }
+
+    @Override
+    public TaskFilterDto transformEndTime(TaskFilterDto taskFilterDto) {
+        if (taskFilterDto.getUpdateEndTime() != null){
+            taskFilterDto.setUpdateEndTime(taskFilterDto.getUpdateEndTime() + " 23:59:59");
+        }
+        if (taskFilterDto.getCreateEndTime() != null){
+            taskFilterDto.setCreateEndTime(taskFilterDto.getCreateEndTime() + " 23:59:59");
+        }
+        return taskFilterDto;
+    }
+
 
     @Override
     public List<RepairRequestImg> queryImgByRequestId(Integer requestId) {

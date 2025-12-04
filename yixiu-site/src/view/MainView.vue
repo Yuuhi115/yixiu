@@ -20,6 +20,7 @@ import {ElMessage} from 'element-plus'
 import {getUserInfo} from "../api/userApi.js";
 import Cookie from "js-cookie";
 import router from "../router/index.js";
+import {checkToken} from "../utils/userUtils.js";
 
 const userInfoRef = ref()
 
@@ -33,10 +34,25 @@ const userInfo = reactive({
   role: "",
   status: "",
   lastLogin: "",
+  volunteerInfo: {
+    volunteerId: "",
+    studentNumber: "",
+    majorClass: "",
+    grade: ""
+  }
 })
 
 onMounted(async () => {
   await queryUserInfo()
+  await saveRole()
+  let isAuth = checkToken()
+  if (!isAuth) {
+    ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
+    setTimeout(() => {
+      Cookie.remove('Authorization')
+      router.push('/login')
+    }, 3000)
+  }
 })
 
 const queryUserInfo = async () => {
@@ -49,6 +65,12 @@ const queryUserInfo = async () => {
   // 将返回的用户信息赋值给 userInfo 对象
   Object.assign(userInfo, response.data)
   console.log(userInfo)
+}
+
+const saveRole = async () => {
+  if (userInfo.userId !== "" && localStorage.getItem('role') === null) {
+    localStorage.setItem('role', userInfo.role)
+  }
 }
 
 const handleOpen = (key, keyPath) => {
@@ -143,6 +165,9 @@ const logout = async () => {
                 </el-icon>
                 <span>任务中心</span>
               </template>
+              <el-menu-item index="3-1" @click="() => router.push('/taskCenter/list')">
+                任务列表
+              </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="4">
               <template #title>

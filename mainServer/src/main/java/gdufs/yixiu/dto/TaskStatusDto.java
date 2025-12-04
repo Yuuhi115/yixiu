@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UsersRegisterDto {
-    String phone;
-    String email;
-    String verificationCode;
-    String role;
-    String inviteCode;
+public class TaskStatusDto {
+    private Integer requestId;
+    private Integer status;
 }

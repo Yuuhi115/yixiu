@@ -1,5 +1,6 @@
 package gdufs.yixiu.dto;
 
+import gdufs.yixiu.pojo.VolunteerInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,5 +20,6 @@ public class UserBasicInfoDto {
     private String role;
     private String status;
     private Date lastLogin;
+    private VolunteerInfo volunteerInfo;
 }
 

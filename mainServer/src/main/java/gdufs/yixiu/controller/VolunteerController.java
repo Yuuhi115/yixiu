@@ -1,0 +1,101 @@
+package gdufs.yixiu.controller;
+
+import gdufs.yixiu.annotation.PassToken;
+import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerModifyDto;
+import gdufs.yixiu.pojo.Users;
+import gdufs.yixiu.service.ImgUploadService;
+import gdufs.yixiu.service.UsersService;
+import gdufs.yixiu.service.VolunteerService;
+import gdufs.yixiu.util.JWTUtils;
+import gdufs.yixiu.util.MessageUtils;
+import gdufs.yixiu.util.Result;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.web.bind.annotation.*;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/volunteer")
+public class VolunteerController {
+    @Autowired
+    private UsersService usersService;
+    @Autowired
+    private VolunteerService volunteerService;
+    @Autowired
+    private ImgUploadService imgUploadService;
+    @Autowired
+    private MessageUtils messageUtils;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private JWTUtils jwtUtils;
+
+    @PassToken
+    @PostMapping("/loginByEmail")
+    public Result loginByEmail(@RequestBody UsersRegisterDto userDto) {
+
+        String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+        if (verificationCode == null) {
+            return Result.fail("验证码未发送或已过期");
+        }
+        if (!verificationCode.equals(userDto.getVerificationCode())) {
+            return Result.fail("验证码错误");
+        }
+        Users user = usersService.queryUserByEmailAndRole(userDto.getEmail(), userDto.getRole());
+        if (user == null) {
+            return Result.fail("该邮箱未注册");
+        }else {
+            log.info("邮箱用户{}-{}-正在登录", userDto.getEmail(), user.getRole());
+            String token = volunteerService.loginByEmail(userDto, user.getUserId());
+            usersService.updateUserLoginTime(user.getUserId());
+            return Result.success(token);
+        }
+    }
+
+    @PassToken
+    @PostMapping("/registerByEmail")
+    public Result registerByEmail(@RequestBody UsersRegisterDto userDto) {
+
+        String inviteCode = (String) redisTemplate.opsForValue().get("inviteCode:email:" + userDto.getEmail());
+        if (inviteCode == null) {
+            return Result.fail("该邮箱没有邀请码，请更换账户");
+        }
+        if (!inviteCode.equals(userDto.getInviteCode())) {
+            return Result.fail("邀请码错误");
+        }
+
+        String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+        if (verificationCode == null) {
+            return Result.fail("验证码未发送或已过期");
+        }
+        if (!verificationCode.equals(userDto.getVerificationCode())) {
+            return Result.fail("验证码错误");
+        }
+        Integer num = volunteerService.isExistVolunteerByEmail(userDto.getEmail());
+        if (num > 0){
+            return Result.fail("该邮箱已注册志愿者/管理员账户");
+        }
+        log.info("邮箱用户{}-{}-正在进行注册", userDto.getEmail(), userDto.getRole());
+        String token = volunteerService.registerByEmail(userDto);
+        return Result.success(token);
+    }
+    @UserLoginToken
+    @PutMapping("/info")
+    public Result modifyInfo(@RequestBody VolunteerModifyDto volunteerModifyDto,
+                             HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        String role = jwtUtils.getInfoFromToken(token).getRole();
+        if (role.equals("student")) {
+            return Result.fail("权限不足");
+        }
+        int id = jwtUtils.getInfoFromToken(token).getId();
+        volunteerModifyDto.setUserId(id);
+        log.info("志愿者:{} 正在修改信息", volunteerModifyDto.getUserId());
+        volunteerService.updateVolunteerInfo(volunteerModifyDto);
+        return Result.success("更新成功");
+    }
+}

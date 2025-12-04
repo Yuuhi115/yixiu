@@ -1,5 +1,6 @@
 package gdufs.yixiu.dto;
 
+import gdufs.yixiu.pojo.RepairAssignment;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,7 @@ public class RepairRequestDto {
     private String remarks;
     private Integer status;
     private List<String> imgUrl;
+    private List<RepairAssignment> repairAssignment;
     private Timestamp createTime;
     private Timestamp updateTime;
     private Timestamp completeTime;
