@@ -24,6 +24,9 @@
     <select id="findSuperAdmin" resultType="gdufs.yixiu.pojo.Users">
         select * from users where role = "super_admin"
     </select>
+    <select id="findAllUserIds" resultType="java.lang.Integer">
+        select user_id from users
+    </select>
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

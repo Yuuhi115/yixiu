@@ -2,6 +2,7 @@ package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
@@ -83,15 +84,11 @@ public class VolunteerController {
         String token = volunteerService.registerByEmail(userDto);
         return Result.success(token);
     }
-    @UserLoginToken
+    @VolunteerLoginToken
     @PutMapping("/info")
     public Result modifyInfo(@RequestBody VolunteerModifyDto volunteerModifyDto,
                              HttpServletRequest request) {
         String token = request.getHeader("Authorization");
-        String role = jwtUtils.getInfoFromToken(token).getRole();
-        if (role.equals("student")) {
-            return Result.fail("权限不足");
-        }
         int id = jwtUtils.getInfoFromToken(token).getId();
         volunteerModifyDto.setUserId(id);
         log.info("志愿者:{} 正在修改信息", volunteerModifyDto.getUserId());

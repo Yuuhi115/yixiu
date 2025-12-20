@@ -2,19 +2,21 @@
 import 'vue-cropper/dist/index.css'
 import { VueCropper } from 'vue-cropper'
 import { Message } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref, computed } from "vue";
+import {onMounted, reactive, ref, computed, onUnmounted} from "vue";
 import Cookie from "js-cookie";
 import {getUserInfo, updateAvatar, updateUserInfo} from "../../api/userApi.js";
 import {updateVolunteerInfo} from "../../api/volunteerApi.js";
 import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
 import router from "../../router/index.js";
+import {startNotifyPoll, stopNotifyPoll} from "../../utils/notificationUtils.js";
 
 /*头像剪裁*/
 const cropperRef = ref()
 const croppedAvatarUrl = ref('')
 
 const userInfoRef = ref()
+let unreadNotifyCount = ref(0)
 const fileInput = ref()
 const uploadRef = ref()
 const avatarDialogVisible = ref(false)
@@ -41,6 +43,16 @@ const userInfo = reactive({
 
 onMounted(async () => {
   await queryUserInfo()
+  await startNotifyPoll((message) => {
+    if (message && message.unread !== undefined) {
+      unreadNotifyCount.value = message.unread
+    }
+  })
+  await getUnreadNotify()
+})
+
+onUnmounted(()=>{
+  stopNotifyPoll()
 })
 
 // 计算属性获取角色信息
@@ -58,6 +70,16 @@ const queryUserInfo = async () => {
   // 将返回的用户信息赋值给 userInfo 对象
   Object.assign(userInfo, response.data)
   console.log(userInfo)
+}
+
+// 未读通知数
+const getUnreadNotify = async () => {
+  const response = await getUnreadNotifyCount()
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+    return
+  }
+  unreadNotifyCount.value = response.data
 }
 
 // 基本信息修改用户名和名字
@@ -324,7 +346,7 @@ const uploadAvatar = async (file) => {
               >
                 <el-menu-item index="1">基本信息</el-menu-item>
                 <el-menu-item index="2">我的收藏</el-menu-item>
-                <el-menu-item index="3">消息中心</el-menu-item>
+                <el-menu-item index="3" @click="() => router.push('/user/messageCenter')">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -334,7 +356,7 @@ const uploadAvatar = async (file) => {
                 <el-avatar :size="50" :src="userInfo.avatar" />
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
                   <el-button type="default" :icon="Message" circle/>
                 </el-badge>
               </div>

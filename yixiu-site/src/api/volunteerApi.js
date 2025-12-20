@@ -41,3 +41,7 @@ export function getFilteredRepairList(queryFilter){
 export function addTaskAssign(data){
     return request.post("/task/addAssign", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function applyToJoin(data) {
+    return request.post("/task/applyToJoin", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

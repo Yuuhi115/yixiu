@@ -12,6 +12,7 @@ import java.util.List;
 public interface TaskService {
     String addTask(RepairRequestDto repairRequestDto);
     String addTaskAssignment(RepairAssignmentDto repairAssignmentDto);
+    String applyToJoinTask(RepairAssignmentDto repairAssignmentDto);
     boolean updateTask(RepairRequestDto repairRequestDto);
     RepairRequestDto queryTaskById(Integer requestId);
     List<RepairRequestDto> queryTaskByUserId(Integer userId);

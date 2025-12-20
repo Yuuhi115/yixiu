@@ -1,6 +1,7 @@
 package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.RepairAssignmentDto;
 import gdufs.yixiu.dto.RepairRequestDto;
 import gdufs.yixiu.dto.TaskFilterDto;
@@ -122,15 +123,11 @@ public class TaskController {
         }
         return Result.success(repairRequestDtos);
     }
-    @UserLoginToken
+    @VolunteerLoginToken
     @GetMapping("/getByFilter")
     public Result getTaskByFilter(TaskFilterDto taskFilterDto,
                                   HttpServletRequest request) {
         String token = request.getHeader("Authorization");
-        String role = jwtUtils.getInfoFromToken(token).getRole();
-        if (!Arrays.asList("volunteer", "admin", "super_admin").contains(role)) {
-            return Result.fail("权限不足");
-        }
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 获取报修单", userId);
 //        log.info("筛选条件为 {}", taskFilterDto);
@@ -185,17 +182,24 @@ public class TaskController {
         }
         return Result.success("更新成功");
     }
-    @UserLoginToken
+    @VolunteerLoginToken
     @PostMapping("/addAssign")
     public Result addTaskAssignment(@RequestBody RepairAssignmentDto repairAssignmentDto,
                                     HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        String role = jwtUtils.getInfoFromToken(token).getRole();
-        if (!Arrays.asList("volunteer", "admin", "super_admin").contains(role)) {
-            return Result.fail("权限不足");
-        }
+//        String token = request.getHeader("Authorization");
+//        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+//        String role = jwtUtils.getInfoFromToken(token).getRole();
+//        if (!Arrays.asList("volunteer", "admin", "super_admin").contains(role)) {
+//            return Result.fail("权限不足");
+//        }
         String assignId = taskService.addTaskAssignment(repairAssignmentDto);
         return assignId == null ? Result.fail("添加异常") : Result.success("添加成功(assignId: " + assignId + ")");
+    }
+    @VolunteerLoginToken
+    @PostMapping("/applyToJoin")
+    public Result applyToJoin(@RequestBody RepairAssignmentDto repairAssignmentDto,
+                              HttpServletRequest request) {
+        String result = taskService.applyToJoinTask(repairAssignmentDto);
+        return result == null ? Result.fail("添加异常") : Result.success("申请成功");
     }
 }

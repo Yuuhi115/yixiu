@@ -5,6 +5,7 @@ import gdufs.yixiu.pojo.RepairAssignment;
 import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.pojo.RepairRequestImg;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -24,6 +25,7 @@ public interface TaskMapper {
     int deleteTaskImgByRequestId(Integer requestId);
 
     int addTaskAssignment(RepairAssignment repairAssignment);
+    int addTaskApplyAssignment(RepairAssignment repairAssignment);
     int findIsExistAssignment(Integer requestId);
     List<RepairAssignment> findTaskAssignmentByRequestId(Integer requestId);
 

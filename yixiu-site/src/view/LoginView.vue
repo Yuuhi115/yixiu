@@ -145,6 +145,7 @@ const handleLogin = () => {
       let token = loginResult.data;
       Cookie.set('Authorization', token, { expires: 7 })
       localStorage.setItem('role', form.role)
+      // window.$ws = new WebSocket(`ws://localhost:8080/ws/notify?token=${token}`)
       ElMessage.success('登录成功！')
       await router.replace('/')
     } else {

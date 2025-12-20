@@ -1,5 +1,6 @@
 package gdufs.yixiu.controller;
 
+import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UsersRegisterDto;
@@ -32,15 +33,9 @@ public class AdminController {
             return Result.success(token);
         }
     }
-    @UserLoginToken
+    @AdminLoginToken
     @GetMapping("inviteCode")
-    public Result sendRegisterInviteCode(@RequestParam String email,
-                                         HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        String role = jwtUtils.getInfoFromToken(token).getRole();
-        if (!"admin".equals(role) && !"super_admin".equals(role)) {
-            return Result.fail("权限不足");
-        }
+    public Result sendRegisterInviteCode(@RequestParam String email) {
         String code = adminService.sendInviteCode(email);
         return Result.success(code);
     }

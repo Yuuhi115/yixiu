@@ -21,8 +21,11 @@ import {getUserInfo} from "../api/userApi.js";
 import Cookie from "js-cookie";
 import router from "../router/index.js";
 import {checkToken} from "../utils/userUtils.js";
+import { startNotifyPoll, stopNotifyPoll } from "../utils/notificationUtils.js";
+import {getUnreadNotifyCount} from "../api/notificationApi.js";
 
 const userInfoRef = ref()
+let unreadNotifyCount = ref(0)
 
 const userInfo = reactive({
   userId: "",
@@ -45,6 +48,12 @@ const userInfo = reactive({
 onMounted(async () => {
   await queryUserInfo()
   await saveRole()
+  await startNotifyPoll((message) => {
+    if (message && message.unread !== undefined) {
+      unreadNotifyCount.value = message.unread
+    }
+  })
+  await getUnreadNotify()
   let isAuth = checkToken()
   if (!isAuth) {
     ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
@@ -53,6 +62,10 @@ onMounted(async () => {
       router.push('/login')
     }, 3000)
   }
+})
+
+onUnmounted(()=>{
+  stopNotifyPoll()
 })
 
 const queryUserInfo = async () => {
@@ -71,6 +84,16 @@ const saveRole = async () => {
   if (userInfo.userId !== "" && localStorage.getItem('role') === null) {
     localStorage.setItem('role', userInfo.role)
   }
+}
+
+// 未读通知数
+const getUnreadNotify = async () => {
+  const response = await getUnreadNotifyCount()
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+    return
+  }
+  unreadNotifyCount.value = response.data
 }
 
 const handleOpen = (key, keyPath) => {
@@ -109,8 +132,8 @@ const logout = async () => {
                 <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button style="margin-bottom: 10px" type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button style="margin-bottom: 10px" type="default" @click="() => router.push('/user/messageCenter')" :icon="Message" circle/>
                 </el-badge>
               </div>
               <div class="component-center">
@@ -184,7 +207,7 @@ const logout = async () => {
               <!--            <el-menu-item-group title="Group Two">-->
               <el-menu-item index="4-2">我的收藏</el-menu-item>
               <!--            </el-menu-item-group>-->
-              <el-menu-item index="4-3">
+              <el-menu-item index="4-3" @click="() => router.push('/user/messageCenter')">
 <!--                <template #title>item four</template>-->
 <!--                <el-menu-item index="1-4-1">item one</el-menu-item>-->
                 消息中心

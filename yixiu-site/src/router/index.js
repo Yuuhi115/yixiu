@@ -8,6 +8,7 @@ import RepairFormView from "../view/repair/RepairFormView.vue";
 import RepairHistoryView from "../view/repair/RepairHistoryView.vue";
 import MemberManageView from "../view/admin/MemberManageView.vue";
 import TaskListView from "../view/taskCenter/TaskListView.vue";
+import messageCenterView from "../view/user/MessageCenterView.vue";
 
 // 定义路由
 const routes = [
@@ -16,6 +17,7 @@ const routes = [
     { path: '/about', component: HelloWorld },
     { path: '/', component: MainView },
     { path: '/user/basicInfo', component: UserBasicInfoView },
+    { path: '/user/messageCenter', component: messageCenterView },
     { path: '/repair/form', component: RepairFormView },
     { path: '/repair/history', component: RepairHistoryView},
     { path: '/admin/memberManage', component: MemberManageView },

@@ -12,7 +12,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class WebInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        log.info("Address: {} is attempting to visit this web",IPUtils.getClientIP(request));
+//        log.info("Address: {} is attempting to visit this web",IPUtils.getClientIP(request));
         return true;
     }
 

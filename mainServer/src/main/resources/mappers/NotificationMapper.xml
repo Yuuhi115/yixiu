@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.NotificationMapper">
+    <!-- SQL映射语句在此定义 -->
+    <insert id="addNotification" useGeneratedKeys="true" keyColumn="notify_id" keyProperty="notifyId">
+        insert into notification(sender_id,receiver_id,title,content,type,link)
+        values(#{senderId},#{receiverId},#{title},#{content},#{type},#{link})
+    </insert>
+    <insert id="addBroadcastIsRead">
+        insert into broadcast_read(notify_id,user_id)
+        values(#{notifyId},#{userId})
+    </insert>
+    <update id="changeToRead">
+        update notification set is_read = 1 where notify_id = #{notifyId}
+    </update>
+    <update id="changeToReadBroadcast">
+        update broadcast_read set is_read = 1 where notify_id = #{notifyId} and user_id = #{userId}
+    </update>
+    <select id="queryByReceiverId" resultType="gdufs.yixiu.pojo.Notification">
+        SELECT * FROM notification
+        WHERE (receiver_id = #{receiverId} OR receiver_id = 0)
+        ORDER BY create_time DESC
+    </select>
+    <select id="unreadCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM notification
+        WHERE is_read = 0
+          AND receiver_id = #{receiverId}
+    </select>
+    <select id="unreadBroadcastCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM broadcast_read
+        WHERE is_read = 0
+          AND user_id = #{userId}
+    </select>
+    <select id="checkIsReadBroadcast" resultType="java.lang.Integer">
+        SELECT is_read FROM broadcast_read
+        WHERE notify_id = #{notifyId}
+        AND user_id = #{userId}
+    </select>
+    <select id="queryTypeByNotifyId" resultType="java.lang.String" parameterType="java.lang.Integer">
+        SELECT type FROM notification WHERE notify_id = #{notifyId}
+    </select>
+</mapper>

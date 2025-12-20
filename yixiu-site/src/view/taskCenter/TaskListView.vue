@@ -1,15 +1,16 @@
 <script setup>
-import { Message } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import {Message} from "@element-plus/icons-vue";
+import {onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import {
   getRepairFormByUserId,
   getUserInfo,
   updateRepairFormStatus
 } from "../../api/userApi.js";
-import { ElMessage, ElMessageBox } from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
 import router from "../../router/index.js";
-import {addTaskAssign, getAllRepairList, getFilteredRepairList} from "../../api/volunteerApi.js";
+import {addTaskAssign, applyToJoin, getAllRepairList, getFilteredRepairList} from "../../api/volunteerApi.js";
+import {checkVolunteerPermission} from "../../utils/userUtils.js"
 
 const userInfoRef = ref()
 
@@ -43,20 +44,20 @@ const filterForm = reactive({
 
 // 状态选项
 const statusOptions = [
-  { label: '已提交待审核', value: 0 },
-  { label: '审核通过', value: 1 },
-  { label: '已被接收', value: 2 },
-  { label: '已完成', value: 3 },
-  { label: '已取消', value: 4 },
-  { label: '用户自行解决', value: 5 },
-  { label: '已被拒绝', value: 6 },
+  {label: '已提交待审核', value: 0},
+  {label: '审核通过', value: 1},
+  {label: '已被接收', value: 2},
+  {label: '已完成', value: 3},
+  {label: '已取消', value: 4},
+  {label: '用户自行解决', value: 5},
+  {label: '已被拒绝', value: 6},
 ]
 
 // 可更改的状态选项
 const changeableStatusOptions = [
-  { label: '接收', value: 2 },
-  { label: '完成任务', value: 3 },
-  { label: '取消任务', value: 4 }
+  {label: '接收', value: 2},
+  {label: '完成任务', value: 3},
+  {label: '取消任务', value: 4}
 ]
 
 // 下拉菜单相关
@@ -65,6 +66,7 @@ const activeTab = ref('all')
 onMounted(async () => {
   await queryUserInfo()
   await loadTaskList()
+  await checkVolunteerPermission(localStorage.getItem("role"))
 })
 
 const queryUserInfo = async () => {
@@ -148,14 +150,21 @@ const getStatusLabel = (status) => {
 
 // 获取状态标签类型
 const getStatusType = (status) => {
-  switch(status) {
-    case 0: return 'warning'     // 已提交待审核
-    case 1: return 'primary'  // 审核通过
-    case 2: return 'primary'  // 已接收
-    case 3: return 'success'   // 已完成
-    case 4: return 'danger'    // 已取消
-    case 5: return 'success'  // 用户自行解决
-    case 6: return 'danger' //已被拒绝
+  switch (status) {
+    case 0:
+      return 'warning'     // 已提交待审核
+    case 1:
+      return 'primary'  // 审核通过
+    case 2:
+      return 'primary'  // 已接收
+    case 3:
+      return 'success'   // 已完成
+    case 4:
+      return 'danger'    // 已取消
+    case 5:
+      return 'success'  // 用户自行解决
+    case 6:
+      return 'danger' //已被拒绝
   }
 }
 
@@ -246,6 +255,31 @@ const addTaskAssignment = async (volunteerId, remarks, task) => {
     }
   }).catch(() => {
     ElMessage.info('操作已取消');
+  });
+}
+
+const applyToJoinTask = async (task) => {
+  ElMessageBox.confirm(
+      `确认要申请加入该任务吗？`,
+      `任务申请确认`,
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(async () => {
+    let data = {
+      requestId: task.requestId,
+      volunteerId: userInfo.volunteerInfo.volunteerId,
+    }
+    const responseAdd = await applyToJoin(data)
+    if (responseAdd.code === 200) {
+      ElMessage.success(responseAdd.data)
+    }else {
+      ElMessage.error(responseAdd.msg)
+    }
+  }).catch(()=>{
+    ElMessage.info('操作已取消')
   });
 }
 
@@ -405,7 +439,7 @@ const submitMaintenanceLog = async () => {
               </div>
             </template>
 
-            <el-empty v-if="taskListRef.length === 0" description="暂无维修任务" />
+            <el-empty v-if="taskListRef.length === 0" description="暂无维修任务"/>
 
             <div class="records-container">
               <el-collapse v-model="activeNames" accordion>
@@ -497,102 +531,68 @@ const submitMaintenanceLog = async () => {
 
                       <!-- 状态更改按钮 -->
                       <div class="action-buttons" v-if="shouldShowActionButtons(task)">
-                        <!-- 志愿者角色 -->
-                        <template v-if="userInfo.role === 'volunteer'">
-                          <!-- 状态0：待审核 - 不显示按钮 -->
-                          <!-- 状态1：审核通过 - 显示接收按钮 -->
+                        <!-- 状态0：待审核 - 仅管理员可操作 -->
+                        <template v-if="task.status === 0 && ['admin', 'super_admin'].includes(userInfo.role)">
                           <el-button
-                              v-if="task.status === 1"
                               type="primary"
-                              @click.stop="addTaskAssignment(userInfo.volunteerInfo.volunteerId,'' , task)"
-                          >
-                            接收
+                              @click.stop="changeTaskStatus(task, 1, '通过')">
+                            通过
                           </el-button>
-
-                          <!-- 状态2：已接收 - 显示完成和取消按钮 -->
-                          <template v-else-if="task.status === 2">
-                            <el-button
-                                type="primary"
-                                @click.stop="applyToJoinTask(task)"
-                            >
-                              申请加入
-                            </el-button>
-                            <el-button
-                                type="success"
-                                @click.stop="showCompleteDialog(task)"
-                            >
-                              完成任务
-                            </el-button>
-                            <el-button
-                                type="danger"
-                                @click.stop="changeTaskStatus(task, 4, '取消')"
-                            >
-                              取消任务
-                            </el-button>
-                          </template>
+                          <el-button
+                              type="danger"
+                              @click.stop="showRejectDialog(task)">
+                            拒绝
+                          </el-button>
                         </template>
 
-                        <!-- 管理员角色 -->
-                        <template v-else-if="['admin', 'super_admin'].includes(userInfo.role)">
-                          <!-- 状态0：待审核 - 显示通过和拒绝按钮 -->
-                          <template v-if="task.status === 0">
-                            <el-button
-                                type="primary"
-                                @click.stop="changeTaskStatus(task, 1, '通过')"
-                            >
-                              通过
-                            </el-button>
-                            <el-button
-                                type="danger"
-                                @click.stop="showRejectDialog(task)"
-                            >
-                              拒绝
-                            </el-button>
-                          </template>
-
-                          <!-- 状态1：审核通过 - 显示接收按钮 -->
+                        <!-- 状态1：审核通过 - 志愿者和管理员都可接收 -->
+                        <template v-else-if="task.status === 1 && ['volunteer', 'admin', 'super_admin'].includes(userInfo.role)">
                           <el-button
-                              v-else-if="task.status === 1"
                               type="primary"
-                              @click.stop="addTaskAssignment(userInfo.volunteerInfo.volunteerId,'' , task)"
-                          >
+                              @click.stop="addTaskAssignment(userInfo.volunteerInfo.volunteerId, '', task)">
                             接收
                           </el-button>
+                        </template>
 
-                          <!-- 状态2：已接收 - 显示完成和取消按钮 -->
-
-                          <el-button
-                              v-else-if="task.status === 2 &&
-                               task.repairAssignment &&
-                               Array.isArray(task.repairAssignment) &&
-                               !task.repairAssignment.some(assign => assign.volunteerId === userInfo.volunteerInfo.volunteerId)"
+                        <!-- 状态2：已被接收 -->
+                        <template v-else-if="task.status === 2 && task.repairAssignment && Array.isArray(task.repairAssignment)">
+                          <!-- 志愿者和管理员角色 -->
+                          <template v-if="['volunteer', 'admin', 'super_admin'].includes(userInfo.role)">
+                            <!-- 用户未参与此任务 - 显示申请加入 -->
+                            <el-button
+                                v-if="!task.repairAssignment.some(assign => assign.volunteerId === userInfo.volunteerInfo.volunteerId)"
                                 type="primary"
-                                @click.stop="applyToJoinTask(task)"
-                            >
+                                @click.stop="applyToJoinTask(task)">
                               申请加入
                             </el-button>
-                          <template
-                              v-else-if="task.status === 2 &&
-                               task.repairAssignment &&
-                               Array.isArray(task.repairAssignment) &&
-                               task.repairAssignment.some(assign => assign.volunteerId === userInfo.volunteerInfo.volunteerId)">
 
+                            <!-- 用户已申请加入(状态为5) - 显示等待提示 -->
+                            <el-text
+                                v-else-if="task.repairAssignment.some(assign =>
+                                 assign.volunteerId === userInfo.volunteerInfo.volunteerId &&
+                                 assign.status === 5)"
+                                type="success"
+                                size="small">
+                              已申请加入，等待回复
+                            </el-text>
+
+                            <!-- 用户是任务接收者(状态不为5) - 显示操作按钮 -->
+                            <template
+                                v-else-if="task.repairAssignment.some(assign =>
+                                assign.volunteerId === userInfo.volunteerInfo.volunteerId)">
                               <el-button
                                   type="danger"
-                                  @click.stop="changeTaskStatus(task, 4, '取消')"
-                              >
+                                  @click.stop="changeTaskStatus(task, 4, '取消')">
                                 取消任务
                               </el-button>
-
                               <el-button
-                                    type="success"
-                                    @click.stop="showCompleteDialog(task)"
-                                >
-                                  完成任务
+                                  type="success"
+                                  @click.stop="showCompleteDialog(task)">
+                                完成任务
                               </el-button>
-
                             </template>
                           </template>
+                        </template>
                       </div>
                     </div>
                   </div>

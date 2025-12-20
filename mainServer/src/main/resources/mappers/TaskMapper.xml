@@ -14,6 +14,9 @@
         insert into repair_assignment (request_id,volunteer_id,is_leader,remarks)
         values (#{requestId},#{volunteerId},#{isLeader},#{remarks})
     </insert>
+    <insert id="addTaskApplyAssignment" parameterType="gdufs.yixiu.pojo.RepairAssignment">
+        insert into repair_assignment (request_id,volunteer_id,status) values (#{requestId},#{volunteerId},#{status})
+    </insert>
     <update id="updateTask">
         update repair_request
         <set>

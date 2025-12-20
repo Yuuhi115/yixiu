@@ -3,8 +3,7 @@ package gdufs.yixiu.interceptor;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import gdufs.yixiu.annotation.PassToken;
-import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.annotation.*;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.util.JWTUtils;
@@ -47,6 +46,83 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 return true;
             }
         }
+        if (method.isAnnotationPresent(SuperAdminLoginToken.class)){
+            SuperAdminLoginToken superAdminLoginToken = method.getAnnotation(SuperAdminLoginToken.class);
+            if (superAdminLoginToken.required()) {
+                if (token == null) {
+                    throw new Exception("null token");
+                }
+            }
+            Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
+            Integer userId = (Integer) userMap.get("id");
+            Users user = usersMapper.findUserById(userId);
+            if (user == null) {
+                throw new Exception("null user");
+            }
+            if (! "super_admin".equals(user.getRole())){
+                throw new Exception("insufficient privileges");
+            }
+            // 验证 token
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
+            try {
+                jwtVerifier.verify(token);
+            } catch (Exception e) {
+                throw new Exception("token verification failed");
+            }
+            return true;
+        }
+        if (method.isAnnotationPresent(AdminLoginToken.class)){
+            AdminLoginToken adminLoginToken = method.getAnnotation(AdminLoginToken.class);
+            if (adminLoginToken.required()) {
+                if (token == null) {
+                    throw new Exception("null token");
+                }
+            }
+            Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
+            Integer userId = (Integer) userMap.get("id");
+            Users user = usersMapper.findUserById(userId);
+            if (user == null) {
+                throw new Exception("null user");
+            }
+            if (! "admin".equals(user.getRole()) && ! "super_admin".equals(user.getRole())){
+                throw new Exception("insufficient privileges");
+            }
+            // 验证 token
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
+            try {
+                jwtVerifier.verify(token);
+            } catch (Exception e) {
+                throw new Exception("token verification failed");
+            }
+            return true;
+        }
+        if (method.isAnnotationPresent(VolunteerLoginToken.class)){
+            VolunteerLoginToken volunteerLoginToken = method.getAnnotation(VolunteerLoginToken.class);
+            if (volunteerLoginToken.required()) {
+                if (token == null) {
+                    throw new Exception("null token");
+                }
+            }
+            Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
+            Integer userId = (Integer) userMap.get("id");
+            Users user = usersMapper.findUserById(userId);
+            if (user == null) {
+                throw new Exception("null user");
+            }
+            if (! "volunteer".equals(user.getRole()) &&
+                    !"admin".equals(user.getRole()) &&
+                    !"super_admin".equals(user.getRole())) {
+                throw new Exception("insufficient privileges");
+            }
+            // 验证 token
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
+            try {
+                jwtVerifier.verify(token);
+            } catch (Exception e) {
+                throw new Exception("token verification failed");
+            }
+            return true;
+        }
 
         //检查有没有需要用户权限的注解
         if (method.isAnnotationPresent(UserLoginToken.class)) {
@@ -71,6 +147,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 return true;
             }
         }
+
         return true;
     }
 }

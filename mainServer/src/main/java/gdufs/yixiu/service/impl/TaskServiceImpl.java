@@ -74,6 +74,20 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public String applyToJoinTask(RepairAssignmentDto repairAssignmentDto) {
+
+        RepairAssignment repairAssignment = new RepairAssignment();
+        repairAssignment.setRequestId(repairAssignmentDto.getRequestId());
+        repairAssignment.setVolunteerId(repairAssignmentDto.getVolunteerId());
+        repairAssignment.setStatus(5);
+        int rows = taskMapper.addTaskApplyAssignment(repairAssignment);
+        if (rows > 0){
+            log.info("志愿者No.{} 申请加入任务，任务id为：{}",repairAssignmentDto.getVolunteerId(), repairAssignmentDto.getRequestId());
+        }
+        return rows > 0 ? "success" : null;
+    }
+
+    @Override
     public boolean updateTask(RepairRequestDto repairRequestDto) {
         RepairRequest repairRequest = new RepairRequest();
         repairRequest.setRequestId(repairRequestDto.getRequestId());

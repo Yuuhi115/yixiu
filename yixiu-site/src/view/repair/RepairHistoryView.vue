@@ -1,10 +1,10 @@
 <script setup>
-import { Message } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
-import Cookie from "js-cookie";
-import {getRepairFormByUserId, getUserInfo} from "../../api/userApi.js";
-import { ElMessage } from "element-plus";
-import router from "../../router/index.js";
+import { Message } from "@element-plus/icons-vue"
+import { onMounted, reactive, ref } from "vue"
+import Cookie from "js-cookie"
+import { getRepairFormByUserId, getUserInfo } from "../../api/userApi.js"
+import { ElMessage } from "element-plus"
+import router from "../../router/index.js"
 
 const userInfoRef = ref()
 
@@ -22,24 +22,6 @@ const userInfo = reactive({
 
 // 维修记录数据
 const repairRecordsRef = ref([])
-
-const repairRecords = reactive([
-    {
-      requestId: "",
-      contactType: "",
-      deviceType: "",
-      deviceModel: "",
-      problemDescription: "",
-      campus: "",
-      repairLocation: "",
-      appointmentTime: "",
-      status: "",
-      createTime: "",
-      completeTime: "",
-      updateTime: "",
-      imgUrl: []
-    }
-])
 
 // 筛选条件
 const filterForm = reactive({
@@ -59,9 +41,6 @@ const statusOptions = [
   { label: '已被拒绝', value: 6 },
 ]
 
-// 下拉菜单相关
-const activeTab = ref('all')
-
 onMounted(async () => {
   await queryUserInfo()
   await loadRepairHistory()
@@ -80,17 +59,14 @@ const queryUserInfo = async () => {
 }
 
 // 加载维修历史记录
-
 const activeNames = ref([])
 
 const loadRepairHistory = async () => {
-  // 这里应该调用API获取维修历史记录
-  // 暂时使用模拟数据
   const response = await getRepairFormByUserId()
   if (response.code === 200) {
-    // 赋值给 repairRecords 列表
-    Object.assign(repairRecords, response.data)
-    console.log(repairRecords)
+    // 赋值给 repairRecordsRef 列表
+    repairRecordsRef.value = response.data
+    console.log(repairRecordsRef.value)
   } else {
     ElMessage.error(response.msg)
   }
@@ -128,13 +104,6 @@ const getStatusType = (status) => {
     case 5: return 'success'  // 用户自行解决
     case 6: return 'danger' //已被拒绝
   }
-}
-
-// 切换视图
-const switchView = (tab) => {
-  activeTab.value = tab
-  // 根据标签过滤数据
-  console.log('切换到标签:', tab)
 }
 </script>
 
@@ -246,24 +215,8 @@ const switchView = (tab) => {
 
           <!-- 视图切换下拉菜单 -->
           <div class="view-switcher">
-            <el-dropdown @command="switchView">
-              <el-button type="primary">
-                查看方式<i class="el-icon-arrow-down el-icon--right"></i>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="all">全部记录</el-dropdown-item>
-                  <el-dropdown-item command="recent">最近记录</el-dropdown-item>
-                  <el-dropdown-item command="pending">待处理</el-dropdown-item>
-                  <el-dropdown-item command="processing">处理中</el-dropdown-item>
-                  <el-dropdown-item command="completed">已完成</el-dropdown-item>
-                  <el-dropdown-item command="cancelled">已取消</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-
-            <el-badge :value="repairRecords.length" class="records-count" type="primary">
-              共 {{ repairRecords.length }} 条记录
+            <el-badge :value="repairRecordsRef.length" class="records-count" type="primary">
+              共 {{ repairRecordsRef.length }} 条记录
             </el-badge>
           </div>
 
@@ -275,12 +228,12 @@ const switchView = (tab) => {
               </div>
             </template>
 
-            <el-empty v-if="repairRecords.length === 0" description="暂无维修记录" />
+            <el-empty v-if="repairRecordsRef.length === 0" description="暂无维修记录" />
 
             <div class="records-container">
               <el-collapse v-model="activeNames" accordion>
                 <el-collapse-item
-                    v-for="(record, index) in repairRecords"
+                    v-for="(record, index) in repairRecordsRef"
                     :key="record.id"
                     :name="index">
                   <template #title>
@@ -501,7 +454,9 @@ const switchView = (tab) => {
   justify-content: space-between;
   font-size: 12px;
   color: #909399;
+  margin-bottom: 15px;
 }
+
 .image-gallery {
   display: flex;
   flex-wrap: wrap;
