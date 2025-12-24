@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from "../view/LoginView.vue";
-import HelloWorld from "../components/HelloWorld.vue";
 import MainView from "../view/MainView.vue";
 import RegisterView from "../view/RegisterView.vue";
 import UserBasicInfoView from "../view/user/BasicInfoView.vue";
@@ -9,24 +8,25 @@ import RepairHistoryView from "../view/repair/RepairHistoryView.vue";
 import MemberManageView from "../view/admin/MemberManageView.vue";
 import TaskListView from "../view/taskCenter/TaskListView.vue";
 import messageCenterView from "../view/user/MessageCenterView.vue";
+import MyTaskView from "../view/taskCenter/MyTaskView.vue";
 
 // 定义路由
 const routes = [
     { path: '/login', component: LoginView },
     { path: '/register', component: RegisterView },
-    { path: '/about', component: HelloWorld },
     { path: '/', component: MainView },
     { path: '/user/basicInfo', component: UserBasicInfoView },
     { path: '/user/messageCenter', component: messageCenterView },
     { path: '/repair/form', component: RepairFormView },
     { path: '/repair/history', component: RepairHistoryView},
     { path: '/admin/memberManage', component: MemberManageView },
-    { path: '/taskCenter/list', component: TaskListView }
+    { path: '/taskCenter/list', component: TaskListView },
+    { path: '/taskCenter/myTask', component: MyTaskView }
 ]
 
 // 创建router实例
 const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHistory('/yixiu-site/'),
     routes
 })
 

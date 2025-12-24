@@ -17,6 +17,12 @@
     <insert id="addTaskApplyAssignment" parameterType="gdufs.yixiu.pojo.RepairAssignment">
         insert into repair_assignment (request_id,volunteer_id,status) values (#{requestId},#{volunteerId},#{status})
     </insert>
+    <insert id="addTaskLog" parameterType="gdufs.yixiu.pojo.RepairLog" useGeneratedKeys="true" keyProperty="logId" keyColumn="log_id">
+        insert into repair_log (request_id,volunteer_id,log_content,repair_duration,solution_summary) values (#{requestId},#{volunteerId},#{logContent},#{repairDuration},#{solutionSummary})
+    </insert>
+    <insert id="addTaskLogImg" parameterType="gdufs.yixiu.pojo.RepairLogImg">
+        insert into repair_log_img (log_id,img_url) values (#{logId},#{imgUrl})
+    </insert>
     <update id="updateTask">
         update repair_request
         <set>
@@ -58,8 +64,40 @@
             request_id = #{requestId}
         </where>
     </update>
+    <update id="updateTaskAssignment" parameterType="gdufs.yixiu.pojo.RepairAssignment">
+        update repair_assignment
+        <set>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="remarks != null">
+                remarks = #{remarks},
+            </if>
+        </set>
+        <where>
+            assign_id = #{assignId}
+        </where>
+    </update>
+    <update id="updateTaskAssignmentByRequestIdAndVolunteerId"
+            parameterType="gdufs.yixiu.pojo.RepairAssignment">
+        update repair_assignment
+        <set>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="remarks != null">
+                remarks = #{remarks},
+            </if>
+        </set>
+        <where>
+            request_id = #{requestId} and volunteer_id = #{volunteerId}
+        </where>
+    </update>
     <delete id="deleteTaskImgByRequestId" parameterType="java.lang.Integer">
         delete from repair_request_img where request_id = #{requestId}
+    </delete>
+    <delete id="deleteTaskLogImgByLogId" parameterType="java.lang.Integer">
+        delete from repair_log_img where log_id = #{logId}
     </delete>
     <select id="findTaskById" resultType="gdufs.yixiu.pojo.RepairRequest" parameterType="java.lang.Integer">
         select * from repair_request where request_id = #{requestId}
@@ -109,4 +147,38 @@
             parameterType="java.lang.Integer">
         select * from repair_assignment where request_id = #{requestId}
     </select>
+    <select id="findTaskLogByRequestId" resultType="gdufs.yixiu.pojo.RepairLog"
+            parameterType="java.lang.Integer">
+        select * from repair_log where request_id = #{requestId}
+    </select>
+    <select id="findTaskLogImgByLogId" resultType="gdufs.yixiu.pojo.RepairLogImg"
+            parameterType="java.lang.Integer">
+        select * from repair_log_img where log_id = #{logId}
+    </select>
+    <select id="findTaskLogImgUrlByLogId" resultType="java.lang.String" parameterType="java.lang.Integer">
+        select img_url from repair_log_img where log_id = #{logId}
+    </select>
+    <select id="findMyTaskAssignmentIdsByVolunteerId" resultType="java.lang.Integer"
+            parameterType="java.lang.Integer">
+        select request_id from repair_assignment where volunteer_id = #{volunteerId}
+    </select>
+    <select id="findMyTaskIdsByFilterDto" resultType="java.lang.Integer"
+            parameterType="gdufs.yixiu.dto.TaskFilterDto">
+        SELECT repair_request.request_id FROM repair_request JOIN repair_assignment ON repair_request.request_id = repair_assignment.request_id
+        <where>
+            <if test="createStartTime != null and createEndTime != null">
+                AND repair_request.create_time BETWEEN #{createStartTime} AND #{createEndTime}
+            </if>
+            <if test="updateStartTime != null and updateEndTime != null">
+                AND repair_request.update_time BETWEEN #{updateStartTime} AND #{updateEndTime}
+            </if>
+            <if test="status != null">
+                AND repair_request.status = #{status}
+            </if>
+            <if test="volunteerId != null">
+                AND repair_assignment.volunteer_id = #{volunteerId}
+            </if>
+        </where>
+    </select>
+
 </mapper>

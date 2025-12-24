@@ -35,4 +35,30 @@
             user_id = #{userId}
         </where>
     </select>
+    <select id="findVolunteerIdByUserId" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        select volunteer_id from volunteer_info
+        <where>
+            user_id = #{userId}
+        </where>
+    </select>
+    <select id="findVolunteerInfoByVolunteerId" resultType="gdufs.yixiu.pojo.VolunteerInfo"
+            parameterType="java.lang.Integer">
+        select * from volunteer_info
+        <where>
+            volunteer_id = #{volunteerId}
+        </where>
+    </select>
+    <select id="findVolunteerNameByUserId" resultType="java.lang.String" parameterType="java.lang.Integer">
+        SELECT real_name FROM users JOIN volunteer_info ON users.user_id = volunteer_info.user_id
+        <where>
+            users.user_id = #{userId}
+        </where>
+    </select>
+    <select id="findVolunteerNameByVolunteerId" resultType="java.lang.String"
+            parameterType="java.lang.Integer">
+        SELECT real_name FROM users JOIN volunteer_info ON users.user_id = volunteer_info.user_id
+        <where>
+            volunteer_info.volunteer_id = #{volunteerId}
+        </where>
+    </select>
 </mapper>

@@ -89,10 +89,10 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (receiverId == 0) {
             LongPullingNotifier.broadcast(pushVO);
+        }else {
+            // 唤醒该用户的轮询请求
+            LongPullingNotifier.notifyUser(receiverId, pushVO);
         }
-
-        // 唤醒该用户的轮询请求
-        LongPullingNotifier.notifyUser(receiverId, pushVO);
     }
 
     @Override
@@ -113,9 +113,11 @@ public class NotificationServiceImpl implements NotificationService {
                 log.info("用户{}的广播{}未读数量为{}", receiverId, notification.getNotifyId(), notificationDto.getIsRead());
             }else {
                 notificationDto.setIsRead(notification.getIsRead());
-                Users users = usersMapper.findUserById(notification.getSenderId());
-                notificationDto.setSenderUsername(users.getUsername());
-                notificationDto.setSenderAvatar(avatarPath + users.getAvatar());
+                if (!Objects.equals(notification.getType(), "SYSTEM")){
+                    Users users = usersMapper.findUserById(notification.getSenderId());
+                    notificationDto.setSenderUsername(users.getUsername());
+                    notificationDto.setSenderAvatar(avatarPath + users.getAvatar());
+                }
             }
             notificationDto.setNotifyId(notification.getNotifyId());
             notificationDto.setSenderId(notification.getSenderId());

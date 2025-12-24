@@ -2,6 +2,7 @@ package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.pojo.RepairLogImg;
 import gdufs.yixiu.pojo.RepairRequestImg;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
@@ -24,6 +25,7 @@ public class ImgUploadServiceImpl implements ImgUploadService {
 
     private String avatarPath;
     private String requestPath;
+    private String repairLogPath;
     @Autowired
     private TaskMapper taskMapper;
 
@@ -36,6 +38,10 @@ public class ImgUploadServiceImpl implements ImgUploadService {
 //    @Value("${resources-path.linux_request}")
     public void setRequestPath(String requestPath) {
         this.requestPath = requestPath;
+    }
+    @Value("${resources-path.repairLog}")
+    public void setRepairLogPath(String repairLogPath) {
+        this.repairLogPath = repairLogPath;
     }
     @Autowired
     private UsersMapper userMapper;
@@ -103,5 +109,35 @@ public class ImgUploadServiceImpl implements ImgUploadService {
             throw new RuntimeException(e);
         }
         return "request/" + fileName;
+    }
+
+    @Override
+    public String uploadRepairLogImg(MultipartFile file, Integer logId, Integer number) {
+        log.info("Uploading No.{} repair log's img to {}", logId, repairLogPath);
+        String originalFilename = file.getOriginalFilename();
+        // 显示文件大小（以MB为单位）
+        long fileSizeInBytes = file.getSize();
+        double fileSizeInMB = fileSizeInBytes / (1024.0 * 1024.0);
+        String formattedFileSize = String.format("%.2f", fileSizeInMB);
+        log.info("logId:{}, imgNumber:{}, file size: {} MB",logId, number, formattedFileSize);
+        String fileName = "repairLog_" + logId + "_img_" + number + "." + originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        Path uploadPath = Paths.get(repairLogPath);
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            RepairLogImg img = new RepairLogImg();
+            img.setLogId(logId);
+            img.setImgUrl("repairLog/" + fileName);
+            taskMapper.addTaskLogImg(img);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return "repairLog/" + fileName;
     }
 }

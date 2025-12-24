@@ -215,7 +215,7 @@ const markAllAsRead = async () => {
 // 跳转到链接
 const goToLink = (link) => {
   if (link) {
-    window.open(link, '_blank')
+    router.push(link)
   }
 }
 
@@ -324,7 +324,7 @@ const getContentPreview = (content) => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :size="50" :src="userInfo.avatar" />
+                <el-avatar :fit="'cover'" :src="userInfo.avatar" />
               </div>
               <div class="component-center">
                 <el-badge :is-dot="hasUnread" class="item">

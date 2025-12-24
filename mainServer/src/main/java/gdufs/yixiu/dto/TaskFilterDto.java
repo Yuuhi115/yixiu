@@ -14,4 +14,5 @@ public class TaskFilterDto {
     private String updateEndTime;
     private Integer status;
     private Integer userId;
+    private Integer volunteerId;
 }

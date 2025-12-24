@@ -15,7 +15,7 @@ import {
 } from '@element-plus/icons-vue'
 import {UserFilled} from '@element-plus/icons-vue'
 
-import {reactive, ref, computed, onUnmounted, onMounted} from 'vue'
+import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount} from 'vue'
 import {ElMessage} from 'element-plus'
 import {getUserInfo} from "../api/userApi.js";
 import Cookie from "js-cookie";
@@ -45,15 +45,10 @@ const userInfo = reactive({
   }
 })
 
+// 添加加载状态控制
+const isLoading = ref(true)
+
 onMounted(async () => {
-  await queryUserInfo()
-  await saveRole()
-  await startNotifyPoll((message) => {
-    if (message && message.unread !== undefined) {
-      unreadNotifyCount.value = message.unread
-    }
-  })
-  await getUnreadNotify()
   let isAuth = checkToken()
   if (!isAuth) {
     ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
@@ -61,6 +56,21 @@ onMounted(async () => {
       Cookie.remove('Authorization')
       router.push('/login')
     }, 3000)
+  }
+  try {
+    // 并行执行初始化请求
+    await Promise.all([
+      queryUserInfo(),
+      getUnreadNotify()
+    ])
+    await saveRole()
+    await startNotifyPoll((message) => {
+      if (message && message.unread !== undefined) {
+        unreadNotifyCount.value = message.unread
+      }
+    })
+  } finally {
+    isLoading.value = false
   }
 })
 
@@ -109,9 +119,8 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="common-layout">
+  <div class="common-layout" v-if = "!isLoading">
     <el-container style="height: 100%">
-
       <!--头部栏-->
       <el-header class="header_container">
         <el-row :gutter="24">
@@ -177,7 +186,7 @@ const logout = async () => {
                 </el-icon>
                 <span>队伍管理</span>
               </template>
-              <el-menu-item index="2-1" @click="() => router.push('/admin/memberManage')">
+              <el-menu-item index="2-1" v-if="userInfo.role === 'super_admin'" @click="() => router.push('/admin/memberManage')">
                 成员管理
               </el-menu-item>
             </el-sub-menu>
@@ -190,6 +199,9 @@ const logout = async () => {
               </template>
               <el-menu-item index="3-1" @click="() => router.push('/taskCenter/list')">
                 任务列表
+              </el-menu-item>
+              <el-menu-item index="3-2" @click="() => router.push('/taskCenter/myTask')">
+                我的任务
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="4">

@@ -10,6 +10,7 @@ import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
 import router from "../../router/index.js";
 import {startNotifyPoll, stopNotifyPoll} from "../../utils/notificationUtils.js";
+import {getUnreadNotifyCount} from "../../api/notificationApi.js";
 
 /*头像剪裁*/
 const cropperRef = ref()
@@ -353,7 +354,7 @@ const uploadAvatar = async (file) => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :size="50" :src="userInfo.avatar" />
+                <el-avatar :fit="'cover'" :src="userInfo.avatar" />
               </div>
               <div class="component-center">
                 <el-badge :is-dot="unreadNotifyCount > 0" class="item">

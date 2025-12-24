@@ -69,6 +69,14 @@ sms:
 resources-path:
   avatar: /usr/yixiuAssist/image/avatar/
   request: /usr/yixiuAssist/image/request/
+  repairLog: /usr/yixiuAssist/image/repairLog/
 
   service-avatar-url: http://8.148.253.180:8080/api/v1/img/users/avatar/
   service-request-url: http://8.148.253.180:8080/api/v1/img/task/
+  service-repairLog-url: http://8.148.253.180:8080/api/v1/img/task/
+
+pagehelper:
+  helper-dialect: mysql
+  reasonable: false
+  support-methods-arguments: true
+  params: count=countSql

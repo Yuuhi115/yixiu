@@ -16,4 +16,6 @@ public interface UsersMapper {
     Users findSuperAdmin(String email);
     int updateUser(Users users);
     List<Integer> findAllUserIds();
+    List<Users> findAllVolunteersExcludeMySelf(Integer userId);
+    Users findUserRealNameAndAvatarById(Integer userId);
 }

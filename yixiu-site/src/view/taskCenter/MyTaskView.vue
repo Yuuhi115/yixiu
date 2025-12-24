@@ -1,31 +1,30 @@
 <script setup>
-import {Message} from "@element-plus/icons-vue";
-import {onMounted, reactive, ref} from "vue";
+import { Message, Edit, Delete, Search, Plus } from "@element-plus/icons-vue";
+import { onMounted, reactive, ref } from "vue";
 import Cookie from "js-cookie";
 import {
-  getRepairFormByUserId,
   getUserInfo,
   updateRepairFormStatus
 } from "../../api/userApi.js";
-import {ElMessage, ElMessageBox} from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import router from "../../router/index.js";
 import {
-  addTaskAssign,
-  addTaskLog, addTaskLogImg,
-  applyToJoin,
-  getAllRepairList,
-  getFilteredRepairList
+  addTaskLog,
+  addTaskLogImg,
+  getMyTaskList, handleJoinApplication,
+  getMyTaskListFiltered
 } from "../../api/volunteerApi.js";
-import {checkVolunteerPermission} from "../../utils/userUtils.js"
-import {sendSystemNoticeToUser} from "../../api/notificationApi.js";
-import {Plus} from "@element-plus/icons-vue";
+import { checkVolunteerPermission } from "../../utils/userUtils.js"
+import { sendSystemNoticeToUser } from "../../api/notificationApi.js";
 import {
-  RepairAssignArrayCheck, ThisVolunteerIsAttended,
-  ThisVolunteerNotAttended,
+  RepairLogArrayCheck, ThisVolunteerHasSubmittedLog,
+  ThisVolunteerIsAttended,
+  ThisVolunteerIsRejectedFromApply,
   ThisVolunteerWaitingForApplyResult
 } from "../../utils/conditionJudgeUtils.js";
 
 const userInfoRef = ref()
+const activeNames = ref([])
 
 const userInfo = reactive({
   userId: "",
@@ -63,24 +62,20 @@ const filterForm = reactive({
 
 // 状态选项
 const statusOptions = [
-  {label: '已提交待审核', value: 0},
-  {label: '审核通过', value: 1},
-  {label: '已被接收', value: 2},
-  {label: '已完成', value: 3},
-  {label: '已取消', value: 4},
-  {label: '用户自行解决', value: 5},
-  {label: '已被拒绝', value: 6},
+  { label: '任务进行中', value: 2 },
+  { label: '已完成', value: 3 },
+  { label: '已取消', value: 4 },
+  { label: '用户自行解决', value: 5 },
+  { label: '已被拒绝', value: 6 },
+  { label: '等待同意加入', value: 7 },
+  { label: '已被拒绝加入', value: 8 },
 ]
 
 // 可更改的状态选项
 const changeableStatusOptions = [
-  {label: '接收', value: 2},
-  {label: '完成任务', value: 3},
-  {label: '取消任务', value: 4}
+  { label: '完成任务', value: 3 },
+  { label: '取消任务', value: 4 }
 ]
-
-// 下拉菜单相关
-const activeTab = ref('all')
 
 onMounted(async () => {
   await queryUserInfo()
@@ -101,10 +96,8 @@ const queryUserInfo = async () => {
 }
 
 // 加载任务列表
-const activeNames = ref([])
-
 const loadTaskList = async () => {
-  const response = await getAllRepairList(pagination.currentPage, pagination.pageSize)
+  const response = await getMyTaskList(pagination.currentPage, pagination.pageSize)
   if (response.code === 200) {
     // 赋值给 taskListRef 列表
     taskListRef.value = response.data.list
@@ -118,11 +111,10 @@ const loadTaskList = async () => {
 // 处理任务筛选
 const handleFilter = async () => {
   const queryParams = buildQueryParams()
-  // console.log('筛选条件:', queryParams)
   queryParams.pageNum = pagination.currentPage
   queryParams.pageSize = pagination.pageSize
 
-  const response = await getFilteredRepairList(queryParams)
+  const response = await getMyTaskListFiltered(queryParams)
 
   if (response.code === 200) {
     taskListRef.value = response.data.list
@@ -130,26 +122,6 @@ const handleFilter = async () => {
     console.log(taskListRef.value)
   } else {
     ElMessage.error(response.msg)
-  }
-}
-
-// 添加分页改变处理函数
-const handlePageChange = (newPage) => {
-  pagination.currentPage = newPage
-  loadTaskListCondition()
-}
-
-const handleSizeChange = (newSize) => {
-  pagination.pageSize = newSize
-  pagination.currentPage = 1
-  loadTaskListCondition()
-}
-
-const loadTaskListCondition = () =>{
-  if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
-    handleFilter()
-  } else {
-    loadTaskList()
   }
 }
 
@@ -185,6 +157,26 @@ const resetFilter = () => {
   loadTaskList()
 }
 
+// 添加分页改变处理函数
+const handlePageChange = (newPage) => {
+  pagination.currentPage = newPage
+  loadTaskListCondition()
+}
+
+const handleSizeChange = (newSize) => {
+  pagination.pageSize = newSize
+  pagination.currentPage = 1
+  loadTaskListCondition()
+}
+
+const loadTaskListCondition = () =>{
+  if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
+    handleFilter()
+  } else {
+    loadTaskList()
+  }
+}
+
 // 获取状态标签
 const getStatusLabel = (status) => {
   const option = statusOptions.find(item => item.value === status)
@@ -192,12 +184,14 @@ const getStatusLabel = (status) => {
 }
 
 // 获取状态标签类型
-const getStatusType = (status) => {
-  switch (status) {
-    case 0:
-      return 'warning'     // 已提交待审核
-    case 1:
-      return 'primary'  // 审核通过
+const getStatusType = (task) => {
+  if (ThisVolunteerWaitingForApplyResult(task, userInfo)){
+    task.status = 7
+  }
+  if (ThisVolunteerIsRejectedFromApply(task, userInfo)){
+    task.status = 8
+  }
+  switch (task.status) {
     case 2:
       return 'primary'  // 已接收
     case 3:
@@ -207,15 +201,12 @@ const getStatusType = (status) => {
     case 5:
       return 'success'  // 用户自行解决
     case 6:
-      return 'danger' //已被拒绝
+      return 'danger' // 已被拒绝
+    case 7:
+      return 'warning' // 等待同意加入
+    case 8:
+      return 'danger' // 已被拒绝加入
   }
-}
-
-// 切换视图
-const switchView = (tab) => {
-  activeTab.value = tab
-  // 根据标签过滤数据
-  console.log('切换到标签:', tab)
 }
 
 // 更改任务状态
@@ -245,120 +236,14 @@ const changeTaskStatus = (task, newStatus, action) => {
 // 拒绝原因对话框相关
 const rejectDialogVisible = ref(false)
 const rejectForm = reactive({
-  taskId: '',
+  assignId: '',
   reason: ''
 })
 const rejectFormRef = ref()
 
-
-// 判断是否应该显示操作按钮
-const shouldShowActionButtons = (task) => {
-  // 志愿者角色
-  if (userInfo.role === 'volunteer') {
-    return [1, 2].includes(task.status) // 只在状态1和2时显示按钮
-  }
-  // 管理员角色
-  else if (['admin', 'super_admin'].includes(userInfo.role)) {
-    return [0, 1, 2].includes(task.status) // 在状态0,1,2时显示按钮
-  }
-  return false
-}
-
-const approveTask = async (task) => {
-  ElMessageBox.confirm(
-      `确认要通过该任务吗？`,
-      `任务审核确认`,
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-  ).then(async () => {
-    let data = {
-      requestId: task.requestId,
-      status: 1
-    }
-    const response = await updateRepairFormStatus(task.requestId, 1)
-    if (response.code !== 200){
-      ElMessage.error(response.msg)
-    }else {
-      // ElMessage.success(response.msg)
-      task.status = 1
-      let msgData = {
-        receiverId: task.userId,
-        title: '报修审核通过通知',
-        content: `您的电脑维修申请(申请编号: ${task.requestId})已通过审核，请继续等待义修志愿者接收任务`,
-        link: '/repair/history'
-      }
-      const responseMsg = await sendSystemNoticeToUser(msgData)
-      if (responseMsg.code === 200) {
-        ElMessage.success(responseMsg.data)
-      } else {
-        ElMessage.error(responseMsg.msg)
-      }
-    }
-  }).catch(() => {
-    ElMessage.info('操作已取消');
-  });
-}
-
-// 接收任务
-const addTaskAssignment = async (volunteerId, remarks, task) => {
-  ElMessageBox.confirm(
-      `确认要接收该任务吗？`,
-      `任务接收确认`,
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-  ).then(async () => {
-    let data = {
-      requestId: task.requestId,
-      volunteerId: volunteerId,
-      remarks: remarks
-    }
-    const responseAdd = await addTaskAssign(data)
-    if (responseAdd.code === 200) {
-      ElMessage.success(responseAdd.msg)
-      loadTaskListCondition()
-    } else {
-      ElMessage.error(responseAdd.msg)
-    }
-  }).catch(() => {
-    ElMessage.info('操作已取消');
-  });
-}
-
-const applyToJoinTask = async (task) => {
-  ElMessageBox.confirm(
-      `确认要申请加入该任务吗？`,
-      `任务申请确认`,
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-  ).then(async () => {
-    let data = {
-      requestId: task.requestId,
-      volunteerId: userInfo.volunteerInfo.volunteerId,
-    }
-    const responseAdd = await applyToJoin(data)
-    if (responseAdd.code === 200) {
-      ElMessage.success(responseAdd.data)
-      loadTaskListCondition()
-    }else {
-      ElMessage.error(responseAdd.msg)
-    }
-  }).catch(()=>{
-    ElMessage.info('操作已取消')
-  });
-}
-
 // 显示拒绝对话框
-const showRejectDialog = (task) => {
-  rejectForm.taskId = task.requestId
+const showRejectDialog = (assignId) => {
+  rejectForm.assignId = assignId
   rejectForm.reason = ''
   rejectDialogVisible.value = true
 }
@@ -431,12 +316,13 @@ const submitMaintenanceLog = async () => {
     }
     completeDialogVisible.value = false
     ElMessage.success('维修日志提交成功')
+    loadTaskListCondition()
   } catch (error) {
     ElMessage.error('提交维修日志失败: ' + error.message)
   }
 }
 
-// 上传维修图片函数（模仿RepairFormView.vue的上传风格）
+// 上传维修图片函数
 const uploadMaintenanceImages = async (logId) => {
   try {
     // 创建 FormData 对象
@@ -463,15 +349,43 @@ const uploadMaintenanceImages = async (logId) => {
 const handleExceed = (files, uploadFiles) => {
   ElMessage.warning(`最多只能上传${maxImageCount}张图片`)
 }
-/**/
 
 // 提交拒绝原因
 const submitRejectReason = async () => {
-  // 这里需要调用后端API提交拒绝原因
-  // await submitRejectReasonAPI(rejectForm)
-  // 然后更新任务状态为6
-  changeTaskStatus({requestId: rejectForm.taskId}, 6, '拒绝')
+  await handleJoinRequest (rejectForm.assignId, 'reject', rejectForm.reason)
   rejectDialogVisible.value = false
+}
+
+// 处理加入申请
+const handleJoinRequest = async (assignId, action, rejectReason) => {
+  try {
+    let data = {
+      assignId: assignId,
+      reason: rejectReason
+    }
+    const response = await handleJoinApplication(data, action)
+    if (response.code === 200) {
+      ElMessage.success(response.data)
+      // 重新加载任务列表
+      await loadTaskListCondition();
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    ElMessage.error('处理申请失败: ' + error.message)
+  }
+}
+
+// 检查当前用户是否是任务负责人
+const isTaskLeader = (task) => {
+  if (!task.repairAssignment || !Array.isArray(task.repairAssignment)) {
+    return false
+  }
+
+  return task.repairAssignment.some(assign =>
+      assign.volunteerId === userInfo.volunteerInfo.volunteerId &&
+      assign.isLeader === 1
+  )
 }
 </script>
 
@@ -488,14 +402,14 @@ const submitRejectReason = async () => {
           <el-col :span="12">
             <div class="grid-content ep-bg-purple">
               <el-menu
-                  default-active="1"
+                  default-active="2"
                   class="el-menu-demo"
                   mode="horizontal"
                   style="border-bottom: silver solid 1px;background-color: snow"
                   :ellipsis="false"
               >
-                <el-menu-item index="1">任务列表</el-menu-item>
-                <el-menu-item index="2" @click="() => router.push('/taskCenter/myTask')">我的任务</el-menu-item>
+                <el-menu-item index="1" @click="() => router.push('/taskCenter/list')">任务列表</el-menu-item>
+                <el-menu-item index="2">我的任务</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -536,8 +450,7 @@ const submitRejectReason = async () => {
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
                         format="YYYY-MM-DD"
-                        value-format="YYYY-MM-DD"
-                        style="width: 100%">
+                        value-format="YYYY-MM-DD"              style="width: 100%">
                     </el-date-picker>
                   </el-form-item>
                 </el-col>
@@ -551,8 +464,7 @@ const submitRejectReason = async () => {
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
                         format="YYYY-MM-DD"
-                        value-format="YYYY-MM-DD"
-                        style="width: 100%">
+                        value-format="YYYY-MM-DD"              style="width: 100%">
                     </el-date-picker>
                   </el-form-item>
                 </el-col>
@@ -579,7 +491,6 @@ const submitRejectReason = async () => {
               </el-row>
             </el-form>
           </el-card>
-
           <!-- 视图切换下拉菜单 -->
           <div class="view-switcher">
             <el-badge :value="pagination.total" class="records-count" type="primary">
@@ -591,25 +502,25 @@ const submitRejectReason = async () => {
           <el-card class="records-card">
             <template #header>
               <div class="card-header">
-                <span>维修任务详情</span>
+                <span>我的维修任务</span>
               </div>
             </template>
 
-            <el-empty v-if="taskListRef.length === 0" description="暂无维修任务"/>
+            <el-empty v-if="taskListRef.length === 0" description="暂无我的维修任务"/>
 
             <div class="records-container">
               <el-collapse v-model="activeNames" accordion>
                 <el-collapse-item
                     v-for="(task, index) in taskListRef"
-                    :key="task.id"
+                    :key="task.requestId"
                     :name="index">
                   <template #title>
                     <div class="collapse-header">
-                      <span class="record-id">申请编号: {{ task.requestId }}</span>
-                      <el-tag :type="getStatusType(task.status)" size="small">
+                      <span class="record-id">任务编号: {{ task.requestId }}</span>
+                      <el-tag :type="getStatusType(task)" size="small">
                         {{ getStatusLabel(task.status) }}
                       </el-tag>
-                      <span class="record-time">{{ task.createTime }}</span>
+                      <span class="record-time">{{ task.updateTime }}</span>
                     </div>
                   </template>
 
@@ -657,6 +568,18 @@ const submitRejectReason = async () => {
                           <span class="detail-value">{{ task.campus === "0" ? '大学城校区' : '白云山校区' }}</span>
                         </div>
                       </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
+                          <span class="detail-label">创建时间:</span>
+                          <span class="detail-value">{{ task.createTime }}</span>
+                        </div>
+                      </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
+                          <span class="detail-label">完成时间:</span>
+                          <span class="detail-value">{{ task.completeTime }}</span>
+                        </div>
+                      </el-col>
                     </el-row>
 
                     <div class="detail-item full-width">
@@ -684,6 +607,107 @@ const submitRejectReason = async () => {
                       <span class="detail-value">无图片</span>
                     </div>
 
+                    <!-- 维修日志 -->
+                    <div class="detail-item full-width">
+                      <span class="detail-label">维修日志:</span>
+                      <div class="detail-value logs-section">
+                        <el-empty v-if="!task.repairLog || task.repairLog.length === 0" description="暂无维修日志"/>
+                        <div v-else>
+                          <div v-for="(log, logIndex) in task.repairLog" :key="logIndex" class="log-item">
+                            <p><strong>维修人员:</strong> {{ log.volunteerName }}</p>
+                            <p><strong>维修内容:</strong> {{ log.logContent }}</p>
+                            <p><strong>维修时长:</strong> {{ log.repairDuration }}</p>
+                            <p><strong>解决方案:</strong> {{ log.solutionSummary }}</p>
+                            <p><strong>提交时间:</strong> {{ log.uploadTime }}</p>
+                            <div class="log-images" v-if="log.logImgUrl && log.logImgUrl.length > 0">
+                              <h5>维修过程图片:</h5>
+                              <el-image
+                                  v-for="(img, imgIdx) in log.logImgUrl"
+                                  :key="imgIdx"
+                                  :src="img"
+                                  :preview-src-list="log.logImgUrl"
+                                  :initial-index="imgIdx"
+                                  fit="cover"
+                                  class="log-image"
+                                  lazy
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 队员信息 -->
+                    <div class="detail-item full-width">
+                      <span class="detail-label">任务队员:</span>
+                      <div class="detail-value team-section">
+                        <el-empty v-if="!task.repairAssignment || task.repairAssignment.length === 0" description="暂无队员信息"/>
+                        <div v-else>
+                          <div v-for="(member, idx) in task.repairAssignment.filter(assignment => assignment.status !== 5 && assignment.status !== 6)" :key="idx" class="team-member">
+                            <el-card class="member-card">
+                              <div class="member-info">
+                                <el-avatar :src="member.avatar" :size="40" />
+                                <div class="member-details">
+                                  <div class="member-name-status">
+                                    <span class="member-name">{{ member.volunteerName }}</span>
+                                    <el-tag :type="member.isLeader === 1 ? 'success' : 'primary'" size="small" class="member-role">
+                                      {{ member.isLeader === 1 ? '负责人' : '队员' }}
+                                    </el-tag>
+                                  </div>
+                                  <div class="member-other-info">
+                                    <p class="member-id">ID: {{ member.volunteerId }}</p>
+                                    <p class="member-class">班级: {{ member.majorClass }}</p>
+                                    <p class="member-grade">年级: {{ member.grade }}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </el-card>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 申请加入列表（仅负责人可见） -->
+                    <div class="detail-item full-width" v-if="isTaskLeader(task)">
+                      <span class="detail-label">申请加入列表:</span>
+                      <div class="detail-value join-requests-section">
+                        <el-empty v-if="!task.repairAssignment || task.repairAssignment.filter(assignment => assignment.status === 5).length === 0" description="暂无申请"/>
+                        <div v-else>
+                          <div v-for="(request, reqIdx) in task.repairAssignment.filter(assignment => assignment.status === 5)" :key="reqIdx" class="team-member">
+                            <el-card class="member-card">
+                              <div class="member-info">
+                                <el-avatar :src="request.avatar" :size="40" />
+                                <div class="member-details">
+                                  <div class="member-name-status">
+                                    <span class="member-name">{{ request.volunteerName }}</span>
+                                    <el-tag type="warning" size="small" class="member-role">申请加入</el-tag>
+                                  </div>
+                                  <div class="member-other-info">
+                                    <p class="member-id">ID: {{ request.volunteerId }}</p>
+                                    <p class="member-class">班级: {{ request.majorClass }}</p>
+                                    <p class="member-grade">年级: {{ request.grade }}</p>
+                                  </div>
+                                  <div class="request-actions-inline">
+                                    <el-button
+                                        type="success"
+                                        size="small"
+                                        @click="handleJoinRequest(request.assignId, 'approve','')">
+                                      同意
+                                    </el-button>
+                                    <el-button
+                                        type="danger"
+                                        size="small"
+                                        @click="showRejectDialog(request.assignId)">
+                                      拒绝
+                                    </el-button>
+                                  </div>
+                                </div>
+                              </div>
+                            </el-card>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <div class="detail-footer">
                       <div class="time-info">
                         <span>创建时间: {{ task.createTime }}</span>
@@ -691,66 +715,51 @@ const submitRejectReason = async () => {
                         <span>更新时间: {{ task.updateTime }}</span>
                       </div>
 
-                      <!-- 状态更改按钮 -->
-                      <div class="action-buttons" v-if="shouldShowActionButtons(task)">
-                        <!-- 状态0：待审核 - 仅管理员可操作 -->
-                        <template v-if="task.status === 0 && ['admin', 'super_admin'].includes(userInfo.role)">
-                          <el-button
-                              type="primary"
-                              @click.stop="approveTask(task)">
-                            通过
-                          </el-button>
+                      <!-- 操作按钮 -->
+                      <div class="action-buttons">
+                        <!-- 状态2：已被接收 -->
+                        <template v-if="task.status === 2 && ThisVolunteerIsAttended(task, userInfo)">
                           <el-button
                               type="danger"
-                              @click.stop="showRejectDialog(task)">
-                            拒绝
+                              @click="changeTaskStatus(task, 4, '取消')">
+                            取消任务
+                          </el-button>
+                          <el-button
+                              type="success"
+                              @click="showCompleteDialog(task)">
+                            完成任务
                           </el-button>
                         </template>
 
-                        <!-- 状态1：审核通过 - 志愿者和管理员都可接收 -->
-                        <template v-else-if="task.status === 1 && ['volunteer', 'admin', 'super_admin'].includes(userInfo.role)">
+                        <!-- 填写维修日志按钮：当任务状态为3且用户已参与任务但未提交日志时显示 -->
+                        <template v-if="task.status === 3 &&
+                        RepairLogArrayCheck(task) &&
+                        ThisVolunteerIsAttended(task, userInfo) &&
+                        !ThisVolunteerHasSubmittedLog(task, userInfo)">
                           <el-button
                               type="primary"
-                              @click.stop="addTaskAssignment(userInfo.volunteerInfo.volunteerId, '', task)">
-                            接收
+                              @click="showCompleteDialog(task)">
+                            填写维修日志
                           </el-button>
                         </template>
 
-                        <!-- 状态2：已被接收 -->
-                        <template v-else-if="task.status === 2 && RepairAssignArrayCheck(task)">
-                          <!-- 志愿者和管理员角色 -->
-                          <template v-if="['volunteer', 'admin', 'super_admin'].includes(userInfo.role)">
-                            <!-- 用户未参与此任务 - 显示申请加入 -->
-                            <el-button
-                                v-if="ThisVolunteerNotAttended(task, userInfo)"
-                                type="primary"
-                                @click.stop="applyToJoinTask(task)">
-                              申请加入
-                            </el-button>
 
-                            <!-- 用户已申请加入(状态为5) - 显示等待提示 -->
-                            <el-text
-                                v-else-if="ThisVolunteerWaitingForApplyResult(task, userInfo)"
-                                type="success"
-                                size="small">
-                              已申请加入，等待回复
-                            </el-text>
+                        <!-- 状态3：已完成 - 可重新激活 -->
+<!--                        <template v-else-if="task.status === 3">-->
+<!--                          <el-button-->
+<!--                              type="warning"-->
+<!--                              @click="changeTaskStatus(task, 2, '重新激活')">-->
+<!--                            重新激活-->
+<!--                          </el-button>-->
+<!--                        </template>-->
 
-                            <!-- 用户是任务接收者(状态不为5) - 显示操作按钮 -->
-                            <template
-                                v-else-if="ThisVolunteerIsAttended(task, userInfo)">
-                              <el-button
-                                  type="danger"
-                                  @click.stop="changeTaskStatus(task, 4, '取消')">
-                                取消任务
-                              </el-button>
-                              <el-button
-                                  type="success"
-                                  @click.stop="showCompleteDialog(task)">
-                                完成任务
-                              </el-button>
-                            </template>
-                          </template>
+                        <!-- 状态4：已取消 - 可重新激活 -->
+                        <template v-else-if="task.status === 4">
+                          <el-button
+                              type="warning"
+                              @click="changeTaskStatus(task, 2, '重新激活')">
+                            重新激活
+                          </el-button>
                         </template>
                       </div>
                     </div>
@@ -759,6 +768,7 @@ const submitRejectReason = async () => {
               </el-collapse>
             </div>
           </el-card>
+
           <div class="pagination-container">
             <el-pagination
                 v-model:current-page="pagination.currentPage"
@@ -1003,21 +1013,117 @@ const submitRejectReason = async () => {
   cursor: pointer;
 }
 
+.logs-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.log-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: white;
+  border-radius: 4px;
+  border-left: 3px solid #409eff;
+}
+
+.log-images {
+  margin-top: 10px;
+}
+
+.log-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.team-section, .join-requests-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.team-member {
+  display: inline-block;
+  margin-right: 10px;
+  margin-bottom: 5px;
+}
+
+.request-actions {
+  display: flex;
+  gap: 5px;
+}
+
 .action-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
+
 .pagination-container {
   display: flex;
   justify-content: center;
   margin-top: 20px;
   padding: 20px 0;
 }
+
 .image-hint {
   font-size: 12px;
   color: #909399;
   margin-top: 5px;
   margin-left: 10px;
 }
+
+.member-card {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+}
+
+.member-info .el-avatar {
+  margin-right: 15px;
+}
+
+.member-details {
+  flex: 1;
+}
+
+.member-name-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.member-name {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.member-role {
+  margin-right: 8px;
+}
+
+.member-other-info {
+  font-size: 13px;
+  color: #606266;
+}
+
+.member-other-info p {
+  margin: 3px 0;
+  line-height: 1.4;
+}
+.request-actions-inline {
+  display: flex;
+  gap: 5px;
+  margin-top: 8px;
+}
 </style>
+

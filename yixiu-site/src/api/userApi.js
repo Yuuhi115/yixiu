@@ -55,13 +55,19 @@ export function submitRepairFormImg(data) {
     return request.post("/task/uploadRequestImg", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*获取报修单By用户id*/
-export function getRepairFormByUserId() {
-    return request.get("/task/getByUserId", {headers: {Authorization: Cookie.get("Authorization")}})
+export function getRepairFormByUserId(pageNum, pageSize) {
+    return request.get("/task/getByUserId", {params: {pageNum: pageNum, pageSize: pageSize}, headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*更新报修单状态*/
 export function updateRepairFormStatus(requestId, status) {
     return request.put("/task/updateStatus",
         { requestId: requestId, status: status },
         { headers: { Authorization: Cookie.get("Authorization") } }
+    )
+}
+/*获取报修单By筛选器限定用户*/
+export function getRepairFormByFilterLimitUser(queryFilter) {
+    return request.get("/task/getByFilterLimitUser",
+        { params: queryFilter, headers: { Authorization: Cookie.get("Authorization") } }
     )
 }

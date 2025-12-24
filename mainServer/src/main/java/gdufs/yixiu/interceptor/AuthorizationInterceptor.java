@@ -60,7 +60,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 throw new Exception("null user");
             }
             if (! "super_admin".equals(user.getRole())){
-                throw new Exception("insufficient privileges");
+                throw new Exception("Insufficient Privileges");
             }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
@@ -85,7 +85,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 throw new Exception("null user");
             }
             if (! "admin".equals(user.getRole()) && ! "super_admin".equals(user.getRole())){
-                throw new Exception("insufficient privileges");
+                throw new Exception("Insufficient Privileges");
             }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
@@ -112,7 +112,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             if (! "volunteer".equals(user.getRole()) &&
                     !"admin".equals(user.getRole()) &&
                     !"super_admin".equals(user.getRole())) {
-                throw new Exception("insufficient privileges");
+                throw new Exception("Insufficient Privileges");
             }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();

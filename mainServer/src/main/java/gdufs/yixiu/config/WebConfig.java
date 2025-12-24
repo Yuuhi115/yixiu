@@ -31,12 +31,18 @@ public class WebConfig implements WebMvcConfigurer {
     public void setRequestPath(String requestPath) {
         this.requestPath = requestPath;
     }
+    private String repairLogPath;
+    @Value("${resources-path.repairLog}")
+    public void setRepairLogPath(String repairLogPath) {
+        this.repairLogPath = repairLogPath;
+    }
 
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("api/v1/img/users/avatar/**").addResourceLocations("file:" + avatarPath);
         registry.addResourceHandler("api/v1/img/task/request/**").addResourceLocations("file:" + requestPath);
+        registry.addResourceHandler("api/v1/img/task/repairLog/**").addResourceLocations("file:" + repairLogPath);
 
 //        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:/usr/yixiuAssist/image/avatar/");
 //        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:/usr/yixiuAssist/image/request/");

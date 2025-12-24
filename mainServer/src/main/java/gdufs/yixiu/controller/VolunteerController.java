@@ -1,8 +1,10 @@
 package gdufs.yixiu.controller;
 
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
+import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
@@ -93,6 +95,17 @@ public class VolunteerController {
         volunteerModifyDto.setUserId(id);
         log.info("志愿者:{} 正在修改信息", volunteerModifyDto.getUserId());
         volunteerService.updateVolunteerInfo(volunteerModifyDto);
+        log.info("志愿者:{} 更新信息为{}", volunteerModifyDto.getUserId(), volunteerModifyDto);
         return Result.success("更新成功");
+    }
+    @VolunteerLoginToken
+    @GetMapping("/infoListExcludeUserId")
+    public Result queryVolunteerListExcludeMyself(@RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                                 @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize,
+                                                 HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        PageInfo<UserBasicInfoDto> pageInfo = volunteerService.queryVolunteerListExcludeMyself(pageNum, pageSize, userId);
+        return Result.success(pageInfo);
     }
 }

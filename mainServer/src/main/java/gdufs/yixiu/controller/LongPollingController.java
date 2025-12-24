@@ -2,6 +2,7 @@ package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.NotificationDto;
 import gdufs.yixiu.pojo.Notification;
 import gdufs.yixiu.service.NotificationService;
@@ -77,7 +78,7 @@ public class LongPollingController {
         notificationService.sendBroadcast(notification);
         return Result.success("发送成功");
     }
-    @AdminLoginToken
+    @VolunteerLoginToken
     @PostMapping("/systemToUser")
     public Result systemToUser(@RequestBody NotificationDto notificationDto){
         Notification notification = new Notification();

@@ -1,9 +1,8 @@
 package gdufs.yixiu.dao;
 
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.TaskFilterDto;
-import gdufs.yixiu.pojo.RepairAssignment;
-import gdufs.yixiu.pojo.RepairRequest;
-import gdufs.yixiu.pojo.RepairRequestImg;
+import gdufs.yixiu.pojo.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -20,6 +19,7 @@ public interface TaskMapper {
     List<RepairRequest> findTaskByUserId(Integer userId);
     List<RepairRequest> findTaskByStatus(String status);
     List<RepairRequest> findTaskByFilterDto(TaskFilterDto taskFilterDto);
+    List<Integer> findMyTaskIdsByFilterDto(TaskFilterDto taskFilterDto);
     List<RepairRequestImg> findRequestImgByRequestId(Integer requestId);
     List<String> findRequestImgUrlByRequestId(Integer requestId);
     int deleteTaskImgByRequestId(Integer requestId);
@@ -28,5 +28,14 @@ public interface TaskMapper {
     int addTaskApplyAssignment(RepairAssignment repairAssignment);
     int findIsExistAssignment(Integer requestId);
     List<RepairAssignment> findTaskAssignmentByRequestId(Integer requestId);
+    List<Integer> findMyTaskAssignmentIdsByVolunteerId(Integer volunteerId);
+    int updateTaskAssignment(RepairAssignment repairAssignment);
+    int updateTaskAssignmentByRequestIdAndVolunteerId(RepairAssignment repairAssignment);
 
+    int addTaskLog(RepairLog repairLog);
+    int addTaskLogImg(RepairLogImg repairLogImg);
+    List<RepairLogImg> findTaskLogImgByLogId(Integer logId);
+    List<String> findTaskLogImgUrlByLogId(Integer logId);
+    List<RepairLog> findTaskLogByRequestId(Integer requestId);
+    int deleteTaskLogImgByLogId(Integer logId);
 }

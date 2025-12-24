@@ -15,6 +15,7 @@ public class VolunteerInfo {
     private String studentNumber;
     private String majorClass;
     private String grade;
+    private Integer status;
     private Timestamp createTime;
     private Timestamp updateTime;
 }

@@ -15,3 +15,10 @@ export function getUnreadNotifyCount() {
 export function changeToRead(notifyId){
     return request.put("/notify/changeToRead", null, {params: {notifyId: notifyId}, headers: {Authorization: Cookie.get("Authorization")}})
 }
+export function sendSystemNoticeToUser(data){
+    return request.post("/notify/systemToUser", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function sendUserNoticeToUser(data){
+    return request.post("/notify/userToUser", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

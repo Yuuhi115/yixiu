@@ -1,14 +1,15 @@
 package gdufs.yixiu.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.RepairAssignmentDto;
+import gdufs.yixiu.dto.RepairLogDto;
 import gdufs.yixiu.dto.RepairRequestDto;
 import gdufs.yixiu.dto.TaskFilterDto;
-import gdufs.yixiu.pojo.RepairAssignment;
-import gdufs.yixiu.pojo.RepairRequest;
-import gdufs.yixiu.pojo.RepairRequestImg;
-import gdufs.yixiu.pojo.Users;
+import gdufs.yixiu.pojo.*;
 import gdufs.yixiu.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +26,22 @@ public class TaskServiceImpl implements TaskService {
     private TaskMapper taskMapper;
     @Autowired
     private UsersMapper usersMapper;
+    @Autowired
+    private VolunteerMapper volunteerMapper;
     private String serviceRequestUrl;
+    private String serviceRepairLogUrl;
+    private String serviceAvatarUrl;
     @Value("${resources-path.service-request-url}")
     private void setServiceRequestUrl(String serviceRequestUrl) {
         this.serviceRequestUrl = serviceRequestUrl;
+    }
+    @Value("${resources-path.service-repairLog-url}")
+    private void setServiceRepairLogUrl(String serviceRepairLogUrl) {
+        this.serviceRepairLogUrl = serviceRepairLogUrl;
+    }
+    @Value("${resources-path.service-avatar-url}")
+    private void setServiceAvatarUrl(String serviceAvatarUrl) {
+        this.serviceAvatarUrl = serviceAvatarUrl;
     }
     @Override
     public String addTask(RepairRequestDto repairRequestDto) {
@@ -118,18 +131,30 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<RepairRequestDto> queryTaskByUserId(Integer userId) {
+    public PageInfo<RepairRequestDto> queryTaskByUserId(Integer userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
         List<RepairRequest> repairRequests = taskMapper.findTaskByUserId(userId);
         Users user = usersMapper.findUserById(userId);
         if (repairRequests == null) {
             return null;
         }
+        // 直接创建 PageInfo 对象包装原始查询结果
+        PageInfo<RepairRequest> pageInfo = new PageInfo<>(repairRequests);
+
         List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
         for (RepairRequest repairRequest : repairRequests) {
             RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
             repairRequestDtos.add(repairRequestDto);
         }
-        return repairRequestDtos;
+
+        // 保持分页信息
+        PageInfo<RepairRequestDto> resultPageInfo = new PageInfo<>(repairRequestDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+
+        return resultPageInfo;
     }
 
     @Override
@@ -148,47 +173,157 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<RepairRequestDto> queryAllTask() {
+    public PageInfo<RepairRequestDto> queryAllTask(Integer pageNum, Integer pageSize) {
+
+        PageHelper.startPage(pageNum, pageSize);
         List<RepairRequest> repairRequests = taskMapper.findAllTask();
         if (repairRequests == null) {
-            return null;
+            return new PageInfo<>(new ArrayList<>());
         }
+
+        // 直接创建 PageInfo 对象包装原始查询结果
+        PageInfo<RepairRequest> pageInfo = new PageInfo<>(repairRequests);
+
+        // 转换数据
         List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
-        for (RepairRequest repairRequest : repairRequests) {
+        for (RepairRequest repairRequest : pageInfo.getList()) {
             Users user = usersMapper.findUserById(repairRequest.getUserId());
             RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
             repairRequestDtos.add(repairRequestDto);
         }
-        return repairRequestDtos;
+
+        // 保持分页信息
+        PageInfo<RepairRequestDto> resultPageInfo = new PageInfo<>(repairRequestDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+
+        return resultPageInfo;
     }
 
     @Override
-    public List<RepairRequestDto> queryTaskByFilter(TaskFilterDto taskFilterDto) {
+    public PageInfo<RepairRequestDto> queryTaskByFilter(TaskFilterDto taskFilterDto, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
         TaskFilterDto newTaskFilterDto = transformEndTime(taskFilterDto);
         List<RepairRequest> repairRequests = taskMapper.findTaskByFilterDto(newTaskFilterDto);
         if (repairRequests == null) {
             return null;
         }
+        // 直接创建 PageInfo 对象包装原始查询结果
+        PageInfo<RepairRequest> pageInfo = new PageInfo<>(repairRequests);
+        // 转换数据
         List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
         for (RepairRequest repairRequest : repairRequests) {
             Users user = usersMapper.findUserById(repairRequest.getUserId());
             RepairRequestDto repairRequestDto = repairRequestPojoToDto(user, repairRequest);
             repairRequestDtos.add(repairRequestDto);
         }
-        return repairRequestDtos;
+        // 保持分页信息
+        PageInfo<RepairRequestDto> resultPageInfo = new PageInfo<>(repairRequestDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+
+        return resultPageInfo;
+    }
+    @Override
+    public PageInfo<RepairRequestDto> queryMyTaskByFilter(TaskFilterDto taskFilterDto, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        TaskFilterDto newTaskFilterDto = transformEndTime(taskFilterDto);
+        // 获取自己参与的任务(通过查TaskAssignment表)
+        List<Integer> requestIds = taskMapper.findMyTaskIdsByFilterDto(newTaskFilterDto);
+        if (requestIds == null) {
+            return null;
+        }
+        PageInfo<Integer> pageInfo = new PageInfo<>(requestIds);
+        List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
+        for (Integer requestId : requestIds) {
+            RepairRequestDto repairRequestDto = queryTaskById(requestId);
+            repairRequestDtos.add(repairRequestDto);
+        }
+        PageInfo<RepairRequestDto> resultPageInfo = new PageInfo<>(repairRequestDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+        return resultPageInfo;
+    }
+
+    @Override
+    public PageInfo<RepairRequestDto> queryMyTaskByVolunteerId(Integer volunteerId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Integer> requestIds = taskMapper.findMyTaskAssignmentIdsByVolunteerId(volunteerId);
+        if (requestIds == null) {
+            return null;
+        }
+        PageInfo<Integer> pageInfo = new PageInfo<>(requestIds);
+        List<RepairRequestDto> repairRequestDtos = new ArrayList<>();
+        for (Integer requestId : requestIds) {
+            RepairRequestDto repairRequestDto = queryTaskById(requestId);
+            repairRequestDtos.add(repairRequestDto);
+        }
+        PageInfo<RepairRequestDto> resultPageInfo = new PageInfo<>(repairRequestDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+        return resultPageInfo;
+    }
+
+
+    @Override
+    public boolean updateAssignmentStatus(Integer assignId, Integer status, String reason) {
+        RepairAssignment repairAssignment = new RepairAssignment();
+        repairAssignment.setAssignId(assignId);
+        repairAssignment.setStatus(status);
+        repairAssignment.setRemarks(reason);
+        return taskMapper.updateTaskAssignment(repairAssignment) == 1;
+    }
+
+    @Override
+    public boolean updateAssignmentStatusByRequestIdAndVolunteerId(Integer requestId, Integer volunteerId, Integer status) {
+        RepairAssignment repairAssignment = new RepairAssignment();
+        repairAssignment.setRequestId(requestId);
+        repairAssignment.setVolunteerId(volunteerId);
+        repairAssignment.setStatus(status);
+        return taskMapper.updateTaskAssignmentByRequestIdAndVolunteerId(repairAssignment) == 1;
     }
 
     @Override
     public RepairRequestDto repairRequestPojoToDto(Users users, RepairRequest repairRequest) {
         RepairRequestDto repairRequestDto = new RepairRequestDto();
+
+        // 拼接维修申请图片信息
         List<String> imgUrls = taskMapper.findRequestImgUrlByRequestId(repairRequest.getRequestId());
         List<String> modifyImgUrls = new ArrayList<>();
         for (String url : imgUrls){
             url = serviceRequestUrl + url;
             modifyImgUrls.add(url);
         }
+        // 拼接任务分配单信息
         List<RepairAssignment> repairAssignments = taskMapper.findTaskAssignmentByRequestId(repairRequest.getRequestId());
-        repairRequestDto.setRepairAssignment(repairAssignments);
+        List<RepairAssignmentDto> repairAssignmentDtos = new ArrayList<>();
+        for (RepairAssignment repairAssignment : repairAssignments){
+            RepairAssignmentDto repairAssignmentDto = repairAssignmentPojoToDto(repairAssignment);
+            repairAssignmentDtos.add(repairAssignmentDto);
+        }
+        repairRequestDto.setRepairAssignment(repairAssignmentDtos);
+
+        // 拼接任务日志信息
+        List<RepairLog> repairLogs = taskMapper.findTaskLogByRequestId(repairRequest.getRequestId());
+        for (RepairLog repairLog : repairLogs){
+            List<String> repairLogImgs = taskMapper.findTaskLogImgUrlByLogId(repairLog.getLogId());
+            List<String> modifyRepairLogImgs = new ArrayList<>();
+            for (String url : repairLogImgs){
+                url = serviceRepairLogUrl + url;
+                modifyRepairLogImgs.add(url);
+            }
+            repairLog.setLogImgUrl(modifyRepairLogImgs);
+            repairLog.setVolunteerName(volunteerMapper.findVolunteerNameByVolunteerId(repairLog.getVolunteerId()));
+        }
+        repairRequestDto.setRepairLog(repairLogs);
         repairRequestDto.setUserId(users.getUserId());
         repairRequestDto.setUsername(users.getUsername());
         repairRequestDto.setRealName(users.getRealName());
@@ -210,6 +345,28 @@ public class TaskServiceImpl implements TaskService {
         repairRequestDto.setUpdateTime(repairRequest.getUpdateTime());
         repairRequestDto.setCompleteTime(repairRequest.getCompleteTime());
         return repairRequestDto;
+    }
+    @Override
+    public RepairAssignmentDto repairAssignmentPojoToDto(RepairAssignment repairAssignment) {
+        VolunteerInfo volunteer = volunteerMapper.findVolunteerInfoByVolunteerId(repairAssignment.getVolunteerId());
+        Users users = usersMapper.findUserRealNameAndAvatarById(volunteer.getUserId());
+        String realName = users.getRealName();
+        String avatar = users.getAvatar();
+        RepairAssignmentDto repairAssignmentDto = new RepairAssignmentDto();
+        repairAssignmentDto.setAssignId(repairAssignment.getAssignId());
+        repairAssignmentDto.setVolunteerName(realName);
+        repairAssignmentDto.setAvatar(serviceAvatarUrl + avatar);
+        repairAssignmentDto.setMajorClass(volunteer.getMajorClass());
+        repairAssignmentDto.setGrade(volunteer.getGrade());
+        repairAssignmentDto.setAssignId(repairAssignment.getAssignId());
+        repairAssignmentDto.setRequestId(repairAssignment.getRequestId());
+        repairAssignmentDto.setVolunteerId(repairAssignment.getVolunteerId());
+        repairAssignmentDto.setIsLeader(repairAssignment.getIsLeader());
+        repairAssignmentDto.setAssignedTime(repairAssignment.getAssignedTime());
+        repairAssignmentDto.setStatus(repairAssignment.getStatus());
+        repairAssignmentDto.setRemarks(repairAssignment.getRemarks());
+        repairAssignmentDto.setUpdateTime(repairAssignment.getUpdateTime());
+        return repairAssignmentDto;
     }
 
     @Override
@@ -233,4 +390,37 @@ public class TaskServiceImpl implements TaskService {
     public void deleteTaskImgByRequestId(Integer requestId) {
         taskMapper.deleteTaskImgByRequestId(requestId);
     }
+
+    @Override
+    public Integer addTaskLog(RepairLogDto repairLogDto) {
+        RepairLog repairLog = new RepairLog();
+        repairLog.setVolunteerId(repairLogDto.getVolunteerId());
+        repairLog.setRequestId(repairLogDto.getRequestId());
+        repairLog.setLogContent(repairLogDto.getLogContent());
+        repairLog.setRepairDuration(repairLogDto.getRepairDuration());
+        repairLog.setSolutionSummary(repairLogDto.getSolutionSummary());
+        int row = taskMapper.addTaskLog(repairLog);
+        if (row == 1) {
+            RepairRequest repairRequest = new RepairRequest();
+            repairRequest.setRequestId(repairLogDto.getRequestId());
+            repairRequest.setStatus(3);
+            int updateRow = taskMapper.updateTask(repairRequest);
+            if (updateRow == 1) {
+                return repairLog.getLogId();
+            }
+            return null;
+        }
+        return null;
+    }
+
+    @Override
+    public List<RepairLogImg> queryTaskLogImgByLogId(Integer logId) {
+        return taskMapper.findTaskLogImgByLogId(logId);
+    }
+
+    @Override
+    public void deleteTaskLogImgByLogId(Integer logId) {
+        taskMapper.deleteTaskLogImgByLogId(logId);
+    }
+
 }

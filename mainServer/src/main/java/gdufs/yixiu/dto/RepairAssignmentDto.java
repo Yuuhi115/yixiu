@@ -12,6 +12,10 @@ public class RepairAssignmentDto {
     private Integer assignId;
     private Integer requestId;
     private Integer volunteerId;
+    private String volunteerName;
+    private String majorClass;
+    private String grade;
+    private String avatar;
     private Integer isLeader;
     private Timestamp assignedTime;
     private Integer status;

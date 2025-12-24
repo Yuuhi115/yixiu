@@ -1,7 +1,10 @@
 package gdufs.yixiu.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
+import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
@@ -14,6 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -94,5 +99,39 @@ public class VolunteerServiceImpl implements VolunteerService {
         volunteerInfo.setMajorClass(volunteerModifyDto.getMajorClass());
         volunteerInfo.setGrade(volunteerModifyDto.getGrade());
         volunteerMapper.updateVolunteerInfo(volunteerInfo);
+    }
+
+    @Override
+    public Integer queryVolunteerIdByUserId(Integer userId) {
+        return volunteerMapper.findVolunteerIdByUserId(userId);
+    }
+
+    @Override
+    public PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Users> volunteers = usersMapper.findAllVolunteersExcludeMySelf(userId);
+        PageInfo<Users> pageInfo = new PageInfo<>(volunteers);
+        List<UserBasicInfoDto> userBasicInfoDtos = new ArrayList<>();
+        for (Users volunteer : volunteers){
+            UserBasicInfoDto userBasicInfoDto = new UserBasicInfoDto();
+            VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(volunteer.getUserId());
+            userBasicInfoDto.setUserId(volunteer.getUserId());
+            userBasicInfoDto.setUsername(volunteer.getUsername());
+            userBasicInfoDto.setRealName(volunteer.getRealName());
+            userBasicInfoDto.setPhone(volunteer.getPhone());
+            userBasicInfoDto.setEmail(volunteer.getEmail());
+            userBasicInfoDto.setAvatar(avatarPath + volunteer.getAvatar());
+            userBasicInfoDto.setRole(volunteer.getRole());
+            userBasicInfoDto.setStatus(volunteer.getStatus());
+            userBasicInfoDto.setLastLogin(volunteer.getLastLogin());
+            userBasicInfoDto.setVolunteerInfo(volunteerInfo);
+            userBasicInfoDtos.add(userBasicInfoDto);
+        }
+        PageInfo<UserBasicInfoDto> pageInfoResult = new PageInfo<>(userBasicInfoDtos);
+        pageInfoResult.setPages(pageInfo.getPages());
+        pageInfoResult.setPageNum(pageInfo.getPageNum());
+        pageInfoResult.setPageSize(pageInfo.getPageSize());
+        pageInfoResult.setTotal(pageInfo.getTotal());
+        return pageInfoResult;
     }
 }

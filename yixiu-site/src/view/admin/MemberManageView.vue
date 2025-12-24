@@ -6,6 +6,7 @@ import {getUserInfo} from "../../api/userApi.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import router from "../../router/index.js";
 import {inviteVolunteer} from "../../api/adminApi.js";
+import {getVolunteerInfoListExcludeMyself} from "../../api/volunteerApi.js";
 
 const userInfoRef = ref()
 
@@ -52,10 +53,9 @@ const roleOptions = [
 
 // 状态选项
 const statusOptions = [
+  {label: '退队', value: 0},
   {label: '正常', value: 1},
-  {label: '退队', value: 2},
-  {label: '退休', value: 3},
-  {label: '冻结', value: 4}
+  {label: '退休', value: 2}
 ]
 
 // 表单验证规则
@@ -73,7 +73,7 @@ const handleEdit = (row) => {
   // 只传递可编辑的字段
   volunteerForm.userId = row.userId
   volunteerForm.role = row.role
-  volunteerForm.status = row.status
+  volunteerForm.status = row.volunteerInfo.status
   dialogVisible.value = true
 }
 
@@ -169,25 +169,13 @@ onMounted(async () => {
 const fetchVolunteers = async () => {
   loading.value = true
   try {
-    // 调用实际API获取志愿者列表
-    const response = await request({
-      url: '/api/admin/volunteers',
-      method: 'get',
-      params: {
-        keyword: searchKeyword.value,
-        page: pagination.currentPage,
-        size: pagination.pageSize
-      }
-    })
-
-    if (response.code === 200) {
-      volunteerList.value = response.data.records || response.data.list || []
-      pagination.total = response.data.total || 0
-    } else {
-      ElMessage.error(response.msg || '获取志愿者列表失败')
-      volunteerList.value = []
-      pagination.total = 0
+    const response = await getVolunteerInfoListExcludeMyself(pagination.currentPage, pagination.pageSize)
+    if (response.code !== 200) {
+      ElMessage.error(response.msg)
+      return
     }
+    volunteerList.value = response.data.list
+    pagination.total = response.data.total
   } catch (error) {
     ElMessage.error('获取志愿者列表失败: ' + error.message)
     volunteerList.value = []
@@ -217,21 +205,23 @@ const getRoleLabel = (role) => {
 
 // 获取状态标签文本
 const getStatusLabel = (status) => {
-  const option = statusOptions.find(item => item.value === status)
-  return option ? option.label : status
+  const statusMap = {
+    0: '退队',
+    1: '正常',
+    2: '退休'
+  }
+  return statusMap[status] || status
 }
 
 // 获取状态标签类型
 const getStatusTagType = (status) => {
   switch (status) {
+    case 0:
+      return 'warning'  // 退队
     case 1:
       return 'success'  // 正常
     case 2:
-      return 'warning'  // 退队
-    case 3:
       return 'info'     // 退休
-    case 4:
-      return 'danger'   // 冻结
     default:
       return 'info'
   }
@@ -448,8 +438,8 @@ const resetInviteForm = () => {
             </el-table-column>
             <el-table-column prop="status" label="状态" width="100">
               <template #default="scope">
-                <el-tag :type="getStatusTagType(scope.row.status)">
-                  {{ getStatusLabel(scope.row.status) }}
+                <el-tag :type="getStatusTagType(scope.row.volunteerInfo.status)">
+                  {{ getStatusLabel(scope.row.volunteerInfo.status) }}
                 </el-tag>
               </template>
             </el-table-column>

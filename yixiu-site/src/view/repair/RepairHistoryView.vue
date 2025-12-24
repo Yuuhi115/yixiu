@@ -2,7 +2,7 @@
 import { Message } from "@element-plus/icons-vue"
 import { onMounted, reactive, ref } from "vue"
 import Cookie from "js-cookie"
-import { getRepairFormByUserId, getUserInfo } from "../../api/userApi.js"
+import {getRepairFormByFilterLimitUser, getRepairFormByUserId, getUserInfo} from "../../api/userApi.js"
 import { ElMessage } from "element-plus"
 import router from "../../router/index.js"
 
@@ -22,6 +22,12 @@ const userInfo = reactive({
 
 // 维修记录数据
 const repairRecordsRef = ref([])
+
+const pagination = reactive({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
 
 // 筛选条件
 const filterForm = reactive({
@@ -62,21 +68,57 @@ const queryUserInfo = async () => {
 const activeNames = ref([])
 
 const loadRepairHistory = async () => {
-  const response = await getRepairFormByUserId()
+  const response = await getRepairFormByUserId(pagination.currentPage, pagination.pageSize)
   if (response.code === 200) {
     // 赋值给 repairRecordsRef 列表
-    repairRecordsRef.value = response.data
+    repairRecordsRef.value = response.data.list
+    pagination.total = response.data.total
     console.log(repairRecordsRef.value)
   } else {
     ElMessage.error(response.msg)
   }
 }
 
-// 处理筛选
-const handleFilter = () => {
-  // 实际应用中应调用API并传递筛选参数
-  console.log('筛选条件:', filterForm)
-  ElMessage.info('筛选功能已触发，请连接实际API')
+// 构建筛选条件
+const buildQueryParams = () => {
+  const params = {}
+
+  // 时间范围条件
+  if (filterForm.createTime?.length) {
+    params.createStartTime = filterForm.createTime[0]
+    params.createEndTime = filterForm.createTime[1]
+  }
+
+  if (filterForm.updateTime?.length) {
+    params.updateStartTime = filterForm.updateTime[0]
+    params.updateEndTime = filterForm.updateTime[1]
+  }
+
+  // 状态条件
+  if (filterForm.status !== '' && filterForm.status != null) {
+    params.status = filterForm.status
+  }
+
+  return params
+}
+
+// 处理任务筛选
+const handleFilter = async () => {
+  const queryParams = buildQueryParams()
+  // console.log('筛选条件:', queryParams)
+  queryParams.pageNum = pagination.currentPage
+  queryParams.pageSize = pagination.pageSize
+  queryParams.userId = userInfo.userId
+
+  const response = await getRepairFormByFilterLimitUser(queryParams)
+
+  if (response.code === 200) {
+    repairRecordsRef.value = response.data.list
+    pagination.total = response.data.total
+    console.log(repairRecordsRef.value)
+  } else {
+    ElMessage.error(response.msg)
+  }
 }
 
 // 重置筛选
@@ -84,6 +126,7 @@ const resetFilter = () => {
   filterForm.createTime = []
   filterForm.updateTime = []
   filterForm.status = ''
+  pagination.currentPage = 1
   loadRepairHistory()
 }
 
@@ -97,12 +140,32 @@ const getStatusLabel = (status) => {
 const getStatusType = (status) => {
   switch(status) {
     case 0: return 'warning'     // 已提交待审核
-    case 1: return 'primary'  // 审核通过
-    case 2: return 'primary'  // 已接收
-    case 3: return 'success'   // 已完成
-    case 4: return 'danger'    // 已取消
-    case 5: return 'success'  // 用户自行解决
-    case 6: return 'danger' //已被拒绝
+    case 1: return 'primary'     // 审核通过
+    case 2: return 'primary'     // 已接收
+    case 3: return 'success'     // 已完成
+    case 4: return 'danger'      // 已取消
+    case 5: return 'success'     // 用户自行解决
+    case 6: return 'danger'      // 已被拒绝
+  }
+}
+
+// 分页改变处理函数
+const handlePageChange = (newPage) => {
+  pagination.currentPage = newPage
+  if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
+    handleFilter()
+  } else {
+    loadRepairHistory()
+  }
+}
+
+const handleSizeChange = (newSize) => {
+  pagination.pageSize = newSize
+  pagination.currentPage = 1
+  if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
+    handleFilter()
+  } else {
+    loadRepairHistory()
   }
 }
 </script>
@@ -215,8 +278,8 @@ const getStatusType = (status) => {
 
           <!-- 视图切换下拉菜单 -->
           <div class="view-switcher">
-            <el-badge :value="repairRecordsRef.length" class="records-count" type="primary">
-              共 {{ repairRecordsRef.length }} 条记录
+            <el-badge :value="pagination.total" class="records-count" type="primary">
+              共 {{ pagination.total }} 条记录
             </el-badge>
           </div>
 
@@ -323,6 +386,19 @@ const getStatusType = (status) => {
               </el-collapse>
             </div>
           </el-card>
+
+          <!-- 分页组件 -->
+          <div class="pagination-container">
+            <el-pagination
+                v-model:current-page="pagination.currentPage"
+                v-model:page-size="pagination.pageSize"
+                :page-sizes="[10, 20, 50]"
+                :total="pagination.total"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handlePageChange"
+            />
+          </div>
         </div>
       </el-main>
     </el-container>
@@ -469,5 +545,12 @@ const getStatusType = (status) => {
   height: 100px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 20px 0;
 }
 </style>

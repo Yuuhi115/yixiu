@@ -1,14 +1,13 @@
 package gdufs.yixiu.controller;
 
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
-import gdufs.yixiu.dto.RepairAssignmentDto;
-import gdufs.yixiu.dto.RepairRequestDto;
-import gdufs.yixiu.dto.TaskFilterDto;
-import gdufs.yixiu.dto.TaskStatusDto;
+import gdufs.yixiu.dto.*;
 import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
+import gdufs.yixiu.service.VolunteerService;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +28,8 @@ import java.util.*;
 public class TaskController {
     @Autowired
     private TaskService taskService;
+    @Autowired
+    private VolunteerService volunteerService;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -101,23 +102,27 @@ public class TaskController {
 
     @UserLoginToken
     @GetMapping("/getByUserId")
-    public Result getTaskByUserId(HttpServletRequest request) {
+    public Result getTaskByUserId(HttpServletRequest request,
+                                  @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                  @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 获取自己的报修单", userId);
-        List<RepairRequestDto> repairRequestDtos = taskService.queryTaskByUserId(userId);
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryTaskByUserId(userId, pageNum, pageSize);
         if (repairRequestDtos == null) {
             return Result.fail("没有此用户报修单");
         }
         return Result.success(repairRequestDtos);
     }
-    @UserLoginToken
+    @VolunteerLoginToken
     @GetMapping("/getAll")
-    public Result getAllTask(HttpServletRequest request) {
+    public Result getAllTask(HttpServletRequest request,
+                             @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                             @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 获取所有报修单", userId);
-        List<RepairRequestDto> repairRequestDtos = taskService.queryAllTask();
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryAllTask(pageNum, pageSize);
         if (repairRequestDtos == null) {
             return Result.fail("没有报修单");
         }
@@ -126,12 +131,14 @@ public class TaskController {
     @VolunteerLoginToken
     @GetMapping("/getByFilter")
     public Result getTaskByFilter(TaskFilterDto taskFilterDto,
-                                  HttpServletRequest request) {
+                                  HttpServletRequest request,
+                                  @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                  @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         log.info("用户No.{} 获取报修单", userId);
 //        log.info("筛选条件为 {}", taskFilterDto);
-        List<RepairRequestDto> repairRequestDtos = taskService.queryTaskByFilter(taskFilterDto);
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryTaskByFilter(taskFilterDto, pageNum, pageSize);
         if (repairRequestDtos == null) {
             return Result.fail("未找到此条件的报修单");
         }
@@ -140,15 +147,15 @@ public class TaskController {
     @UserLoginToken
     @GetMapping("/getByFilterLimitUser")
     public Result getTaskByFilterLimitUser(TaskFilterDto taskFilterDto,
-                                  HttpServletRequest request) {
+                                           HttpServletRequest request,
+                                           @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                           @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        if (!taskFilterDto.getUserId().equals(userId)) {
-            return Result.fail("身份信息异常");
-        }
         log.info("用户No.{} 获取报修单", userId);
         log.info("筛选条件为 {}", taskFilterDto);
-        List<RepairRequestDto> repairRequestDtos = taskService.queryTaskByFilter(taskFilterDto);
+        taskFilterDto.setUserId(userId);
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryTaskByFilter(taskFilterDto, pageNum, pageSize);
         if (repairRequestDtos == null) {
             return Result.fail("未找到此条件的报修单");
         }
@@ -201,5 +208,93 @@ public class TaskController {
                               HttpServletRequest request) {
         String result = taskService.applyToJoinTask(repairAssignmentDto);
         return result == null ? Result.fail("添加异常") : Result.success("申请成功");
+    }
+    @VolunteerLoginToken
+    @PostMapping("/addLog")
+    public Result addTaskLog(@RequestBody RepairLogDto taskLogDto,
+                             HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 添加报修单No.{} 日志", userId, taskLogDto.getRequestId());
+        Integer logId = taskService.addTaskLog(taskLogDto);
+        boolean result = taskService.updateAssignmentStatusByRequestIdAndVolunteerId(taskLogDto.getRequestId(), taskLogDto.getVolunteerId(), 1);
+        if (logId == null || !result) {
+            return Result.fail("添加异常");
+        }
+        Map<String, Object> map = new HashMap<>();
+        map.put("logId", logId);
+        return Result.success(map);
+    }
+    @VolunteerLoginToken
+    @PostMapping("/uploadLogImg")
+    public Result uploadLogImg(@RequestParam("logId") Integer logId,
+                               @RequestParam("logImg") MultipartFile[] files,
+                               HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 上传日志No.{} 的附属图片", userId, logId);
+        int count = 1;
+        List<String> imgUrls = new ArrayList<>();
+
+        Integer originalImgNum = taskService.queryTaskLogImgByLogId(logId).size();
+        if (originalImgNum != 0) {
+            taskService.deleteTaskLogImgByLogId(logId);
+        }
+        for (MultipartFile file : files) {
+            String imgUrl = imgUploadService.uploadRepairLogImg(file, logId, count);
+            imgUrls.add(imgUrl);
+            count++;
+        }
+        Map<String, List<String>> map = new HashMap<>();
+        map.put("logImgUrls", imgUrls);
+        return Result.success(map);
+    }
+    @VolunteerLoginToken
+    @GetMapping("/getMyTaskByVolunteerId")
+    public Result getMyTaskByVolunteerId(HttpServletRequest request,
+                                         @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                         @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
+        String token = request.getHeader("Authorization");
+        Integer volunteerId = volunteerService.queryVolunteerIdByUserId(jwtUtils.getInfoFromToken(token).getId());
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryMyTaskByVolunteerId(volunteerId, pageNum, pageSize);
+        return repairRequestDtos == null ? Result.fail("未获取到我的任务") : Result.success(repairRequestDtos);
+    }
+    @VolunteerLoginToken
+    @PutMapping("/approveTaskApply")
+    public Result approveTaskApply(@RequestBody AssignCheckDto assignCheckDto,
+                                       HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 同意任务协作申请No.{}", userId, assignCheckDto.getAssignId());
+        boolean result = taskService.updateAssignmentStatus(assignCheckDto.getAssignId(), 0, "");
+        return result ? Result.success("同意加入成功") : Result.fail("不存在该assignId");
+    }
+    @VolunteerLoginToken
+    @PutMapping("/rejectTaskApply")
+    public Result rejectTaskApply(@RequestBody AssignCheckDto assignCheckDto,
+                                   HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 拒绝任务协作申请No.{}", userId, assignCheckDto.getAssignId());
+        boolean result = taskService.updateAssignmentStatus(assignCheckDto.getAssignId(), 6, assignCheckDto.getReason());
+        return result ? Result.success("拒绝加入成功") : Result.fail("不存在该assignId");
+    }
+    @VolunteerLoginToken
+    @GetMapping("/getMyTaskByFilter")
+    public Result getMyTaskByFilter(TaskFilterDto taskFilterDto,
+                                    HttpServletRequest request,
+                                    @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                    @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 获取自己已接取的任务", userId);
+//        log.info("筛选条件为 {}", taskFilterDto);
+        Integer volunteerId = volunteerService.queryVolunteerIdByUserId(jwtUtils.getInfoFromToken(token).getId());
+        taskFilterDto.setVolunteerId(volunteerId);
+        PageInfo<RepairRequestDto> repairRequestDtos = taskService.queryMyTaskByFilter(taskFilterDto, pageNum, pageSize);
+        if (repairRequestDtos == null) {
+            return Result.fail("未找到此条件的报修单");
+        }
+        return Result.success(repairRequestDtos);
     }
 }
