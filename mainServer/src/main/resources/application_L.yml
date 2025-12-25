@@ -80,3 +80,6 @@ pagehelper:
   reasonable: false
   support-methods-arguments: true
   params: count=countSql
+logging:
+  level:
+    com.github.pagehelper: debug

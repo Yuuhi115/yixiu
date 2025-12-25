@@ -60,18 +60,32 @@ export function getVolunteerInfoListExcludeMyself(pageNum, pageSize) {
     return request.get("/volunteer/infoListExcludeUserId", {params: {pageNum: pageNum, pageSize: pageSize},
         headers: {Authorization: Cookie.get("Authorization")}})
 }
+// 获取志愿者信息列表 通过筛选器(除了自己)
+export function getVolunteerInfoListByFilterExcludeMyself(queryFilter) {
+    return request.get("/volunteer/infoListByFilterExcludeUserId",
+        {
+            params: queryFilter,
+            headers: {Authorization: Cookie.get("Authorization")}
+        })
+}
+// 获取志愿者信息列表(根据用户名或姓名)
+export function getVolunteerInfoListByName(pageNum, pageSize, name) {
+    return request.get("/volunteer/infoListByName", {params: {pageNum: pageNum, pageSize: pageSize, name: name},
+    headers: {Authorization: Cookie.get("Authorization")}})
+}
+// 获取自己维修任务列表
 export function getMyTaskList(pageNum, pageSize){
     return request.get("/task/getMyTaskByVolunteerId", {params: {pageNum: pageNum, pageSize: pageSize},
         headers: {Authorization: Cookie.get("Authorization")}})
 }
-
+// 处理申请加入维修任务
 export function handleJoinApplication(data, action){
     if (action === "approve"){
         return request.put("/task/approveTaskApply", data, {headers: {Authorization: Cookie.get("Authorization")}})
     }
     return request.put("/task/rejectTaskApply", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
-
+// 获取自己维修任务列表(根据过滤条件)
 export function getMyTaskListFiltered(queryFilter){
     return request.get("/task/getMyTaskByFilter",
         {

@@ -1,8 +1,11 @@
 package gdufs.yixiu.service.impl;
 
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
+import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.AdminService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.EmailUtils;
@@ -23,6 +26,8 @@ public class AdminServiceImpl implements AdminService {
     private UsersMapper usersMapper;
     @Autowired
     private UsersService usersService;
+    @Autowired
+    private VolunteerMapper volunteerMapper;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -74,5 +79,23 @@ public class AdminServiceImpl implements AdminService {
         emailUtils.sendCustomVerifyCode(email, "广外义修帮志愿者注册邀请码","【广外义修帮】您的注册邀请码是" + code + "。邀请码有效期为24小时，请尽快登录网站进行注册。如遇邀请码过期，请联系管理员重新发送");
         log.info("邀请码{}已发送至{}",code, email);
         return code;
+    }
+
+    @Override
+    public Integer modifyVolunteerInfo(VolunteerModifyDto volunteerModifyDto) {
+        Users user = new Users();
+        user.setUserId(volunteerModifyDto.getUserId());
+        user.setRealName(volunteerModifyDto.getRealName());
+
+        VolunteerInfo volunteerInfo = new VolunteerInfo();
+        volunteerInfo.setUserId(volunteerModifyDto.getUserId());
+        volunteerInfo.setStudentNumber(volunteerModifyDto.getStudentNumber());
+        volunteerInfo.setMajorClass(volunteerModifyDto.getMajorClass());
+        volunteerInfo.setGrade(volunteerModifyDto.getGrade());
+        volunteerInfo.setStatus(volunteerModifyDto.getStatus());
+
+        int basicRow = usersMapper.updateUser(user);
+        int volunteerRow = volunteerMapper.updateVolunteerInfo(volunteerInfo);
+        return (basicRow + volunteerRow) == 2 ? 1 : 0;
     }
 }

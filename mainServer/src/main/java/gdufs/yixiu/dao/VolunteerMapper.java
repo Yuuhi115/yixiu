@@ -1,5 +1,6 @@
 package gdufs.yixiu.dao;
 
+import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -15,4 +16,5 @@ public interface VolunteerMapper {
     String findVolunteerNameByUserId(Integer userId);
     String findVolunteerNameByVolunteerId(Integer volunteerId);
     Integer findVolunteerIdByUserId(Integer userId);
+    List<Users> findVolunteersByName(String name);
 }

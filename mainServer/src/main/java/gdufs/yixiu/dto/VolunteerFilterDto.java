@@ -7,11 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class VolunteerModifyDto {
-    private Integer userId;
-    private String realName;
-    private String studentNumber;
+public class VolunteerFilterDto {
+    private Integer excludeUserId;
+    private Integer status;
     private String majorClass;
     private String grade;
-    private Integer status;
 }

@@ -23,6 +23,7 @@ import router from "../router/index.js";
 import {checkToken} from "../utils/userUtils.js";
 import { startNotifyPoll, stopNotifyPoll } from "../utils/notificationUtils.js";
 import {getUnreadNotifyCount} from "../api/notificationApi.js";
+import {AcceptAdmin, AcceptVolunteer} from "../utils/roleCheckUtils.js";
 
 const userInfoRef = ref()
 let unreadNotifyCount = ref(0)
@@ -179,32 +180,43 @@ const logout = async () => {
                 预约历史
               </el-menu-item>
             </el-sub-menu>
-            <el-sub-menu index="2" v-if="userInfo.role === 'admin' || userInfo.role === 'super_admin'">
+            <el-sub-menu index="2" v-if="AcceptAdmin(userInfo)">
               <template #title>
                 <el-icon>
                   <icon-menu />
                 </el-icon>
                 <span>队伍管理</span>
               </template>
-              <el-menu-item index="2-1" v-if="userInfo.role === 'super_admin'" @click="() => router.push('/admin/memberManage')">
+              <el-menu-item index="2-1" @click="() => router.push('/admin/memberManage')">
                 成员管理
               </el-menu-item>
             </el-sub-menu>
-            <el-sub-menu index="3" v-if="userInfo.role !== 'student'">
+            <el-sub-menu index="3" v-if="AcceptAdmin(userInfo)">
+              <template #title>
+                <el-icon>
+                  <icon-menu />
+                </el-icon>
+                <span>站务管理</span>
+              </template>
+              <el-menu-item index="3-1" @click="() => router.push('/admin/userManage')">
+                用户管理
+              </el-menu-item>
+            </el-sub-menu>
+            <el-sub-menu index="4" v-if="AcceptVolunteer(userInfo)">
               <template #title>
                 <el-icon>
                   <icon-menu />
                 </el-icon>
                 <span>任务中心</span>
               </template>
-              <el-menu-item index="3-1" @click="() => router.push('/taskCenter/list')">
+              <el-menu-item index="4-1" @click="() => router.push('/taskCenter/list')">
                 任务列表
               </el-menu-item>
-              <el-menu-item index="3-2" @click="() => router.push('/taskCenter/myTask')">
+              <el-menu-item index="4-2" @click="() => router.push('/taskCenter/myTask')">
                 我的任务
               </el-menu-item>
             </el-sub-menu>
-            <el-sub-menu index="4">
+            <el-sub-menu index="5">
               <template #title>
                 <el-icon>
                   <location/>
@@ -212,26 +224,26 @@ const logout = async () => {
                 <span>个人中心</span>
               </template>
               <!--            <el-menu-item-group title="Group One">-->
-              <el-menu-item index="4-1" @click="() => router.push('/user/basicInfo')">
+              <el-menu-item index="5-1" @click="() => router.push('/user/basicInfo')">
                 基本信息
               </el-menu-item>
               <!--            </el-menu-item-group>-->
               <!--            <el-menu-item-group title="Group Two">-->
-              <el-menu-item index="4-2">我的收藏</el-menu-item>
+              <el-menu-item index="5-2">我的收藏</el-menu-item>
               <!--            </el-menu-item-group>-->
-              <el-menu-item index="4-3" @click="() => router.push('/user/messageCenter')">
+              <el-menu-item index="5-3" @click="() => router.push('/user/messageCenter')">
 <!--                <template #title>item four</template>-->
 <!--                <el-menu-item index="1-4-1">item one</el-menu-item>-->
                 消息中心
               </el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="5">
+            <el-menu-item index="6">
               <el-icon>
                 <document/>
               </el-icon>
               <span>义修社区</span>
             </el-menu-item>
-            <el-menu-item index="6">
+            <el-menu-item index="7">
               <el-icon>
                 <setting/>
               </el-icon>

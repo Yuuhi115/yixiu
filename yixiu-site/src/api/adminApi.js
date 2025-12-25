@@ -4,3 +4,7 @@ import Cookie from "js-cookie";
 export function inviteVolunteer(email) {
     return request.get("/admin/inviteCode", {headers: {Authorization: Cookie.get("Authorization")}, params: {email: email}})
 }
+
+export function modifyVolunteer(data) {
+    return request.put("/admin/volunteerInfo", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

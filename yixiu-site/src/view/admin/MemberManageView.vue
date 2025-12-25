@@ -5,8 +5,13 @@ import Cookie from "js-cookie";
 import {getUserInfo} from "../../api/userApi.js";
 import {ElMessage, ElMessageBox} from "element-plus";
 import router from "../../router/index.js";
-import {inviteVolunteer} from "../../api/adminApi.js";
-import {getVolunteerInfoListExcludeMyself} from "../../api/volunteerApi.js";
+import {inviteVolunteer, modifyVolunteer} from "../../api/adminApi.js";
+import {
+  getVolunteerInfoListByFilterExcludeMyself,
+  getVolunteerInfoListByName,
+  getVolunteerInfoListExcludeMyself
+} from "../../api/volunteerApi.js";
+import {AcceptSuperAdmin} from "../../utils/roleCheckUtils.js";
 
 const userInfoRef = ref()
 
@@ -41,7 +46,10 @@ const pagination = reactive({
 const volunteerForm = reactive({
   userId: '',
   role: '',  // 身份
-  status: '' // 状态
+  status: '', // 状态
+  realName: '', // 姓名
+  grade: '', // 年级
+  majorClass: '' // 专业班级
 })
 
 // 身份选项
@@ -65,6 +73,15 @@ const formRules = {
   ],
   status: [
     {required: true, message: '请选择状态', trigger: 'change'}
+  ],
+  realName: [
+    {required: true, message: '请输入姓名', trigger: 'blur'}
+  ],
+  grade: [
+    {required: true, message: '请输入年级', trigger: 'blur'}
+  ],
+  majorClass: [
+    {required: true, message: '请输入专业班级', trigger: 'blur'}
   ]
 }
 
@@ -73,6 +90,9 @@ const handleEdit = (row) => {
   // 只传递可编辑的字段
   volunteerForm.userId = row.userId
   volunteerForm.role = row.role
+  volunteerForm.realName = row.realName
+  volunteerForm.grade = row.volunteerInfo.grade
+  volunteerForm.majorClass = row.volunteerInfo.majorClass
   volunteerForm.status = row.volunteerInfo.status
   dialogVisible.value = true
 }
@@ -89,18 +109,23 @@ const handleDelete = (row) => {
       }
   ).then(async () => {
     try {
-      // 调用实际的删除API
-      const response = await request({
-        url: `/api/admin/volunteers/${row.userId}`,
-        method: 'delete'
-      })
-
-      if (response.code === 200) {
-        ElMessage.success('删除成功')
-        await fetchVolunteers()
-      } else {
-        ElMessage.error(response.msg || '删除失败')
+      if (!AcceptSuperAdmin(userInfo)) {
+        ElMessage.error('无操作权限')
+        return
       }
+      // 调用实际的删除API
+      // const response = await request({
+      //   url: `/api/admin/volunteers/${row.userId}`,
+      //   method: 'delete'
+      // })
+      //
+      // if (response.code === 200) {
+      //   ElMessage.success('删除成功')
+      //   await fetchVolunteers()
+      // } else {
+      //   ElMessage.error(response.msg || '删除失败')
+      // }
+      ElMessage.info("接口开发中")
     } catch (error) {
       ElMessage.error('删除失败: ' + error.message)
     }
@@ -110,19 +135,22 @@ const handleDelete = (row) => {
 // 提交表单
 const submitForm = () => {
   volunteerFormRef.value.validate(async (valid) => {
+    if (!AcceptSuperAdmin(userInfo)) {
+      ElMessage.error('无操作权限')
+      return
+    }
     if (valid) {
       submitLoading.value = true
       try {
-        // 调用编辑API（只更新身份和状态）
-        const response = await request({
-          url: `/api/admin/volunteers/${volunteerForm.userId}/role-status`,
-          method: 'put',
-          data: {
-            role: volunteerForm.role,
-            status: volunteerForm.status
-          }
-        })
-
+        let data = {
+          userId: volunteerForm.userId,
+          role: volunteerForm.role,
+          status: volunteerForm.status,
+          realName: volunteerForm.realName,
+          grade: volunteerForm.grade,
+          majorClass: volunteerForm.majorClass
+        }
+        const response = await modifyVolunteer(data)
         if (response.code === 200) {
           ElMessage.success('编辑成功')
           dialogVisible.value = false
@@ -147,16 +175,80 @@ const resetForm = () => {
   volunteerForm.userId = ''
   volunteerForm.role = ''
   volunteerForm.status = ''
+  volunteerForm.realName = ''
+  volunteerForm.grade = ''
+  volunteerForm.majorClass = ''
+}
+
+/* 志愿者筛选模块 */
+
+// 筛选条件
+const filterForm = reactive({
+  status: '',
+  grade: '',
+  majorClass: ''
+})
+
+// 处理志愿者筛选
+const handleFilter = async () => {
+  const queryParams = buildQueryParams()
+  queryParams.pageNum = pagination.currentPage
+  queryParams.pageSize = pagination.pageSize
+
+  const response = await getVolunteerInfoListByFilterExcludeMyself(queryParams)
+
+  if (response.code === 200) {
+    volunteerList.value = response.data.list
+    pagination.total = response.data.total
+    console.log(volunteerList.value)
+  } else {
+    ElMessage.error(response.msg)
+  }
+}
+
+// 构建筛选条件
+const buildQueryParams = () => {
+  const params = {}
+
+  // 状态条件
+  if (filterForm.status !== '' && filterForm.status != null) {
+    params.status = filterForm.status
+  }
+  if (filterForm.grade !== '' && filterForm.grade != null) {
+    params.grade = filterForm.grade
+  }
+  if (filterForm.majorClass !== '' && filterForm.majorClass != null) {
+    params.majorClass = filterForm.majorClass
+  }
+
+  return params
+}
+
+// 重置筛选
+const resetFilter = () => {
+  filterForm.status = ''
+  filterForm.grade = ''
+  filterForm.majorClass = ''
+  pagination.currentPage = 1
+  fetchVolunteers()
 }
 
 // 分页相关
 const handleSizeChange = async (val) => {
   pagination.pageSize = val
-  await fetchVolunteers()
+  pagination.currentPage = 1
+  await loadVolunteersConditions()
 }
 
 const handleCurrentChange = async (val) => {
   pagination.currentPage = val
+  await loadVolunteersConditions()
+}
+
+const loadVolunteersConditions = async () => {
+  if (filterForm.status !== '' || filterForm.grade !== '' || filterForm.majorClass !== ''){
+    await handleFilter()
+  }
   await fetchVolunteers()
 }
 
@@ -180,6 +272,23 @@ const fetchVolunteers = async () => {
     ElMessage.error('获取志愿者列表失败: ' + error.message)
     volunteerList.value = []
     pagination.total = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchVolunteersByName = async () => {
+  loading.value = true
+  try {
+    const response = await getVolunteerInfoListByName(pagination.currentPage, pagination.pageSize, searchKeyword.value)
+    if (response.code !== 200) {
+      ElMessage.error(response.msg)
+      return
+    }
+    volunteerList.value = response.data.list
+    pagination.total = response.data.total
+  } catch (error) {
+    ElMessage.error('获取志愿者列表失败: ' + error.message)
   } finally {
     loading.value = false
   }
@@ -281,7 +390,6 @@ const inviteRules = computed(() => ({
 }))
 
 
-
 const showAddDialog = () => {
   inviteDialogVisible.value = true
 }
@@ -367,9 +475,6 @@ const resetInviteForm = () => {
                   :ellipsis="false"
               >
                 <el-menu-item index="1">成员管理</el-menu-item>
-                <el-menu-item index="2">申请历史</el-menu-item>
-                <el-menu-item index="3">我的收藏</el-menu-item>
-                <el-menu-item index="4">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -391,6 +496,57 @@ const resetInviteForm = () => {
       <!--主界面-->
       <el-main>
         <div class="main-content">
+          <!-- 筛选面板 -->
+          <el-card class="filter-card">
+            <template #header>
+              <div class="card-header">
+                <span>筛选条件</span>
+              </div>
+            </template>
+
+            <el-form :model="filterForm" label-width="100px">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="专业班级">
+                    <el-input v-model="filterForm.majorClass" placeholder="请输入专业班级"/>
+                  </el-form-item>
+                </el-col>
+
+                <el-col :span="12">
+                  <el-form-item label="年级">
+                    <el-date-picker
+                        v-model="filterForm.grade"
+                        type="year"
+                        placeholder="选择年级"
+                        format="YYYY"
+                        value-format="YYYY" style="width: 100%">
+                    </el-date-picker>
+                  </el-form-item>
+                </el-col>
+
+                <el-col :span="12">
+                  <el-form-item label="状态">
+                    <el-select v-model="filterForm.status" placeholder="请选择状态" clearable style="width: 100%">
+                      <el-option
+                          v-for="item in statusOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value">
+                      </el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+
+                <el-col :span="12">
+                  <el-form-item label="操作">
+                    <el-button type="primary" @click="handleFilter">查询</el-button>
+                    <el-button @click="resetFilter">重置</el-button>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </el-card>
+
           <!-- 操作栏 -->
           <div class="toolbar">
             <el-button type="primary" :icon="Plus" @click="showAddDialog">
@@ -401,10 +557,10 @@ const resetInviteForm = () => {
                 placeholder="搜索用户名或姓名"
                 style="width: 300px;"
                 clearable
-                @keyup.enter="fetchVolunteers"
+                @keyup.enter="fetchVolunteersByName"
             >
               <template #append>
-                <el-button @click="fetchVolunteers">
+                <el-button @click="fetchVolunteersByName">
                   <el-icon>
                     <Search/>
                   </el-icon>
@@ -429,13 +585,15 @@ const resetInviteForm = () => {
             </el-table-column>
             <el-table-column prop="realName" label="真实姓名" width="120"/>
             <el-table-column prop="username" label="用户名" width="120"/>
-            <el-table-column prop="email" label="邮箱" width="180"/>
-            <el-table-column prop="phone" label="手机号" width="120"/>
+            <el-table-column prop="volunteerInfo.grade" label="年级" width="120"/>
+            <el-table-column prop="volunteerInfo.majorClass" label="专业班级" width="120"/>
             <el-table-column prop="role" label="身份" width="100">
               <template #default="scope">
                 <el-tag>{{ getRoleLabel(scope.row.role) }}</el-tag>
               </template>
             </el-table-column>
+            <el-table-column prop="email" label="邮箱" width="180"/>
+            <el-table-column prop="phone" label="手机号" width="120"/>
             <el-table-column prop="status" label="状态" width="100">
               <template #default="scope">
                 <el-tag :type="getStatusTagType(scope.row.volunteerInfo.status)">
@@ -490,6 +648,9 @@ const resetInviteForm = () => {
                 :rules="formRules"
                 label-width="80px"
             >
+              <el-form-item label="姓名" prop="realName">
+                <el-input v-model="volunteerForm.realName" placeholder="请输入姓名"/>
+              </el-form-item>
               <el-form-item label="身份" prop="role">
                 <el-select v-model="volunteerForm.role" style="width: 100%;">
                   <el-option
@@ -499,6 +660,12 @@ const resetInviteForm = () => {
                       :value="option.value"
                   />
                 </el-select>
+              </el-form-item>
+              <el-form-item label="年级" prop="grade">
+                <el-input v-model="volunteerForm.grade" placeholder="请输入年级(四位数字)"/>
+              </el-form-item>
+              <el-form-item label="专业班级" prop="majorClass">
+                <el-input v-model="volunteerForm.majorClass" placeholder="请输入专业班级 (例:软件工程1班)"/>
               </el-form-item>
               <el-form-item label="状态" prop="status">
                 <el-select v-model="volunteerForm.status" style="width: 100%;">
@@ -610,6 +777,12 @@ const resetInviteForm = () => {
 .toolbar {
   display: flex;
   margin-bottom: 20px;
+  margin-top: 20px;
   justify-content: space-between;
+  padding: 20px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background-color: #fff;
 }
 </style>

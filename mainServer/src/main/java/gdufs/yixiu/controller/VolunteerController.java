@@ -6,6 +6,7 @@ import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
@@ -106,6 +107,28 @@ public class VolunteerController {
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();
         PageInfo<UserBasicInfoDto> pageInfo = volunteerService.queryVolunteerListExcludeMyself(pageNum, pageSize, userId);
+        return Result.success(pageInfo);
+    }
+    @VolunteerLoginToken
+    @GetMapping("/infoListByFilterExcludeUserId")
+    public Result queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto,
+                                                          @RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                                          @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize,
+                                                          HttpServletRequest request) {
+//        log.info("接收到的筛选参数:{}-{}-{}", filterDto, pageNum, pageSize);
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        filterDto.setExcludeUserId(userId);
+        PageInfo<UserBasicInfoDto> pageInfo = volunteerService.queryVolunteerListByFilterExcludeMyself(filterDto, pageNum, pageSize);
+        return Result.success(pageInfo);
+    }
+    @VolunteerLoginToken
+    @GetMapping("/infoListByName")
+    public Result queryVolunteerListByName(@RequestParam(defaultValue = "1", name = "pageNum") Integer pageNum,
+                                          @RequestParam(defaultValue = "10", name = "pageSize") Integer pageSize,
+                                          @RequestParam(defaultValue = "", name = "name") String name,
+                                          HttpServletRequest request) {
+        PageInfo<UserBasicInfoDto> pageInfo = volunteerService.queryVolunteerInfoByName(pageNum, pageSize, name);
         return Result.success(pageInfo);
     }
 }

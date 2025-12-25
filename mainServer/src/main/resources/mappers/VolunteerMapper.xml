@@ -19,6 +19,9 @@
             <if test="grade != null">
                 grade = #{grade},
             </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
         </set>
         where user_id = #{userId}
     </update>
@@ -59,6 +62,13 @@
         SELECT real_name FROM users JOIN volunteer_info ON users.user_id = volunteer_info.user_id
         <where>
             volunteer_info.volunteer_id = #{volunteerId}
+        </where>
+    </select>
+    <select id="findVolunteersByName" resultType="gdufs.yixiu.pojo.Users">
+        select * from users
+        <where>
+            username like "%"#{name}"%" OR real_name like "%"#{name}"%"
+            AND role IN ('volunteer', 'admin', 'super_admin')
         </where>
     </select>
 </mapper>

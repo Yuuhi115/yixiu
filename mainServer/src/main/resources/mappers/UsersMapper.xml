@@ -34,6 +34,32 @@
             parameterType="java.lang.Integer">
         select real_name,avatar from users where user_id = #{userId}
     </select>
+    <select id="findUserByName" resultType="gdufs.yixiu.pojo.Users">
+        select * from users
+        <where>
+            username like "%"#{name}"%" OR real_name like "%"#{name}"%"
+        </where>
+    </select>
+    <select id="findAllVolunteersExcludeMySelfByFilter" resultType="gdufs.yixiu.pojo.Users">
+        select
+        u.user_id,u.username,u.real_name,u.phone,u.email,u.avatar,u.role,u.status,u.last_login
+        from users u
+        join volunteer_info v on u.user_id = v.user_id
+        <where>
+            <if test="status != null">
+                AND v.status = #{status}
+            </if>
+            <if test="grade != null">
+                AND v.grade = #{grade}
+            </if>
+            <if test="majorClass != null">
+                AND v.major_class like "%"#{majorClass}"%"
+            </if>
+            <if test="excludeUserId != null">
+                AND u.user_id != #{excludeUserId}
+            </if>
+        </where>
+    </select>
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

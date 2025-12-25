@@ -4,6 +4,7 @@ import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.service.AdminService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.JWTUtils;
@@ -38,5 +39,15 @@ public class AdminController {
     public Result sendRegisterInviteCode(@RequestParam String email) {
         String code = adminService.sendInviteCode(email);
         return Result.success(code);
+    }
+    @AdminLoginToken
+    @PutMapping("volunteerInfo")
+    public Result modifyVolunteerInfo(@RequestBody VolunteerModifyDto volunteerModifyDto,
+                                     HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("管理员 (userId:{}) 正在修改志愿者 (userId:{}) 的信息", userId, volunteerModifyDto.getUserId());
+        Integer result = adminService.modifyVolunteerInfo(volunteerModifyDto);
+        return result == 1 ? Result.success("更新成功") : Result.fail("更新失败");
     }
 }

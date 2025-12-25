@@ -6,6 +6,7 @@ import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
@@ -107,24 +108,66 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
+    public PageInfo<UserBasicInfoDto> queryVolunteerInfoByName(Integer pageNum, Integer pageSize, String name) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Users> volunteers = volunteerMapper.findVolunteersByName(name);
+        PageInfo<Users> pageInfo = new PageInfo<>(volunteers);
+        List<UserBasicInfoDto> userBasicInfoDtos = new ArrayList<>();
+        for (Users volunteer : volunteers){
+            UserBasicInfoDto userBasicInfoDto = userToVolunteerBasicInfoDto(volunteer);
+            userBasicInfoDtos.add(userBasicInfoDto);
+        }
+        PageInfo<UserBasicInfoDto> pageInfoResult = new PageInfo<>(userBasicInfoDtos);
+        pageInfoResult.setPages(pageInfo.getPages());
+        pageInfoResult.setPageNum(pageInfo.getPageNum());
+        pageInfoResult.setPageSize(pageInfo.getPageSize());
+        pageInfoResult.setTotal(pageInfo.getTotal());
+        return pageInfoResult;
+    }
+
+    @Override
+    public UserBasicInfoDto userToVolunteerBasicInfoDto(Users volunteer) {
+        UserBasicInfoDto userBasicInfoDto = new UserBasicInfoDto();
+        VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(volunteer.getUserId());
+        userBasicInfoDto.setUserId(volunteer.getUserId());
+        userBasicInfoDto.setUsername(volunteer.getUsername());
+        userBasicInfoDto.setRealName(volunteer.getRealName());
+        userBasicInfoDto.setPhone(volunteer.getPhone());
+        userBasicInfoDto.setEmail(volunteer.getEmail());
+        userBasicInfoDto.setAvatar(avatarPath + volunteer.getAvatar());
+        userBasicInfoDto.setRole(volunteer.getRole());
+        userBasicInfoDto.setStatus(volunteer.getStatus());
+        userBasicInfoDto.setLastLogin(volunteer.getLastLogin());
+        userBasicInfoDto.setVolunteerInfo(volunteerInfo);
+        return userBasicInfoDto;
+    }
+
+    @Override
     public PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId) {
         PageHelper.startPage(pageNum, pageSize);
         List<Users> volunteers = usersMapper.findAllVolunteersExcludeMySelf(userId);
         PageInfo<Users> pageInfo = new PageInfo<>(volunteers);
         List<UserBasicInfoDto> userBasicInfoDtos = new ArrayList<>();
         for (Users volunteer : volunteers){
-            UserBasicInfoDto userBasicInfoDto = new UserBasicInfoDto();
-            VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(volunteer.getUserId());
-            userBasicInfoDto.setUserId(volunteer.getUserId());
-            userBasicInfoDto.setUsername(volunteer.getUsername());
-            userBasicInfoDto.setRealName(volunteer.getRealName());
-            userBasicInfoDto.setPhone(volunteer.getPhone());
-            userBasicInfoDto.setEmail(volunteer.getEmail());
-            userBasicInfoDto.setAvatar(avatarPath + volunteer.getAvatar());
-            userBasicInfoDto.setRole(volunteer.getRole());
-            userBasicInfoDto.setStatus(volunteer.getStatus());
-            userBasicInfoDto.setLastLogin(volunteer.getLastLogin());
-            userBasicInfoDto.setVolunteerInfo(volunteerInfo);
+            UserBasicInfoDto userBasicInfoDto = userToVolunteerBasicInfoDto(volunteer);
+            userBasicInfoDtos.add(userBasicInfoDto);
+        }
+        PageInfo<UserBasicInfoDto> pageInfoResult = new PageInfo<>(userBasicInfoDtos);
+        pageInfoResult.setPages(pageInfo.getPages());
+        pageInfoResult.setPageNum(pageInfo.getPageNum());
+        pageInfoResult.setPageSize(pageInfo.getPageSize());
+        pageInfoResult.setTotal(pageInfo.getTotal());
+        return pageInfoResult;
+    }
+
+    @Override
+    public PageInfo<UserBasicInfoDto> queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Users> volunteers = usersMapper.findAllVolunteersExcludeMySelfByFilter(filterDto);
+        PageInfo<Users> pageInfo = new PageInfo<>(volunteers);
+        List<UserBasicInfoDto> userBasicInfoDtos = new ArrayList<>();
+        for (Users volunteer : volunteers){
+            UserBasicInfoDto userBasicInfoDto = userToVolunteerBasicInfoDto(volunteer);
             userBasicInfoDtos.add(userBasicInfoDto);
         }
         PageInfo<UserBasicInfoDto> pageInfoResult = new PageInfo<>(userBasicInfoDtos);

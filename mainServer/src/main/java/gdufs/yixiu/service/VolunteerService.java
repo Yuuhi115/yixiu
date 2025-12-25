@@ -3,7 +3,9 @@ package gdufs.yixiu.service;
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
+import gdufs.yixiu.pojo.Users;
 
 public interface VolunteerService {
     String registerByPhone(UsersRegisterDto userDto);
@@ -13,5 +15,8 @@ public interface VolunteerService {
     Integer isExistVolunteerByEmail(String email);
     void updateVolunteerInfo(VolunteerModifyDto volunteerModifyDto);
     Integer queryVolunteerIdByUserId(Integer userId);
+    PageInfo<UserBasicInfoDto> queryVolunteerInfoByName(Integer pageNum, Integer pageSize, String name);
+    UserBasicInfoDto userToVolunteerBasicInfoDto(Users user);
     PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId);
+    PageInfo<UserBasicInfoDto> queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto, Integer pageNum, Integer pageSize);
 }
