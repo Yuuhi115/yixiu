@@ -16,6 +16,10 @@ image/
 
 yixiu-site/node_modules/
 
+mainServer/src/main/resources/application.yml
+mainServer/src/main/resources/application_L.yml
+mainServer/src/main/resources/application_W.yml
+
 ### Eclipse ###
 .apt_generated
 .classpath
