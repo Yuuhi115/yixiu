@@ -2,6 +2,7 @@ package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.PassToken;
+import gdufs.yixiu.annotation.SuperAdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
@@ -40,7 +41,7 @@ public class AdminController {
         String code = adminService.sendInviteCode(email);
         return Result.success(code);
     }
-    @AdminLoginToken
+    @SuperAdminLoginToken
     @PutMapping("volunteerInfo")
     public Result modifyVolunteerInfo(@RequestBody VolunteerModifyDto volunteerModifyDto,
                                      HttpServletRequest request) {

@@ -23,6 +23,9 @@
     <insert id="addTaskLogImg" parameterType="gdufs.yixiu.pojo.RepairLogImg">
         insert into repair_log_img (log_id,img_url) values (#{logId},#{imgUrl})
     </insert>
+    <insert id="addTaskEvaluate" useGeneratedKeys="true" keyColumn="evaluate_id" keyProperty="evaluateId">
+        insert into repair_evaluate (request_id,user_id,content,score) values (#{requestId},#{userId},#{content},#{score})
+    </insert>
     <update id="updateTask">
         update repair_request
         <set>
@@ -179,6 +182,9 @@
                 AND repair_assignment.volunteer_id = #{volunteerId}
             </if>
         </where>
+    </select>
+    <select id="findTaskEvaluateByRequestId" resultType="gdufs.yixiu.pojo.RepairEvaluate">
+        select * from repair_evaluate where request_id = #{requestId}
     </select>
 
 </mapper>

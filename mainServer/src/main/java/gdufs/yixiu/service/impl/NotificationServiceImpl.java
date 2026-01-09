@@ -1,8 +1,11 @@
 package gdufs.yixiu.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.NotificationMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.NotificationDto;
+import gdufs.yixiu.dto.NotificationFilterDto;
 import gdufs.yixiu.pojo.Notification;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.NotificationService;
@@ -103,14 +106,58 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public List<NotificationDto> queryByReceiverId(Integer receiverId) {
+    public PageInfo<NotificationDto> queryByReceiverId(Integer receiverId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
         List<Notification> notifications = notificationMapper.queryByReceiverId(receiverId);
+        PageInfo<Notification> pageInfo = new PageInfo<>(notifications);
+        List<NotificationDto> notificationDtoList = notificationsToNotificationDtos(notifications, receiverId);
+        PageInfo<NotificationDto> pageInfoDto = new PageInfo<>(notificationDtoList);
+        pageInfoDto.setList(notificationDtoList);
+        pageInfoDto.setPages(pageInfo.getPages());
+        pageInfoDto.setPageNum(pageInfo.getPageNum());
+        pageInfoDto.setPageSize(pageInfo.getPageSize());
+        pageInfoDto.setTotal(pageInfo.getTotal());
+
+        return pageInfoDto;
+    }
+
+    @Override
+    public PageInfo<NotificationDto> queryByReceiverIdFilter(NotificationFilterDto notificationFilterDto, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        log.info("查询用户{}的过滤通知{}", notificationFilterDto.getReceiverId(), notificationFilterDto);
+        List<Notification> notifications = notificationMapper.queryByReceiverIdFilter(notificationFilterDto);
+        PageInfo<Notification> pageInfo = new PageInfo<>(notifications);
+        List<NotificationDto> notificationDtoList = notificationsToNotificationDtos(notifications, notificationFilterDto.getReceiverId());
+        PageInfo<NotificationDto> pageInfoDto = new PageInfo<>(notificationDtoList);
+        pageInfoDto.setList(notificationDtoList);
+        pageInfoDto.setPages(pageInfo.getPages());
+        pageInfoDto.setPageNum(pageInfo.getPageNum());
+        pageInfoDto.setPageSize(pageInfo.getPageSize());
+        pageInfoDto.setTotal(pageInfo.getTotal());
+        return pageInfoDto;
+    }
+
+    @Override
+    public int updateIsRead(Integer notifyId, Integer receiverId) {
+        String type = notificationMapper.queryTypeByNotifyId(notifyId);
+        int row;
+        if (type.equals("BROADCAST")){
+            row = notificationMapper.changeToReadBroadcast(notifyId, receiverId);
+        }
+        else {
+            row = notificationMapper.changeToRead(notifyId);
+        }
+        return row;
+    }
+
+    @Override
+    public List<NotificationDto> notificationsToNotificationDtos(List<Notification> notifications, Integer receiverId) {
         List<NotificationDto> notificationDtoList = new ArrayList<>();
         for (Notification notification : notifications) {
             NotificationDto notificationDto = new NotificationDto();
             if (Objects.equals(notification.getType(), "BROADCAST")){
                 notificationDto.setIsRead(notificationMapper.checkIsReadBroadcast(notification.getNotifyId(), receiverId));
-                log.info("用户{}的广播{}未读数量为{}", receiverId, notification.getNotifyId(), notificationDto.getIsRead());
+//                log.info("用户{}的广播{}未读数量为{}", receiverId, notification.getNotifyId(), notificationDto.getIsRead());
             }else {
                 notificationDto.setIsRead(notification.getIsRead());
                 if (!Objects.equals(notification.getType(), "SYSTEM")){
@@ -130,18 +177,5 @@ public class NotificationServiceImpl implements NotificationService {
             notificationDtoList.add(notificationDto);
         }
         return notificationDtoList;
-    }
-
-    @Override
-    public int updateIsRead(Integer notifyId, Integer receiverId) {
-        String type = notificationMapper.queryTypeByNotifyId(notifyId);
-        int row;
-        if (type.equals("BROADCAST")){
-            row = notificationMapper.changeToReadBroadcast(notifyId, receiverId);
-        }
-        else {
-            row = notificationMapper.changeToRead(notifyId);
-        }
-        return row;
     }
 }

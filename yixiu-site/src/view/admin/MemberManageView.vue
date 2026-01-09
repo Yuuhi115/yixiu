@@ -1,5 +1,5 @@
 <script setup>
-import {Message, Edit, Delete, Search, Plus} from "@element-plus/icons-vue";
+import {Message, Edit, Delete, Search, Plus, Download} from "@element-plus/icons-vue";
 import {onMounted, reactive, ref, computed} from "vue";
 import Cookie from "js-cookie";
 import {getUserInfo} from "../../api/userApi.js";
@@ -12,6 +12,7 @@ import {
   getVolunteerInfoListExcludeMyself
 } from "../../api/volunteerApi.js";
 import {AcceptSuperAdmin} from "../../utils/roleCheckUtils.js";
+import {sendRoleChangeNotification} from "../../api/notificationApi.js";
 
 const userInfoRef = ref()
 
@@ -54,7 +55,6 @@ const volunteerForm = reactive({
 
 // 身份选项
 const roleOptions = [
-  {label: '普通用户', value: 'student'},
   {label: '管理员', value: 'admin'},
   {label: '志愿者', value: 'volunteer'}
 ]
@@ -87,6 +87,8 @@ const formRules = {
 
 // 编辑志愿者
 const handleEdit = (row) => {
+  // 保存原始角色用于后续对比
+  volunteerForm.originalRole = row.role
   // 只传递可编辑的字段
   volunteerForm.userId = row.userId
   volunteerForm.role = row.role
@@ -113,18 +115,6 @@ const handleDelete = (row) => {
         ElMessage.error('无操作权限')
         return
       }
-      // 调用实际的删除API
-      // const response = await request({
-      //   url: `/api/admin/volunteers/${row.userId}`,
-      //   method: 'delete'
-      // })
-      //
-      // if (response.code === 200) {
-      //   ElMessage.success('删除成功')
-      //   await fetchVolunteers()
-      // } else {
-      //   ElMessage.error(response.msg || '删除失败')
-      // }
       ElMessage.info("接口开发中")
     } catch (error) {
       ElMessage.error('删除失败: ' + error.message)
@@ -152,6 +142,21 @@ const submitForm = () => {
         }
         const response = await modifyVolunteer(data)
         if (response.code === 200) {
+          // 检查角色是否变更，如果是则发送通知
+          if (volunteerForm.originalRole !== volunteerForm.role) {
+            // 添加发送通知的逻辑
+            let roleChangeNotification = {
+              userId: volunteerForm.userId,
+              role: volunteerForm.role,
+              originalRole: volunteerForm.originalRole
+            }
+            const response = await sendRoleChangeNotification(roleChangeNotification)
+            if (response.code !== 200) {
+              ElMessage.error(response.msg || '编辑失败')
+              dialogVisible.value = false
+              return
+            }
+          }
           ElMessage.success('编辑成功')
           dialogVisible.value = false
           await fetchVolunteers()
@@ -585,6 +590,7 @@ const resetInviteForm = () => {
             </el-table-column>
             <el-table-column prop="realName" label="真实姓名" width="120"/>
             <el-table-column prop="username" label="用户名" width="120"/>
+            <el-table-column prop="volunteerInfo.studentNumber" label="学号" width="120"/>
             <el-table-column prop="volunteerInfo.grade" label="年级" width="120"/>
             <el-table-column prop="volunteerInfo.majorClass" label="专业班级" width="120"/>
             <el-table-column prop="role" label="身份" width="100">
@@ -602,7 +608,7 @@ const resetInviteForm = () => {
               </template>
             </el-table-column>
             <el-table-column prop="lastLogin" label="最后登录" width="180"/>
-            <el-table-column label="操作" width="120" fixed="right">
+            <el-table-column label="操作" width="150" fixed="right">
               <template #default="scope">
                 <el-button
                     type="primary"
@@ -617,6 +623,14 @@ const resetInviteForm = () => {
                     circle
                     @click="handleDelete(scope.row)"
                     title="删除"
+                    style="margin-left: 10px;"
+                />
+                <el-button
+                    type="success"
+                    :icon="Download"
+                    circle
+                    @click="handleDelete(scope.row)"
+                    title="导出志愿者维修数据"
                     style="margin-left: 10px;"
                 />
               </template>

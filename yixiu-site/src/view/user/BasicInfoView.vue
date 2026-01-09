@@ -9,7 +9,6 @@ import {updateVolunteerInfo} from "../../api/volunteerApi.js";
 import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
 import router from "../../router/index.js";
-import {startNotifyPoll, stopNotifyPoll} from "../../utils/notificationUtils.js";
 import {getUnreadNotifyCount} from "../../api/notificationApi.js";
 
 /*头像剪裁*/
@@ -38,22 +37,15 @@ const userInfo = reactive({
     volunteerId: "",
     studentNumber: "",
     majorClass: "",
-    grade: ""
+    grade: "",
+    contactType: "",
+    contactNumber: "",
   }
 })
 
 onMounted(async () => {
   await queryUserInfo()
-  await startNotifyPoll((message) => {
-    if (message && message.unread !== undefined) {
-      unreadNotifyCount.value = message.unread
-    }
-  })
   await getUnreadNotify()
-})
-
-onUnmounted(()=>{
-  stopNotifyPoll()
 })
 
 // 计算属性获取角色信息
@@ -131,9 +123,26 @@ const editVolunteerForm = reactive({
   volunteerId: '',
   studentNumber: '',
   majorClass: '',
-  grade: ''
+  grade: '',
+  contactType: "",
+  contactNumber: "",
 })
 const editVolunteerFormRef = ref()
+
+const getContactTypeText = (contactType) => {
+  switch (String(contactType)) {
+    case '0':
+      return '手机号'
+    case '1':
+      return '邮箱号'
+    case '2':
+      return '微信号'
+    case '3':
+      return 'QQ号'
+    default:
+      return '未知'
+  }
+}
 
 const editVolunteerInfo = () => {
   // 初始化表单数据（示例数据）
@@ -142,6 +151,8 @@ const editVolunteerInfo = () => {
   editVolunteerForm.studentNumber = userInfo.volunteerInfo.studentNumber
   editVolunteerForm.majorClass = userInfo.volunteerInfo.majorClass
   editVolunteerForm.grade = userInfo.volunteerInfo.grade
+  editVolunteerForm.contactType = userInfo.volunteerInfo.contactType
+  editVolunteerForm.contactNumber = userInfo.volunteerInfo.contactNumber
   // 显示对话框
   editVolunteerDialogVisible.value = true
 }
@@ -154,9 +165,7 @@ const saveVolunteerEdit = async () => {
         ElMessage.error(response.msg)
         return
       }
-      userInfo.volunteerInfo.studentNumber = editVolunteerForm.studentNumber
-      userInfo.volunteerInfo.majorClass = editVolunteerForm.majorClass
-      userInfo.volunteerInfo.grade = editVolunteerForm.grade
+      await queryUserInfo()
       ElMessage.success('志愿者信息修改成功')
       editVolunteerDialogVisible.value = false
     }
@@ -456,6 +465,8 @@ const uploadAvatar = async (file) => {
                   <el-descriptions-item label="学号">{{ userInfo.volunteerInfo.studentNumber }}</el-descriptions-item>
                   <el-descriptions-item label="专业班级">{{ userInfo.volunteerInfo.majorClass }}</el-descriptions-item>
                   <el-descriptions-item label="年级">{{ userInfo.volunteerInfo.grade }}</el-descriptions-item>
+                  <el-descriptions-item label="联系方式">{{ getContactTypeText(userInfo.volunteerInfo.contactType) }}</el-descriptions-item>
+                  <el-descriptions-item label="联系号码">{{ userInfo.volunteerInfo.contactNumber }}</el-descriptions-item>
                 </el-descriptions>
               </el-card>
             </el-col>
@@ -594,6 +605,17 @@ const uploadAvatar = async (file) => {
         </el-form-item>
         <el-form-item label="年级">
           <el-input v-model="editVolunteerForm.grade" />
+        </el-form-item>
+        <el-form-item label="联系方式">
+          <el-radio-group v-model="editVolunteerForm.contactType">
+            <el-radio label="0">手机号</el-radio>
+            <el-radio label="1">邮箱号</el-radio>
+            <el-radio label="2">微信号</el-radio>
+            <el-radio label="3">QQ号</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="联系号码">
+          <el-input v-model="editVolunteerForm.contactNumber" />
         </el-form-item>
       </el-form>
       <template #footer>

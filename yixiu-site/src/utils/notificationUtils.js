@@ -2,12 +2,14 @@ import { pollNotification } from "../api/notificationApi.js"
 import { ElMessage, ElNotification } from "element-plus"
 
 let polling = false
+let pollTimer = null  // 添加定时器引用
 
 export function startNotifyPoll(callback) {
     if (polling) return
     polling = true
 
     const poll = async () => {
+        if (!polling) return
         try {
             const res = await pollNotification()
             // res 就是 NotifyPushVO
@@ -40,7 +42,7 @@ export function startNotifyPoll(callback) {
             console.error("notify poll error", e)
         } finally {
             if (polling) {
-                setTimeout(poll, 200)
+                setTimeout(poll, 500)
             }
         }
     }
@@ -48,5 +50,16 @@ export function startNotifyPoll(callback) {
 }
 
 export function stopNotifyPoll() {
-    polling = false
+    if (polling) {
+        console.log("停止通知轮询")
+        polling = false
+        if (pollTimer) {
+            clearTimeout(pollTimer)
+            pollTimer = null
+        }
+    }
+}
+
+export function isPolling() {
+    return polling
 }

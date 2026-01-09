@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -23,6 +24,8 @@ import java.util.Map;
 public class AuthorizationInterceptor implements HandlerInterceptor {
     @Autowired
     private UsersMapper usersMapper;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     private static String secretKey;
 
@@ -105,6 +108,10 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
+            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            if (redisToken == null || !redisToken.equals(token)) {
+                throw new Exception("expired token");
+            }
             Users user = usersMapper.findUserById(userId);
             if (user == null) {
                 throw new Exception("null user");

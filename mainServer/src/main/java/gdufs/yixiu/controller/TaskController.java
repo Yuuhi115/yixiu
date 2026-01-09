@@ -4,6 +4,7 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.*;
+import gdufs.yixiu.pojo.RepairEvaluate;
 import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
@@ -296,5 +297,16 @@ public class TaskController {
             return Result.fail("未找到此条件的报修单");
         }
         return Result.success(repairRequestDtos);
+    }
+    @UserLoginToken
+    @PostMapping("/addEvaluation")
+    public Result addEvaluation(@RequestBody RepairEvaluate repairEvaluate,
+                                HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 添加维修单No.{}的评价", userId, repairEvaluate.getRequestId());
+        repairEvaluate.setUserId(userId);
+        Integer result = taskService.addTaskEvaluate(repairEvaluate);
+        return result == null ? Result.fail("添加异常") : Result.success("添加成功");
     }
 }

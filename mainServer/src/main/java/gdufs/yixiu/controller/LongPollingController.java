@@ -4,6 +4,7 @@ import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.NotificationDto;
+import gdufs.yixiu.dto.NotificationFilterDto;
 import gdufs.yixiu.pojo.Notification;
 import gdufs.yixiu.service.NotificationService;
 import gdufs.yixiu.service.impl.NotificationServiceImpl;
@@ -12,10 +13,12 @@ import gdufs.yixiu.util.LongPullingNotifier;
 import gdufs.yixiu.util.Result;
 import gdufs.yixiu.vo.NotifyPushVO;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.async.DeferredResult;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/notify")
 public class LongPollingController {
@@ -92,9 +95,12 @@ public class LongPollingController {
     }
     @UserLoginToken
     @GetMapping("/list")
-    public Result getByReceiverId(HttpServletRequest request){
+    public Result getByReceiverId(
+            @RequestParam("pageNum") Integer pageNum,
+            @RequestParam("pageSize") Integer pageSize,
+            HttpServletRequest request){
         Integer userId = jwtUtils.getInfoFromToken(request.getHeader("Authorization")).getId();
-        return Result.success(notificationService.queryByReceiverId(userId));
+        return Result.success(notificationService.queryByReceiverId(userId, pageNum, pageSize));
     }
     @UserLoginToken
     @PutMapping("/changeToRead")
@@ -108,5 +114,16 @@ public class LongPollingController {
     public Result getUnreadCount(HttpServletRequest request){
         Integer userId = jwtUtils.getInfoFromToken(request.getHeader("Authorization")).getId();
         return Result.success(notificationService.findUnreadCount(userId));
+    }
+    @UserLoginToken
+    @GetMapping("/listByFilter")
+    public Result listByFilter(
+            @RequestParam("pageNum") Integer pageNum,
+            @RequestParam("pageSize") Integer pageSize,
+            NotificationFilterDto notificationFilterDto,
+            HttpServletRequest request){
+        Integer userId = jwtUtils.getInfoFromToken(request.getHeader("Authorization")).getId();
+        notificationFilterDto.setReceiverId(userId);
+        return Result.success(notificationService.queryByReceiverIdFilter(notificationFilterDto, pageNum, pageSize));
     }
 }

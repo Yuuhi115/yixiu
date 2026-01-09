@@ -120,7 +120,8 @@ const handleRegister = () => {
         return
       }
       let token = registerResult.data;
-      Cookie.set('Authorization', token)
+      Cookie.set('Authorization', token, { expires: 7 })
+      localStorage.setItem('role', form.role)
       ElMessage.success('注册成功！')
       await router.push('/')
     } else {

@@ -1,12 +1,12 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import {ref, reactive, computed, onMounted, onUnmounted, inject} from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Message, Search } from '@element-plus/icons-vue'
 import Cookie from 'js-cookie'
 import { getUserInfo } from '../../api/userApi.js'
-import { changeToRead, getNotifyList } from "../../api/notificationApi.js"
-import { startNotifyPoll, stopNotifyPoll } from "../../utils/notificationUtils.js"
+import {changeToRead, getNotifyByFilter, getNotifyList} from "../../api/notificationApi.js"
 import router from "../../router/index.js"
+import {useNotificationStore} from "../../stores/notificationInit.js";
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
@@ -24,13 +24,14 @@ const userInfo = reactive({
     volunteerId: "",
     studentNumber: "",
     majorClass: "",
-    grade: ""
+    grade: "",
+    contactType: "",
+    contactNumber: "",
   }
 })
 
 // 消息数据
 const notifications = ref([])
-const filteredNotifications = ref([])
 const currentNotification = reactive({
   notifyId: '',
   receiverId: '',
@@ -45,42 +46,17 @@ const currentNotification = reactive({
   createTime: ''
 })
 
-// 分页和过滤
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
-const filterType = ref('')
-const searchKeyword = ref('')
-const loading = ref(false)
+const notificationStore = useNotificationStore()
 
-// 对话框控制
-const detailDialogVisible = ref(false)
-
-// 计算属性
-const hasUnread = computed(() => {
-  return notifications.value.some(notification => notification.isRead === 0)
-})
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 // 生命周期
 onMounted(async () => {
   await queryUserInfo()
   await loadNotifications()
-  startNotifyPoll(handleNewNotification)
+  await notificationStore.syncUnreadCount()
 })
-
-onUnmounted(() => {
-  stopNotifyPoll()
-})
-
-// 处理新消息通知
-const handleNewNotification = (notification) => {
-  if (notification && notification.type !== "NONE") {
-    // 可以在这里处理新消息的通知逻辑
-    ElMessage.info('收到新消息')
-    // 重新加载消息列表
-    loadNotifications()
-  }
-}
 
 // 获取用户信息
 const queryUserInfo = async () => {
@@ -97,18 +73,26 @@ const queryUserInfo = async () => {
   }
 }
 
+// 分页和过滤
+const loading = ref(false)
+
+const pagination = reactive({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // 加载消息列表
 const loadNotifications = async () => {
   loading.value = true
   try {
-    const response = await getNotifyList()
+    const response = await getNotifyList(pagination.currentPage, pagination.pageSize)
     if (response.code !== 200) {
       ElMessage.error(response.msg)
       return
     }
-    notifications.value = response.data
-    total.value = notifications.value.length
-    filterNotifications()
+    notifications.value = response.data.list
+    pagination.total = response.data.total
   } catch (error) {
     ElMessage.error('加载消息失败')
   } finally {
@@ -116,36 +100,65 @@ const loadNotifications = async () => {
   }
 }
 
-// 刷新消息
-const refreshNotifications = () => {
-  loadNotifications()
+// 筛选条件
+const filterForm = reactive({
+  type: "",
+  searchKeyword: ""
+})
+
+// 处理消息筛选
+const handleFilter = async () => {
+  const queryParams = buildQueryParams()
+  const response = await getNotifyByFilter(queryParams)
+
+  if (response.code === 200) {
+    notifications.value = response.data.list
+    pagination.total = response.data.total
+    console.log(notifications.value)
+  } else {
+    ElMessage.error(response.msg)
+  }
 }
 
-// 过滤消息
-const filterNotifications = () => {
-  let result = [...notifications.value]
-
-  // 按类型过滤
-  if (filterType.value) {
-    result = result.filter(item => item.type === filterType.value)
+// 构建筛选条件
+const buildQueryParams = () => {
+  const params = {}
+  // 状态条件
+  if (filterForm.type !== '' && filterForm.type != null) {
+    params.type = filterForm.type
   }
-
-  // 按关键字搜索
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    result = result.filter(item =>
-        item.title.toLowerCase().includes(keyword) ||
-        item.content.toLowerCase().includes(keyword) ||
-        (item.senderUsername && item.senderUsername.toLowerCase().includes(keyword))
-    )
+  if (filterForm.searchKeyword !== '' && filterForm.searchKeyword != null) {
+    params.searchKeyword = filterForm.searchKeyword
   }
+  params.pageNum = pagination.currentPage
+  params.pageSize = pagination.pageSize
+  return params
+}
 
-  filteredNotifications.value = result
+// 对话框控制
+const detailDialogVisible = ref(false)
+
+// // 计算未读信息数量
+// const hasUnread = computed(() => {
+//   return notifications.value.some(notification => notification.isRead === 0)
+// })
+
+const loadNotificationCondition = () =>{
+  if (filterForm.type !== '' || filterForm.searchKeyword !== '') {
+    handleFilter()
+  } else {
+    loadNotifications()
+  }
+}
+
+// 刷新消息
+const refreshNotifications = () => {
+  loadNotificationCondition()
 }
 
 // 搜索消息
 const searchNotifications = () => {
-  filterNotifications()
+  handleFilter()
 }
 
 // 查看消息详情
@@ -187,7 +200,7 @@ const markAsRead = async (notifyId) => {
     }
 
     ElMessage.success('标记为已读成功')
-    filterNotifications()
+    loadNotificationCondition()
   } catch (error) {
     ElMessage.error('标记失败')
   }
@@ -206,7 +219,7 @@ const markAllAsRead = async () => {
     }
 
     ElMessage.success('全部标记为已读成功')
-    filterNotifications()
+    loadNotificationCondition()
   } catch (error) {
     ElMessage.error('操作失败')
   }
@@ -221,21 +234,21 @@ const goToLink = (link) => {
 
 // 分页处理
 const handleSizeChange = (val) => {
-  pageSize.value = val
-  currentPage.value = 1
-  filterNotifications()
+  pagination.pageSize = val
+  pagination.pageNum = 1
+  loadNotificationCondition()
 }
 
 const handleCurrentChange = (val) => {
-  currentPage.value = val
-  filterNotifications()
+  pagination.pageSize = val
+  loadNotificationCondition()
 }
 
 // 工具函数
 const getTypeDisplayName = (type) => {
   switch (type) {
     case 'SYSTEM': return '系统消息'
-    case 'BROADCAST': return '广播消息'
+    case 'BROADCAST': return '公告'
     case 'USER': return '用户消息'
     default: return '未知类型'
   }
@@ -252,7 +265,7 @@ const getTypeTagType = (type) => {
 
 const getSenderDisplay = (notification) => {
   if (notification.type === 'SYSTEM') return '系统'
-  if (notification.type === 'BROADCAST') return '平台'
+  if (notification.type === 'BROADCAST') return '公告'
   return notification.senderUsername || '用户'
 }
 
@@ -317,7 +330,7 @@ const getContentPreview = (content) => {
               >
                 <el-menu-item index="1" @click="() => router.push('/user/basicInfo')">基本信息</el-menu-item>
                 <el-menu-item index="2">我的收藏</el-menu-item>
-                <el-menu-item index="3">消息中心</el-menu-item>
+                <el-menu-item index="3" @click="() => router.push('/user/messageCenter')">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -327,7 +340,7 @@ const getContentPreview = (content) => {
                 <el-avatar :fit="'cover'" :src="userInfo.avatar" />
               </div>
               <div class="component-center">
-                <el-badge :is-dot="hasUnread" class="item">
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
                   <el-button type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
@@ -352,14 +365,14 @@ const getContentPreview = (content) => {
 
             <!-- 消息筛选 -->
             <div class="filter-section">
-              <el-radio-group v-model="filterType" @change="filterNotifications">
+              <el-radio-group v-model="filterForm.type" @change="handleFilter">
                 <el-radio-button label="">全部</el-radio-button>
                 <el-radio-button label="SYSTEM">系统消息</el-radio-button>
                 <el-radio-button label="BROADCAST">广播消息</el-radio-button>
                 <el-radio-button label="USER">用户消息</el-radio-button>
               </el-radio-group>
               <el-input
-                  v-model="searchKeyword"
+                  v-model="filterForm.searchKeyword"
                   placeholder="搜索消息内容..."
                   style="width: 300px; margin-left: 20px"
                   clearable
@@ -375,7 +388,7 @@ const getContentPreview = (content) => {
             <!-- 消息列表容器 -->
             <div class="messages-container" v-loading="loading">
               <div
-                  v-for="notification in filteredNotifications"
+                  v-for="notification in notifications"
                   :key="notification.notifyId"
                   class="message-item"
                   :class="{ 'unread': notification.isRead === 0 }"
@@ -409,7 +422,7 @@ const getContentPreview = (content) => {
               </div>
 
               <!-- 空状态 -->
-              <div v-if="filteredNotifications.length === 0 && !loading" class="empty-state">
+              <div v-if="notifications.length === 0 && !loading" class="empty-state">
                 <el-empty description="暂无消息" />
               </div>
             </div>
@@ -417,10 +430,10 @@ const getContentPreview = (content) => {
             <!-- 分页 -->
             <div class="pagination-container">
               <el-pagination
-                  v-model:current-page="currentPage"
-                  v-model:page-size="pageSize"
+                  v-model:current-page="pagination.currentPage"
+                  v-model:page-size="pagination.pageSize"
                   :page-sizes="[10, 20, 50, 100]"
-                  :total="total"
+                  :total="pagination.total"
                   layout="total, sizes, prev, pager, next, jumper"
                   @size-change="handleSizeChange"
                   @current-change="handleCurrentChange"

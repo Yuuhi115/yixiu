@@ -15,18 +15,23 @@ import {
 } from '@element-plus/icons-vue'
 import {UserFilled} from '@element-plus/icons-vue'
 
-import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount} from 'vue'
+import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount, provide} from 'vue'
 import {ElMessage} from 'element-plus'
 import {getUserInfo} from "../api/userApi.js";
 import Cookie from "js-cookie";
 import router from "../router/index.js";
-import {checkToken} from "../utils/userUtils.js";
-import { startNotifyPoll, stopNotifyPoll } from "../utils/notificationUtils.js";
+import {isPolling, startNotifyPoll, stopNotifyPoll} from "../utils/notificationUtils.js";
 import {getUnreadNotifyCount} from "../api/notificationApi.js";
 import {AcceptAdmin, AcceptVolunteer} from "../utils/roleCheckUtils.js";
+import {JumpToRepairForm, JumpToTaskList} from "../utils/redirectUtils.js";
+import {useNotificationStore} from "../stores/notificationInit.js";
 
 const userInfoRef = ref()
-let unreadNotifyCount = ref(0)
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfo = reactive({
   userId: "",
@@ -42,7 +47,9 @@ const userInfo = reactive({
     volunteerId: "",
     studentNumber: "",
     majorClass: "",
-    grade: ""
+    grade: "",
+    contactType: "",
+    contactNumber: "",
   }
 })
 
@@ -50,26 +57,22 @@ const userInfo = reactive({
 const isLoading = ref(true)
 
 onMounted(async () => {
-  let isAuth = checkToken()
-  if (!isAuth) {
-    ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
-    setTimeout(() => {
-      Cookie.remove('Authorization')
-      router.push('/login')
-    }, 3000)
-  }
   try {
     // 并行执行初始化请求
     await Promise.all([
       queryUserInfo(),
-      getUnreadNotify()
+      getUnreadNotify(),
+      notificationStore.syncUnreadCount()
     ])
+
+    // if (!isPolling()) {
+    //   await startNotifyPoll((message) => {
+    //     if (message && message.unread !== undefined) {
+    //       unreadNotifyCount.value = message.unread
+    //     }
+    //   })
+    // }
     await saveRole()
-    await startNotifyPoll((message) => {
-      if (message && message.unread !== undefined) {
-        unreadNotifyCount.value = message.unread
-      }
-    })
   } finally {
     isLoading.value = false
   }
@@ -170,7 +173,7 @@ const logout = async () => {
                 </el-icon>
                 <span>义修服务</span>
               </template>
-              <el-menu-item index="1-1" @click="() => router.push('/repair/form')">
+              <el-menu-item index="1-1" @click="JumpToRepairForm(userInfo)">
                 填写预约问卷
               </el-menu-item>
               <el-menu-item index="1-2" @click="() => router.push('/user/basicInfo')">
@@ -209,7 +212,7 @@ const logout = async () => {
                 </el-icon>
                 <span>任务中心</span>
               </template>
-              <el-menu-item index="4-1" @click="() => router.push('/taskCenter/list')">
+              <el-menu-item index="4-1" @click="JumpToTaskList(userInfo)">
                 任务列表
               </el-menu-item>
               <el-menu-item index="4-2" @click="() => router.push('/taskCenter/myTask')">

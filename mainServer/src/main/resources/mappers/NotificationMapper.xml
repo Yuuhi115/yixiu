@@ -40,4 +40,19 @@
     <select id="queryTypeByNotifyId" resultType="java.lang.String" parameterType="java.lang.Integer">
         SELECT type FROM notification WHERE notify_id = #{notifyId}
     </select>
+    <select id="queryByReceiverIdFilter" resultType="gdufs.yixiu.pojo.Notification">
+        SELECT * FROM notification
+        <where>
+            <if test="receiverId != null">
+                (receiver_id = #{receiverId} OR receiver_id = 0)
+            </if>
+            <if test="searchKeyword != null">
+                AND (title LIKE "%"#{searchKeyword}"%" OR content LIKE "%"#{searchKeyword}"%")
+            </if>
+            <if test="type != null">
+                AND `type` = #{type}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
 </mapper>

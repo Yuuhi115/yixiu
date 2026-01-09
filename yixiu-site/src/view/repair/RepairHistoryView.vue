@@ -1,10 +1,12 @@
 <script setup>
 import { Message } from "@element-plus/icons-vue"
-import { onMounted, reactive, ref } from "vue"
+import {computed, onMounted, reactive, ref} from "vue"
 import Cookie from "js-cookie"
-import {getRepairFormByFilterLimitUser, getRepairFormByUserId, getUserInfo} from "../../api/userApi.js"
+import {addEvaluation, getRepairFormByFilterLimitUser, getRepairFormByUserId, getUserInfo} from "../../api/userApi.js"
 import { ElMessage } from "element-plus"
 import router from "../../router/index.js"
+import { ElRate, ElDialog } from 'element-plus'
+
 
 const userInfoRef = ref()
 
@@ -22,6 +24,7 @@ const userInfo = reactive({
 
 // 维修记录数据
 const repairRecordsRef = ref([])
+const evaluationFormRef = ref()
 
 const pagination = reactive({
   currentPage: 1,
@@ -45,6 +48,7 @@ const statusOptions = [
   { label: '已取消', value: 4 },
   { label: '用户自行解决', value: 5 },
   { label: '已被拒绝', value: 6 },
+  { label: '已完成评价', value: 7 },
 ]
 
 onMounted(async () => {
@@ -152,6 +156,16 @@ const getStatusType = (status) => {
 // 分页改变处理函数
 const handlePageChange = (newPage) => {
   pagination.currentPage = newPage
+  conditionRepairHistory()
+}
+
+const handleSizeChange = (newSize) => {
+  pagination.pageSize = newSize
+  pagination.currentPage = 1
+  conditionRepairHistory()
+}
+
+const conditionRepairHistory = () => {
   if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
     handleFilter()
   } else {
@@ -159,14 +173,74 @@ const handlePageChange = (newPage) => {
   }
 }
 
-const handleSizeChange = (newSize) => {
-  pagination.pageSize = newSize
-  pagination.currentPage = 1
-  if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
-    handleFilter()
-  } else {
-    loadRepairHistory()
-  }
+// 评价相关数据
+const evaluationDialogVisible = ref(false)
+let currentRecord = ref(null)
+
+const evaluationForm = reactive({
+  satisfaction: 0,
+  content: ''
+})
+
+// 评价表单验证规则
+const evaluationRules = {
+  satisfaction: [
+    { required: true, message: '请选择满意度', trigger: 'change' }
+  ],
+  content: [
+    { required: true, message: '请输入评价内容', trigger: 'blur' },
+    { min: 5, max: 500, message: '评价内容长度应在5到500个字符之间', trigger: 'blur' }
+  ]
+}
+
+// 打开评价弹窗
+const openEvaluationDialog = (record) => {
+  currentRecord = record
+  evaluationForm.satisfaction = 0
+  evaluationForm.content = ''
+  evaluationDialogVisible.value = true
+}
+
+// 关闭评价弹窗
+const closeEvaluationDialog = () => {
+  evaluationDialogVisible.value = false
+  // 重置表单
+  Object.assign(evaluationForm, {
+    satisfaction: 0,
+    content: ''
+  })
+}
+
+/*评价部分*/
+// 提交评价
+const submitEvaluation = async () => {
+  evaluationFormRef.value.validate(async (valid) => {
+    if (valid) {
+      let data = {
+        requestId: currentRecord.requestId,
+        score: evaluationForm.satisfaction,
+        content: evaluationForm.content
+      }
+
+      const response = await addEvaluation(data)
+
+      if (response.code !== 200){
+        ElMessage.error(response.msg)
+      }
+
+      console.log('提交评价:', {
+        recordId: currentRecord.requestId,
+        satisfaction: evaluationForm.satisfaction,
+        content: evaluationForm.content
+      })
+
+      ElMessage.success('评价提交成功！')
+      evaluationDialogVisible.value = false
+      await conditionRepairHistory()
+    } else {
+      ElMessage.error('请完善必填信息')
+    }
+  })
 }
 </script>
 
@@ -297,7 +371,7 @@ const handleSizeChange = (newSize) => {
               <el-collapse v-model="activeNames" accordion>
                 <el-collapse-item
                     v-for="(record, index) in repairRecordsRef"
-                    :key="record.id"
+                    :key="record.requestId"
                     :name="index">
                   <template #title>
                     <div class="collapse-header">
@@ -374,11 +448,85 @@ const handleSizeChange = (newSize) => {
                       <span class="detail-value">无图片</span>
                     </div>
 
+                    <!-- 队员信息 -->
+                    <div class="detail-item full-width">
+                      <span class="detail-label">任务队员:</span>
+                      <div class="detail-value team-section">
+                        <el-empty v-if="!record.repairAssignment || record.repairAssignment.length === 0" description="暂无队员信息"/>
+                        <div v-else>
+                          <div v-for="(member, idx) in record.repairAssignment.filter(assignment => assignment.status !== 5 && assignment.status !== 6)" :key="idx" class="team-member">
+                            <el-card class="member-card">
+                              <div class="member-info">
+                                <el-avatar :src="member.avatar" :size="40" />
+                                <div class="member-details">
+                                  <div class="member-name-status">
+                                    <span class="member-name">{{ member.volunteerName }}</span>
+                                    <el-tag :type="member.isLeader === 1 ? 'success' : 'primary'" size="small" class="member-role">
+                                      {{ member.isLeader === 1 ? '负责人' : '队员' }}
+                                    </el-tag>
+                                  </div>
+                                  <div class="member-other-info">
+                                    <p class="member-class">班级: {{ member.majorClass }}</p>
+                                    <p class="member-grade">年级: {{ member.grade }}</p>
+                                    <p class="member-contactType">联系方式: {{
+                                        member.contactType === 0 ? '手机号' :
+                                            member.contactType === 1 ? '邮箱号' :
+                                                member.contactType === 2 ? '微信号' :
+                                                    member.contactType === 3 ? 'QQ号' : '未知' }}</p>
+                                    <p class="member-contactNumber">联系号码: {{ member.contactNumber }}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </el-card>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 任务评价 -->
+                    <div class="detail-item full-width" v-if="record.status === 7 && record.repairEvaluate">
+                      <span class="detail-label">任务评价:</span>
+                      <div class="detail-value evaluation-section">
+                        <el-descriptions :column="1" size="small">
+                          <el-descriptions-item label="评分" :label-style="{ fontWeight: 'bold', color: '#409EFF' }">
+                            <el-rate
+                                v-model="record.repairEvaluate.score"
+                                disabled
+                                :max="5"
+                                show-text
+                                :texts="['非常差', '差', '一般', '好', '非常好']"
+                            />
+                          </el-descriptions-item>
+                          <el-descriptions-item label="评价内容" :label-style="{ fontWeight: 'bold', color: '#409EFF' }">
+                            <span>{{ record.repairEvaluate.content }}</span>
+                          </el-descriptions-item>
+                          <el-descriptions-item label="评价时间" :label-style="{ fontWeight: 'bold', color: '#409EFF' }">
+                            <span>{{ record.repairEvaluate.createTime }}</span>
+                          </el-descriptions-item>
+                        </el-descriptions>
+                      </div>
+                    </div>
+
+                    <!-- 如果记录没有评价但状态为7，显示暂无评价 -->
+                    <div class="detail-item full-width" v-else-if="record.status === 3">
+                      <span class="detail-label">任务评价:</span>
+                      <span class="detail-value">暂无评价信息</span>
+                    </div>
+
                     <div class="detail-footer">
                       <div class="time-info">
                         <span>创建时间: {{ record.createTime }}</span>
                         <span>完成时间: {{ record.completeTime }}</span>
                         <span>更新时间: {{ record.updateTime }}</span>
+                      </div>
+                      <!-- 评价按钮 -->
+                      <div class="action-buttons" v-if="record.status === 3">
+                        <el-button
+                            type="primary"
+                            @click="openEvaluationDialog(record)"
+                        >
+                          填写评价
+                        </el-button>
                       </div>
                     </div>
                   </div>
@@ -403,6 +551,43 @@ const handleSizeChange = (newSize) => {
       </el-main>
     </el-container>
   </div>
+
+  <!-- 评价弹窗 -->
+  <el-dialog
+      v-model="evaluationDialogVisible"
+      title="填写维修评价"
+      width="500px"
+      @close="closeEvaluationDialog"
+  >
+    <el-form :model="evaluationForm" :rules="evaluationRules" ref="evaluationFormRef">
+      <el-form-item label="满意度" prop="satisfaction" label-width="100px">
+        <el-rate
+            v-model="evaluationForm.satisfaction"
+            :max="5"
+            show-text
+            :texts="['非常差', '差', '一般', '好', '非常好']"
+        />
+      </el-form-item>
+
+      <el-form-item label="评价内容" prop="content" label-width="100px">
+        <el-input
+            v-model="evaluationForm.content"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入您的评价内容..."
+            maxlength="500"
+            show-word-limit
+        />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="closeEvaluationDialog">取消</el-button>
+        <el-button type="primary" @click="submitEvaluation">提交评价</el-button>
+      </span>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -552,5 +737,89 @@ const handleSizeChange = (newSize) => {
   justify-content: center;
   margin-top: 20px;
   padding: 20px 0;
+}
+
+.team-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.team-member {
+  display: inline-block;
+  margin-right: 10px;
+  margin-bottom: 5px;
+}
+
+.member-card {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+}
+
+.member-info .el-avatar {
+  margin-right: 15px;
+}
+
+.member-details {
+  flex: 1;
+}
+
+.member-name-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.member-name {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.member-role {
+  margin-right: 8px;
+}
+
+.member-other-info {
+  font-size: 13px;
+  color: #606266;
+}
+
+.member-other-info p {
+  margin: 3px 0;
+  line-height: 1.4;
+}
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.evaluation-section .el-descriptions {
+  border: none;
+  background: #f0f9ff;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.evaluation-section .el-descriptions .el-descriptions-item__label {
+  font-weight: bold;
+  color: #409eff;
+  padding-right: 10px;
+}
+
+.evaluation-section .el-descriptions .el-descriptions-item__content {
+  padding: 2px 0;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 </style>

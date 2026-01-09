@@ -41,7 +41,9 @@ const userInfo = reactive({
     volunteerId: "",
     studentNumber: "",
     majorClass: "",
-    grade: ""
+    grade: "",
+    contactType: "",
+    contactNumber: "",
   }
 })
 

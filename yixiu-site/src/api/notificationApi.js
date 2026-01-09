@@ -4,8 +4,16 @@ import Cookie from "js-cookie";
 export function pollNotification() {
     return request.get("/notify/poll", {headers: {Authorization: Cookie.get("Authorization")}})
 }
-export function getNotifyList() {
-    return request.get("/notify/list", {headers: {Authorization: Cookie.get("Authorization")}})
+export function getNotifyList(pageNum, pageSize) {
+    return request.get("/notify/list", {headers: {Authorization: Cookie.get("Authorization")}, params: {pageNum: pageNum, pageSize: pageSize}})
+}
+
+export function getNotifyByFilter(queryFilter) {
+    return request.get("/notify/listByFilter",
+        {
+            params: queryFilter,
+            headers: {Authorization: Cookie.get("Authorization")}
+        })
 }
 
 export function getUnreadNotifyCount() {
@@ -21,4 +29,8 @@ export function sendSystemNoticeToUser(data){
 
 export function sendUserNoticeToUser(data){
     return request.post("/notify/userToUser", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function sendRoleChangeNotification(data){
+    return request.post("/notify/roleChange", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }

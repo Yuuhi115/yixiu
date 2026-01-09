@@ -9,6 +9,9 @@ import MemberManageView from "../view/admin/MemberManageView.vue";
 import TaskListView from "../view/taskCenter/TaskListView.vue";
 import messageCenterView from "../view/user/MessageCenterView.vue";
 import MyTaskView from "../view/taskCenter/MyTaskView.vue";
+import {checkToken} from "../api/userApi.js";
+import {ElMessage} from "element-plus";
+import Cookie from "js-cookie";
 
 // 定义路由
 const routes = [
@@ -28,6 +31,17 @@ const routes = [
 const router = createRouter({
     history: createWebHistory('/yixiu-site/'),
     routes
+})
+
+// 需要验证的路由白名单（或者定义哪些路由不需要验证）
+const whiteList = ['/login', '/register']
+
+// 全局前置守卫
+router.beforeEach((to, from, next) => {
+    if (!whiteList.includes(to.path)) {
+        checkToken()
+    }
+    next()
 })
 
 export default router

@@ -292,6 +292,19 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public Integer addTaskEvaluate(RepairEvaluate repairEvaluate) {
+        RepairRequestDto repairRequestDto = new RepairRequestDto();
+        repairRequestDto.setRequestId(repairEvaluate.getRequestId());
+        repairRequestDto.setStatus(7);
+        boolean update = updateTask(repairRequestDto);
+        if (!update) {
+            return null;
+        }
+        int addRow = taskMapper.addTaskEvaluate(repairEvaluate);
+        return addRow == 1 ? repairEvaluate.getEvaluateId() : null;
+    }
+
+    @Override
     public RepairRequestDto repairRequestPojoToDto(Users users, RepairRequest repairRequest) {
         RepairRequestDto repairRequestDto = new RepairRequestDto();
 
@@ -323,6 +336,11 @@ public class TaskServiceImpl implements TaskService {
             repairLog.setLogImgUrl(modifyRepairLogImgs);
             repairLog.setVolunteerName(volunteerMapper.findVolunteerNameByVolunteerId(repairLog.getVolunteerId()));
         }
+
+        // 拼接用户评价
+        RepairEvaluate repairEvaluate = taskMapper.findTaskEvaluateByRequestId(repairRequest.getRequestId());
+        repairRequestDto.setRepairEvaluate(repairEvaluate);
+
         repairRequestDto.setRepairLog(repairLogs);
         repairRequestDto.setUserId(users.getUserId());
         repairRequestDto.setUsername(users.getUsername());
@@ -358,6 +376,8 @@ public class TaskServiceImpl implements TaskService {
         repairAssignmentDto.setAvatar(serviceAvatarUrl + avatar);
         repairAssignmentDto.setMajorClass(volunteer.getMajorClass());
         repairAssignmentDto.setGrade(volunteer.getGrade());
+        repairAssignmentDto.setContactType(volunteer.getContactType());
+        repairAssignmentDto.setContactNumber(volunteer.getContactNumber());
         repairAssignmentDto.setAssignId(repairAssignment.getAssignId());
         repairAssignmentDto.setRequestId(repairAssignment.getRequestId());
         repairAssignmentDto.setVolunteerId(repairAssignment.getVolunteerId());

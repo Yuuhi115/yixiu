@@ -40,7 +40,9 @@ const userInfo = reactive({
     volunteerId: "",
     studentNumber: "",
     majorClass: "",
-    grade: ""
+    grade: "",
+    contactType: "",
+    contactNumber: "",
   }
 })
 
@@ -67,8 +69,9 @@ const statusOptions = [
   { label: '已取消', value: 4 },
   { label: '用户自行解决', value: 5 },
   { label: '已被拒绝', value: 6 },
-  { label: '等待同意加入', value: 7 },
-  { label: '已被拒绝加入', value: 8 },
+  { label: '已完成评价', value: 7 },
+  { label: '等待同意加入', value: 10 },
+  { label: '已被拒绝加入', value: 11 },
 ]
 
 // 可更改的状态选项
@@ -188,10 +191,10 @@ const getStatusLabel = (status) => {
 // 获取状态标签类型
 const getStatusType = (task) => {
   if (ThisVolunteerWaitingForApplyResult(task, userInfo)){
-    task.status = 7
+    task.status = 10
   }
   if (ThisVolunteerIsRejectedFromApply(task, userInfo)){
-    task.status = 8
+    task.status = 11
   }
   switch (task.status) {
     case 2:
@@ -205,8 +208,10 @@ const getStatusType = (task) => {
     case 6:
       return 'danger' // 已被拒绝
     case 7:
-      return 'warning' // 等待同意加入
-    case 8:
+      return 'success' // 已完成评价
+    case 10:
+      return 'danger' // 等待同意加入
+    case 11:
       return 'danger' // 已被拒绝加入
   }
 }

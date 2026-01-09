@@ -38,4 +38,8 @@ public interface TaskMapper {
     List<String> findTaskLogImgUrlByLogId(Integer logId);
     List<RepairLog> findTaskLogByRequestId(Integer requestId);
     int deleteTaskLogImgByLogId(Integer logId);
+
+    int addTaskEvaluate(RepairEvaluate repairEvaluate);
+    RepairEvaluate findTaskEvaluateByRequestId(Integer requestId);
+
 }

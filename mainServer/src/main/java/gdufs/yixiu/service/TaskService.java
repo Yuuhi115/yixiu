@@ -33,4 +33,6 @@ public interface TaskService {
     PageInfo<RepairRequestDto> queryMyTaskByFilter(TaskFilterDto taskFilterDto, Integer pageNum, Integer pageSize);
     boolean updateAssignmentStatus(Integer assignId, Integer status, String reason);
     boolean updateAssignmentStatusByRequestIdAndVolunteerId(Integer requestId, Integer volunteerId, Integer status);
+
+    Integer addTaskEvaluate(RepairEvaluate repairEvaluate);
 }

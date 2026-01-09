@@ -1,5 +1,6 @@
 package gdufs.yixiu.dao;
 
+import gdufs.yixiu.dto.NotificationFilterDto;
 import gdufs.yixiu.pojo.Notification;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -11,6 +12,7 @@ public interface NotificationMapper {
     int addNotification(Notification notification);
     int addBroadcastIsRead(@Param("notifyId") Integer notifyId, @Param("userId") Integer userId);
     List<Notification> queryByReceiverId(Integer receiverId);
+    List<Notification> queryByReceiverIdFilter(NotificationFilterDto notificationFilterDto);
     Integer checkIsReadBroadcast(@Param("notifyId") Integer notifyId, @Param("userId") Integer userId);
     int changeToRead(Integer notifyId);
     int changeToReadBroadcast(@Param("notifyId") Integer notifyId, @Param("userId") Integer userId);

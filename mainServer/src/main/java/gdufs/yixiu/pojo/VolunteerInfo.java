@@ -16,6 +16,8 @@ public class VolunteerInfo {
     private String majorClass;
     private String grade;
     private Integer status;
+    private Integer contactType; // 联系方式 0: 手机号 1: 邮箱号 2: 微信号 3: QQ号
+    private String contactNumber;
     private Timestamp createTime;
     private Timestamp updateTime;
 }

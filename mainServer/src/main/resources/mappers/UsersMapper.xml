@@ -81,6 +81,9 @@
             <if test="lastLogin != null">
                 last_login = #{lastLogin},
             </if>
+            <if test="role != null">
+                role = #{role},
+            </if>
         </set>
         <where>
             user_id = #{userId}

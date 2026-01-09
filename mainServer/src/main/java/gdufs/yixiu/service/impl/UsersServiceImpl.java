@@ -113,6 +113,7 @@ public class UsersServiceImpl implements UsersService {
         user.setUserId(userModifyDto.getUserId());
         user.setUsername(userModifyDto.getUsername());
         user.setRealName(userModifyDto.getRealName());
+        user.setRole(userModifyDto.getRole());
         usersMapper.updateUser(user);
     }
 

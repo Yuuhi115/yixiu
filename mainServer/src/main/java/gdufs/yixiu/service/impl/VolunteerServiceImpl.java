@@ -99,6 +99,9 @@ public class VolunteerServiceImpl implements VolunteerService {
         volunteerInfo.setStudentNumber(volunteerModifyDto.getStudentNumber());
         volunteerInfo.setMajorClass(volunteerModifyDto.getMajorClass());
         volunteerInfo.setGrade(volunteerModifyDto.getGrade());
+        volunteerInfo.setStatus(volunteerModifyDto.getStatus());
+        volunteerInfo.setContactType(volunteerModifyDto.getContactType());
+        volunteerInfo.setContactNumber(volunteerModifyDto.getContactNumber());
         volunteerMapper.updateVolunteerInfo(volunteerInfo);
     }
 

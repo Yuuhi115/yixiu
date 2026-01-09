@@ -21,6 +21,8 @@ export function updateVolunteerInfo(volunteerInfo) {
         studentNumber: volunteerInfo.studentNumber,
         majorClass: volunteerInfo.majorClass,
         grade: volunteerInfo.grade,
+        contactType: volunteerInfo.contactType,
+        contactNumber: volunteerInfo.contactNumber
     }
     console.log(data)
     return request.put("/volunteer/info", data, {headers: {Authorization: Cookie.get("Authorization")}})

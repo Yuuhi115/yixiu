@@ -1,6 +1,19 @@
 import request from "../request/request.js";
 import Cookie from "js-cookie";
 import qs from 'qs';
+import {ElMessage} from "element-plus";
+import router from "../router/index.js";
+
+export async function checkToken() {
+    const isAuth = await request.get("/users/checkAuth", {headers: {Authorization: Cookie.get("Authorization")}})
+    if (isAuth.code !== 200) {
+        ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
+        setTimeout(() => {
+            Cookie.remove('Authorization')
+            router.push('/login')
+        }, 3000)
+    }
+}
 /*邮箱验证码登录*/
 export function loginByEmailVerification(loginForm) {
     let data = {
@@ -70,4 +83,8 @@ export function getRepairFormByFilterLimitUser(queryFilter) {
     return request.get("/task/getByFilterLimitUser",
         { params: queryFilter, headers: { Authorization: Cookie.get("Authorization") } }
     )
+}
+/*添加维修评价*/
+export function addEvaluation(data){
+    return request.post("/task/addEvaluation", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }

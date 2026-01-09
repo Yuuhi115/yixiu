@@ -33,6 +33,21 @@ public class UsersController {
     @Autowired
     private JWTUtils jwtUtils;
 
+    @UserLoginToken
+    @GetMapping("/checkAuth")
+    public Result checkAuth(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+        if (redisToken == null || !redisToken.equals(token)) {
+            log.info("用户(id:{})检查token失败", userId);
+            redisTemplate.delete("token:" + userId);
+            return Result.fail("");
+        }
+        return Result.success("");
+    }
+
+
     @PassToken
     @PostMapping("/loginByPhone")
     public Result loginByPhone(@RequestBody UsersRegisterDto userDto) {

@@ -76,7 +76,7 @@ public class AdminServiceImpl implements AdminService {
     public String sendInviteCode(String email) {
         String code = String.valueOf((int)((Math.random() * 9 + 1) * 100000));
         redisTemplate.opsForValue().set("inviteCode:email:" + email, code, 24, TimeUnit.HOURS);
-        emailUtils.sendCustomVerifyCode(email, "广外义修帮志愿者注册邀请码","【广外义修帮】您的注册邀请码是" + code + "。邀请码有效期为24小时，请尽快登录网站进行注册。如遇邀请码过期，请联系管理员重新发送");
+        emailUtils.sendCustomVerifyCode(email, "广外义修帮志愿者注册邀请码","【广外义修帮】 您的注册邀请码是" + code + "。邀请码有效期为24小时，请尽快登录网站进行注册。如遇邀请码过期，请联系管理员重新发送");
         log.info("邀请码{}已发送至{}",code, email);
         return code;
     }
@@ -86,6 +86,7 @@ public class AdminServiceImpl implements AdminService {
         Users user = new Users();
         user.setUserId(volunteerModifyDto.getUserId());
         user.setRealName(volunteerModifyDto.getRealName());
+        user.setRole(volunteerModifyDto.getRole());
 
         VolunteerInfo volunteerInfo = new VolunteerInfo();
         volunteerInfo.setUserId(volunteerModifyDto.getUserId());

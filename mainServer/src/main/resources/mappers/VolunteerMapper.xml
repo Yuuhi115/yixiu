@@ -22,6 +22,12 @@
             <if test="status != null">
                 status = #{status},
             </if>
+            <if test="contactType != null">
+                contact_type = #{contactType},
+            </if>
+            <if test="contactNumber != null">
+                contact_number = #{contactNumber},
+            </if>
         </set>
         where user_id = #{userId}
     </update>
