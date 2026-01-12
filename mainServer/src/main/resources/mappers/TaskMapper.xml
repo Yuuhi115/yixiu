@@ -186,5 +186,8 @@
     <select id="findTaskEvaluateByRequestId" resultType="gdufs.yixiu.pojo.RepairEvaluate">
         select * from repair_evaluate where request_id = #{requestId}
     </select>
+    <select id="findRepairLogsWithDate" resultType="gdufs.yixiu.pojo.RepairLog">
+        SELECT * FROM repair_log WHERE volunteer_id = #{volunteerId} AND DATE(upload_time) BETWEEN #{startDate} AND #{endDate}
+    </select>
 
 </mapper>

@@ -1,10 +1,7 @@
 package gdufs.yixiu.service;
 
 import com.github.pagehelper.PageInfo;
-import gdufs.yixiu.dto.RepairAssignmentDto;
-import gdufs.yixiu.dto.RepairLogDto;
-import gdufs.yixiu.dto.RepairRequestDto;
-import gdufs.yixiu.dto.TaskFilterDto;
+import gdufs.yixiu.dto.*;
 import gdufs.yixiu.pojo.*;
 
 import java.util.List;
@@ -35,4 +32,7 @@ public interface TaskService {
     boolean updateAssignmentStatusByRequestIdAndVolunteerId(Integer requestId, Integer volunteerId, Integer status);
 
     Integer addTaskEvaluate(RepairEvaluate repairEvaluate);
+
+    List<VolunteerStatisticsDto> exportRepairLogsWithDate(Integer volunteerId, String startDate, String endDate);
+
 }

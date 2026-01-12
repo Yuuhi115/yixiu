@@ -8,7 +8,19 @@ const instance= axios.create({baseURL})
 
 instance.interceptors.response.use(result => {
     // console.log(result.data)
-    if (result.status === 200) {  // 请求成功
+    if (result.status === 200) {
+        if (result.config.responseType === 'blob' ||
+            result.config.responseType === 'arraybuffer') {
+            // 判断是否是 JSON 错误
+            const contentType = result.headers['content-type'] || '';
+            if (contentType.includes('application/json')) {
+                return result.data.text().then(text => {
+                    return Promise.reject(JSON.parse(text));
+                });
+            }
+            return result;
+        }
+        // 请求成功
         return result.data
     }
     else {

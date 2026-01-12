@@ -13,6 +13,7 @@ import {
 } from "../../api/volunteerApi.js";
 import {AcceptSuperAdmin} from "../../utils/roleCheckUtils.js";
 import {sendRoleChangeNotification} from "../../api/notificationApi.js";
+import {exportVolunteerRepairStatistics} from "../../api/exportApi.js";
 
 const userInfoRef = ref()
 
@@ -458,6 +459,90 @@ const resetInviteForm = () => {
   inviteMethod.value = 'email'
   resetInviteField()
 }
+
+/*导出志愿者维修数据*/
+// 导出相关数据
+const exportDialogVisible = ref(false)
+const exportFormRef = ref()
+const exportLoading = ref(false)
+
+const exportForm = reactive({
+  volunteerId: '',
+  volunteerName: '',
+  dateRange: [] // [startDate, endDate]
+})
+
+// 显示导出对话框
+const showExportDialog = (row) => {
+  exportForm.volunteerId = row.volunteerInfo.volunteerId
+  exportForm.volunteerName = row.realName
+  exportForm.dateRange = []
+  exportDialogVisible.value = true
+}
+
+// 重置导出表单
+const resetExportForm = () => {
+  exportForm.volunteerId = ''
+  exportForm.volunteerName = ''
+  exportForm.dateRange = []
+  if (exportFormRef.value) {
+    exportFormRef.value.resetFields()
+  }
+}
+
+// 提交导出表单
+const submitExportForm = async () => {
+  if (!exportForm.volunteerId) {
+    ElMessage.error('缺少志愿者ID')
+    return
+  }
+
+  const [startDate, endDate] = exportForm.dateRange
+  const params = {
+    volunteerId: exportForm.volunteerId,
+    startDate: startDate || '',
+    endDate: endDate || ''
+  }
+
+  try {
+    exportLoading.value = true
+
+    // 调用导出API
+    const response = await exportVolunteerRepairStatistics(params)
+
+    // 创建下载链接
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    // console.log(response)
+    // console.log(link)
+
+    // 设置文件名
+    const contentDisposition = response.headers['content-disposition']
+    let filename = `志愿者_${exportForm.volunteerName}_维修记录.xlsx`
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename\*?=([^;]+)/)
+      if (filenameMatch) {
+        filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''))
+      }
+    }
+    link.setAttribute('download', filename)
+
+    // 触发下载
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    ElMessage.success('导出成功')
+    exportDialogVisible.value = false
+  } catch (error) {
+    ElMessage.error('导出失败: ' + error.message)
+  } finally {
+    exportLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -629,7 +714,7 @@ const resetInviteForm = () => {
                     type="success"
                     :icon="Download"
                     circle
-                    @click="handleDelete(scope.row)"
+                    @click="showExportDialog(scope.row)"
                     title="导出志愿者维修数据"
                     style="margin-left: 10px;"
                 />
@@ -744,6 +829,49 @@ const resetInviteForm = () => {
                   >
                     发送邀请
                   </el-button>
+              </span>
+            </template>
+          </el-dialog>
+
+          <!-- 导出维修数据对话框 -->
+          <el-dialog
+              v-model="exportDialogVisible"
+              title="导出志愿者维修数据"
+              width="500px"
+              @close="resetExportForm"
+          >
+            <el-form
+                ref="exportFormRef"
+                :model="exportForm"
+                label-width="100px"
+            >
+              <el-form-item label="志愿者姓名">
+                <el-input v-model="exportForm.volunteerName" disabled />
+              </el-form-item>
+
+              <el-form-item label="时间范围">
+                <el-date-picker
+                    v-model="exportForm.dateRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    format="YYYY-MM-DD"
+                    value-format="YYYY-MM-DD"          style="width: 100%"
+                />
+              </el-form-item>
+            </el-form>
+
+            <template #footer>
+              <span class="dialog-footer">
+                <el-button @click="exportDialogVisible = false">取消</el-button>
+                <el-button
+                    type="primary"
+                    @click="submitExportForm"
+                    :loading="exportLoading"
+                >
+                  确定导出
+                </el-button>
               </span>
             </template>
           </el-dialog>

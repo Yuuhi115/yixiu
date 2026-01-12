@@ -2,6 +2,7 @@ package gdufs.yixiu.dao;
 
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.TaskFilterDto;
+import gdufs.yixiu.dto.VolunteerStatisticsDto;
 import gdufs.yixiu.pojo.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -41,5 +42,8 @@ public interface TaskMapper {
 
     int addTaskEvaluate(RepairEvaluate repairEvaluate);
     RepairEvaluate findTaskEvaluateByRequestId(Integer requestId);
+    List<RepairLog> findRepairLogsWithDate(@Param("volunteerId") Integer volunteerId,
+                                           @Param("startDate") String startDate,
+                                           @Param("endDate") String endDate);
 
 }

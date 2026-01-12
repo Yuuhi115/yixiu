@@ -5,10 +5,7 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
-import gdufs.yixiu.dto.RepairAssignmentDto;
-import gdufs.yixiu.dto.RepairLogDto;
-import gdufs.yixiu.dto.RepairRequestDto;
-import gdufs.yixiu.dto.TaskFilterDto;
+import gdufs.yixiu.dto.*;
 import gdufs.yixiu.pojo.*;
 import gdufs.yixiu.service.TaskService;
 import lombok.extern.slf4j.Slf4j;
@@ -302,6 +299,31 @@ public class TaskServiceImpl implements TaskService {
         }
         int addRow = taskMapper.addTaskEvaluate(repairEvaluate);
         return addRow == 1 ? repairEvaluate.getEvaluateId() : null;
+    }
+
+    @Override
+    public List<VolunteerStatisticsDto> exportRepairLogsWithDate(Integer volunteerId, String startDate, String endDate) {
+        List<RepairLog> repairLogs = taskMapper.findRepairLogsWithDate(volunteerId, startDate, endDate);
+        List<VolunteerStatisticsDto> excelDataList = new ArrayList<>();
+
+        for (RepairLog repairLog : repairLogs) {
+            VolunteerStatisticsDto excelDto = new VolunteerStatisticsDto();
+            excelDto.setLogId(repairLog.getLogId());
+            excelDto.setVolunteerId(repairLog.getVolunteerId());
+            excelDto.setRequestId(repairLog.getRequestId());
+            excelDto.setLogContent(repairLog.getLogContent());
+            excelDto.setRepairDuration(repairLog.getRepairDuration());
+            excelDto.setSolutionSummary(repairLog.getSolutionSummary());
+            // 处理时间字段
+            if (repairLog.getUploadTime() != null) {
+                excelDto.setUploadTime(repairLog.getUploadTime().toLocalDateTime());
+            }
+            String name = volunteerMapper.findVolunteerNameByVolunteerId(repairLog.getVolunteerId());
+            excelDto.setVolunteerName(name);
+            excelDataList.add(excelDto);
+        }
+
+        return excelDataList;
     }
 
     @Override
