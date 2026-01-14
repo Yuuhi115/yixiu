@@ -1,7 +1,9 @@
 package gdufs.yixiu.service.impl;
 
+import gdufs.yixiu.dao.PostMapper;
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.pojo.PostImg;
 import gdufs.yixiu.pojo.RepairLogImg;
 import gdufs.yixiu.pojo.RepairRequestImg;
 import gdufs.yixiu.pojo.Users;
@@ -26,8 +28,13 @@ public class ImgUploadServiceImpl implements ImgUploadService {
     private String avatarPath;
     private String requestPath;
     private String repairLogPath;
+    private String postImgPath;
     @Autowired
     private TaskMapper taskMapper;
+    @Autowired
+    private PostMapper postMapper;
+    @Autowired
+    private UsersMapper userMapper;
 
     @Value("${resources-path.avatar}")
 //    @Value("${resources-path.linux_avatar}")
@@ -43,8 +50,11 @@ public class ImgUploadServiceImpl implements ImgUploadService {
     public void setRepairLogPath(String repairLogPath) {
         this.repairLogPath = repairLogPath;
     }
-    @Autowired
-    private UsersMapper userMapper;
+    @Value("${resources-path.postImg}")
+    public void setPostImgPath(String postImgPath) {
+        this.postImgPath = postImgPath;
+    }
+
     /*上传用户头像到本地*/
     @Override
     public String uploadAvatar(MultipartFile file, int id) {
@@ -139,5 +149,35 @@ public class ImgUploadServiceImpl implements ImgUploadService {
             throw new RuntimeException(e);
         }
         return "repairLog/" + fileName;
+    }
+
+    @Override
+    public String uploadPostImg(MultipartFile file, Integer postId, Integer number) {
+        log.info("Uploading No.{} post's img to {}", postId, postImgPath);
+        String originalFilename = file.getOriginalFilename();
+        // 显示文件大小（以MB为单位）
+        long fileSizeInBytes = file.getSize();
+        double fileSizeInMB = fileSizeInBytes / (1024.0 * 1024.0);
+        String formattedFileSize = String.format("%.2f", fileSizeInMB);
+        log.info("postId:{}, imgNumber:{}, file size: {} MB",postId, number, formattedFileSize);
+        String fileName = "post_" + postId + "_img_" + number + "." + originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
+        Path uploadPath = Paths.get(postImgPath);
+        if (!Files.exists(uploadPath)) {
+            try {
+                Files.createDirectories(uploadPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        try {
+            Files.copy(file.getInputStream(), uploadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+            PostImg img = new PostImg();
+            img.setPostId(postId);
+            img.setImgUrl("postImg/" + fileName);
+            postMapper.addPostImg(img);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return "postImg/" + fileName;
     }
 }

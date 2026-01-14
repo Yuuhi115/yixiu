@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.PostMapper">
+    <!-- SQL映射语句在此定义 -->
+    <insert id="addPost" parameterType="gdufs.yixiu.pojo.Post" useGeneratedKeys="true" keyColumn="post_id" keyProperty="postId">
+        insert into post(user_id, title, content)
+        values(#{userId}, #{title}, #{content})
+    </insert>
+    <insert id="addPostImg" parameterType="gdufs.yixiu.pojo.PostImg">
+        insert into post_img(post_id, img_url)
+        values(#{postId}, #{imgUrl})
+    </insert>
+    <insert id="addLike">
+        insert into post_like(post_id, user_id)
+        values(#{postId}, #{userId})
+    </insert>
+    <insert id="addFavorite">
+        insert into post_favorite(post_id, user_id)
+        values(#{postId}, #{userId})
+    </insert>
+    <insert id="addView">
+        insert into post_view(post_id, ip_address, user_id)
+        values(#{postId}, #{ipAddress}, #{userId})
+    </insert>
+    <update id="updatePost" parameterType="gdufs.yixiu.pojo.Post">
+        update post
+        <set>
+            <if test="title != null">
+                title = #{title},
+            </if>
+            <if test="content != null">
+                content = #{content},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        where post_id = #{postId}
+    </update>
+    <delete id="deletePost">
+        delete from post where post_id = #{postId}
+    </delete>
+    <delete id="deleteLike">
+        delete from post_like where post_id = #{postId} and user_id = #{userId}
+    </delete>
+    <delete id="deleteFavorite">
+        delete from post_favorite where post_id = #{postId} and user_id = #{userId}
+    </delete>
+    <select id="queryPostById" resultType="gdufs.yixiu.pojo.Post" parameterType="java.lang.Integer">
+        select * from post where post_id = #{postId}
+    </select>
+    <select id="queryPostByUserId" resultType="gdufs.yixiu.pojo.Post" parameterType="java.lang.Integer">
+        select * from post where user_id = #{userId}
+    </select>
+    <select id="queryPostByFilter" resultType="gdufs.yixiu.pojo.Post"
+            parameterType="gdufs.yixiu.dto.community.request.PostFilterDto">
+        select * from post
+        <where>
+            <if test="status != null">
+                and status = #{status}
+            </if>
+            <if test="tagId != null">
+                and tag_id = #{tagId}
+            </if>
+        </where>
+    </select>
+    <select id="queryAllPost" resultType="gdufs.yixiu.pojo.Post">
+        select * from post
+    </select>
+    <select id="countPostLikeFavViewNum" resultType="java.util.Map" parameterType="java.lang.Integer">
+        select
+            (select count(*) from post_like where post_id = #{postId}) as likeNum,
+            (select count(*) from post_favorite where post_id = #{postId}) as favoriteNum,
+            (select count(*) from post_view where post_id = #{postId}) as viewNum
+    </select>
+    <select id="queryPostImgUrls" resultType="java.lang.String" parameterType="java.lang.Integer">
+        select img_url from post_img where post_id = #{postId}
+    </select>
+    <select id="isExistLike" resultType="java.lang.Boolean">
+        select exists(select * from post_like where post_id = #{postId} and user_id = #{userId})
+    </select>
+    <select id="isExistFavorite" resultType="java.lang.Boolean">
+        select exists(select * from post_favorite where post_id = #{postId} and user_id = #{userId})
+    </select>
+    <select id="checkRecentView" resultType="java.lang.Boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM post_view
+            WHERE post_id = #{postId}
+              AND user_id = #{userId}
+              AND create_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+        )
+    </select>
+
+
+</mapper>

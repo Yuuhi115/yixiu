@@ -36,6 +36,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void setRepairLogPath(String repairLogPath) {
         this.repairLogPath = repairLogPath;
     }
+    private String postImgPath;
+    @Value("${resources-path.postImg}")
+    public void setPostImgPath(String postImgPath) {
+        this.postImgPath = postImgPath;
+    }
 
 
     @Override
@@ -43,6 +48,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("api/v1/img/users/avatar/**").addResourceLocations("file:" + avatarPath);
         registry.addResourceHandler("api/v1/img/task/request/**").addResourceLocations("file:" + requestPath);
         registry.addResourceHandler("api/v1/img/task/repairLog/**").addResourceLocations("file:" + repairLogPath);
+        registry.addResourceHandler("api/v1/img/community/postImg/**").addResourceLocations("file:" + postImgPath);
 
 //        registry.addResourceHandler("/users/avatar/**").addResourceLocations("file:/usr/yixiuAssist/image/avatar/");
 //        registry.addResourceHandler("/task/requestImg/**").addResourceLocations("file:/usr/yixiuAssist/image/request/");

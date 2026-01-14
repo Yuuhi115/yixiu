@@ -1,0 +1,26 @@
+package gdufs.yixiu.dto.community.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.sql.Timestamp;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class ResponsePostDto {
+    private Integer postId;
+    private Integer userId;
+    private String title;
+    private String content;
+    private List<String> imgUrls;
+    private Integer status;
+    private Integer likeNum;
+    private Integer commentNum;
+    private Integer viewNum;
+    private Integer favoriteNum;
+    private Timestamp createTime;
+    private Timestamp updateTime;
+}
