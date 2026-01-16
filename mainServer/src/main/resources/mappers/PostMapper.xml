@@ -23,6 +23,13 @@
         insert into post_view(post_id, ip_address, user_id)
         values(#{postId}, #{ipAddress}, #{userId})
     </insert>
+    <insert id="addPostTags">
+        insert into post_tag_rel(post_id, tag_id)
+        values
+            <foreach collection="tags" item="tag" separator=",">
+                (#{postId}, #{tag})
+            </foreach>
+    </insert>
     <update id="updatePost" parameterType="gdufs.yixiu.pojo.Post">
         update post
         <set>
@@ -91,6 +98,71 @@
               AND create_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
         )
     </select>
+    <select id="queryPostTags" resultType="gdufs.yixiu.dto.community.vo.TagVO"
+            parameterType="java.lang.Integer">
+        select pt.tag_id, pt.tag_name from post_tag_rel as ptr
+            join post_tag as pt
+                on ptr.tag_id = pt.tag_id
+        where ptr.post_id = #{postId}
+    </select>
+    <select id="queryAllTags" resultType="gdufs.yixiu.dto.community.vo.TagVO">
+        select pt.tag_id, pt.tag_name
+        from post_tag as pt
+            left join post_tag_rel as ptr
+                on pt.tag_id = ptr.tag_id
+        group by pt.tag_id, pt.tag_name
+        order by COUNT(ptr.tag_id) desc
+    </select>
+    <select id="getPostsLikeCounts" resultType="gdufs.yixiu.dto.community.vo.PostCommentStatisticVO">
+        SELECT post_id, COUNT(*) as `count`
+        FROM post_like
+        WHERE post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        GROUP BY post_id
+    </select>
+    <select id="getPostsFavoriteCounts" resultType="gdufs.yixiu.dto.community.vo.PostCommentStatisticVO">
+        SELECT post_id, COUNT(*) as `count`
+        FROM post_favorite
+        WHERE post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        GROUP BY post_id
+    </select>
+    <select id="getPostsViewCounts" resultType="gdufs.yixiu.dto.community.vo.PostCommentStatisticVO">
+        SELECT post_id, COUNT(*) as `count`
+        FROM post_view
+        WHERE post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        GROUP BY post_id
+    </select>
+    <select id="getPostsCommentCounts" resultType="gdufs.yixiu.dto.community.vo.PostCommentStatisticVO">
+        SELECT post_id, COUNT(*) AS `count`
+        FROM (
+        -- 一级评论
+        SELECT pc.post_id
+        FROM post_comment pc
+        WHERE pc.post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
 
+        UNION ALL
+
+        -- 二级评论
+        SELECT pc.post_id
+        FROM post_comment_reply pcr
+        JOIN post_comment pc ON pcr.comment_id = pc.comment_id
+        WHERE pc.post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        ) t
+        GROUP BY post_id
+    </select>
 
 </mapper>

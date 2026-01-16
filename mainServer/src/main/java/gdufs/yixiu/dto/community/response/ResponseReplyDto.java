@@ -12,10 +12,14 @@ import java.sql.Timestamp;
 public class ResponseReplyDto {
     private Integer replyId;
     private Integer commentId;
-    private Integer userId;
+    private Integer fromUserId;
+    private String fromUserName;
+    private String fromUserAvatar;
+    private Integer toUserId;
+    private String toUserName;
+    private Integer parentReplyId;
     private String content;
     private Integer likeNum;
     private Integer isLike;
     private Timestamp createTime;
-
 }

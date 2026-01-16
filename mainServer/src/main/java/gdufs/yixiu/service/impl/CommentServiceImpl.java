@@ -3,18 +3,24 @@ package gdufs.yixiu.service.impl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.CommentMapper;
+import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.community.request.RequestCommentDto;
 import gdufs.yixiu.dto.community.request.RequestReplyDto;
-import gdufs.yixiu.dto.community.response.CommentStatisticCountVO;
+import gdufs.yixiu.dto.community.vo.CommentStatisticCountVO;
+import gdufs.yixiu.dto.community.vo.ReplyStatisticCountVO;
 import gdufs.yixiu.dto.community.response.ResponseCommentDto;
+import gdufs.yixiu.dto.community.response.ResponseReplyDto;
+import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.PostCommentReply;
 import gdufs.yixiu.service.CommentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -22,6 +28,13 @@ import java.util.stream.Collectors;
 public class CommentServiceImpl implements CommentService {
     @Autowired
     private CommentMapper commentMapper;
+    @Autowired
+    private UsersMapper usersMapper;
+    private String serviceUserUrl;
+    @Value("${resources-path.service-avatar-url}")
+    public void setServiceUserUrl(String serviceUserUrl) {
+        this.serviceUserUrl = serviceUserUrl;
+    }
     @Override
     public int addComment(RequestCommentDto requestCommentDto) {
         return commentMapper.addComment(requestCommentDto);
@@ -34,6 +47,13 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     public List<ResponseCommentDto> postCommentToResponseCommentDto(List<PostComment> postComments, Integer userId) {
+        // 提取用户ID列表
+        List<Integer> userIds = postComments.stream()
+                .map(PostComment::getUserId)
+                .distinct() // 去重，避免重复查询
+                .toList();
+        // 批量查询用户信息
+        Map<Integer, UserInfoVO> userInfoMap = getUserInfoMap(userIds);
         // 提取评论ID列表
         List<Integer> commentIds = postComments.stream()
                 .map(PostComment::getCommentId)
@@ -62,6 +82,12 @@ public class CommentServiceImpl implements CommentService {
                         CommentStatisticCountVO::getCount
                 ));
 
+        // 默认加载前 20 条二级评论
+        List<PostCommentReply> replies = commentMapper.getRepliesByCommentIds(commentIds, 20);
+
+        // 组装二级评论
+        Map<Integer, List<ResponseReplyDto>> replyGroupMap = buildReplyGroup(replies, userId);
+
         List<ResponseCommentDto> responseCommentDtos = new ArrayList<>();
 
         // 设置每个评论的点赞数和回复数
@@ -75,10 +101,103 @@ public class CommentServiceImpl implements CommentService {
             responseCommentDto.setReplyNum(replyCountMap.getOrDefault(comment.getCommentId(), 0));
             responseCommentDto.setCreateTime(comment.getCreateTime());
             responseCommentDto.setIsLike(likedSet.contains(comment.getCommentId()) ? 1 : 0);
+            // 设置用户信息
+            UserInfoVO userInfo = userInfoMap.get(comment.getUserId());
+            if (userInfo != null) {
+                responseCommentDto.setUsername(userInfo.getUsername());
+                responseCommentDto.setAvatar(serviceUserUrl + userInfo.getAvatar());
+            }
+            responseCommentDto.setReplyList(replyGroupMap.getOrDefault(comment.getCommentId(), List.of()));
             responseCommentDtos.add(responseCommentDto);
         }
         return responseCommentDtos;
     }
+
+    @Override
+    public Map<Integer, List<ResponseReplyDto>> buildReplyGroup(List<PostCommentReply> replies, Integer userId) {
+        if (replies == null || replies.isEmpty()) {
+            return Map.of();
+        }
+        List<Integer> fromUserIds = replies.stream()
+                .map(PostCommentReply::getFromUserId)
+                .distinct()
+                .toList();
+        List<Integer> toUserIds = replies.stream()
+                .map(PostCommentReply::getToUserId)
+                .distinct()
+                .toList();
+        Map<Integer, UserInfoVO> fromUserInfoMap = getUserInfoMap(fromUserIds);
+        Map<Integer, UserInfoVO> toUserInfoMap = getUserInfoMap(toUserIds);
+
+        // 提取 replyIds
+        List<Integer> replyIds = replies.stream()
+                .map(PostCommentReply::getReplyId)
+                .toList();
+
+        // 二级评论点赞数（VO → Map）
+        Map<Integer, Integer> likeCountMap =
+                commentMapper.getReplyLikeCounts(replyIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ReplyStatisticCountVO::getReplyId,
+                                ReplyStatisticCountVO::getCount
+                        ));
+
+        // 当前用户点赞的 replyId 集合
+        Set<Integer> likedReplySet =
+                new HashSet<>(commentMapper.selectLikedReplyIds(userId, replyIds));
+
+        // 按 commentId 分组组装 ResponseReplyDto
+        Map<Integer, List<ResponseReplyDto>> groupMap = new HashMap<>();
+
+        for (PostCommentReply reply : replies) {
+            ResponseReplyDto dto = new ResponseReplyDto();
+            dto.setReplyId(reply.getReplyId());
+            dto.setCommentId(reply.getCommentId());
+            dto.setFromUserId(reply.getFromUserId());
+            dto.setToUserId(reply.getToUserId());
+            dto.setParentReplyId(reply.getParentReplyId());
+            dto.setContent(reply.getContent());
+            dto.setCreateTime(reply.getCreateTime());
+            UserInfoVO fromUserInfo = fromUserInfoMap.get(reply.getFromUserId());
+            if (fromUserInfo != null) {
+                dto.setFromUserName(fromUserInfo.getUsername());
+                dto.setFromUserAvatar(serviceUserUrl + fromUserInfo.getAvatar());
+            }
+            UserInfoVO toUserInfo = toUserInfoMap.get(reply.getToUserId());
+            if (toUserInfo != null) {
+                dto.setToUserName(toUserInfo.getUsername());
+            }
+            dto.setLikeNum(
+                    likeCountMap.getOrDefault(reply.getReplyId(), 0)
+            );
+            dto.setIsLike(
+                    likedReplySet.contains(reply.getReplyId()) ? 1 : 0
+            );
+            // 添加到分组
+            groupMap
+                    .computeIfAbsent(reply.getCommentId(), k -> new ArrayList<>())
+                    .add(dto);
+        }
+
+        return groupMap;
+    }
+
+    @Override
+    public Map<Integer, UserInfoVO> getUserInfoMap(List<Integer> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        // 调用 UserMapper 的批量查询方法
+        List<UserInfoVO> userInfos = usersMapper.findUserNameAndAvatarByIds(userIds);
+
+        return userInfos.stream()
+                .collect(Collectors.toMap(
+                        UserInfoVO::getUserId,
+                        Function.identity()
+                ));
+    }
+
 
     @Override
     public PageInfo<ResponseCommentDto> listComments(Integer postId, Integer userId, Integer pageNum, Integer pageSize) {
@@ -95,23 +214,69 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageInfo<PostCommentReply> listReplies(Integer commentId, Integer pageNum, Integer pageSize) {
-        return null;
+    public PageInfo<ResponseReplyDto> listReplies(Integer commentId, Integer userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+
+        List<PostCommentReply> replies =
+                commentMapper.getReplyByCommentId(commentId);
+        PageInfo<PostCommentReply> originalReplyList = new PageInfo<>(replies);
+
+        if (replies.isEmpty()) {
+            return new PageInfo<>(List.of());
+        }
+
+        Map<Integer, List<ResponseReplyDto>> group =
+                buildReplyGroup(replies, userId);
+        PageInfo<ResponseReplyDto> resultPageInfo = new PageInfo<>(group.get(commentId));
+        resultPageInfo.setTotal(originalReplyList.getTotal());
+        resultPageInfo.setPages(originalReplyList.getPages());
+        resultPageInfo.setPageNum(originalReplyList.getPageNum());
+        resultPageInfo.setPageSize(originalReplyList.getPageSize());
+
+       return resultPageInfo;
     }
 
     @Override
     public int deleteComment(Integer commentId) {
-        return 0;
+        PostComment postComment = new PostComment();
+        postComment.setCommentId(commentId);
+        postComment.setStatus(1);
+        return commentMapper.updateComment(postComment) == 1 ? 1 : 0;
     }
 
     @Override
     public int deleteReply(Integer replyId) {
-        return 0;
+        PostCommentReply postCommentReply = new PostCommentReply();
+        postCommentReply.setReplyId(replyId);
+        postCommentReply.setStatus(1);
+        return commentMapper.updateReply(postCommentReply) == 1 ? 1 : 0;
     }
 
     @Override
     public int countCommentsNum(Integer postId) {
         return 0;
+    }
+
+    @Override
+    public PostComment getCommentByCommentId(Integer commentId) {
+        return commentMapper.getCommentByCommentId(commentId);
+    }
+
+    @Override
+    public PostCommentReply getReplyByReplyId(Integer replyId) {
+        return commentMapper.getReplyByReplyId(replyId);
+    }
+
+    @Override
+    public Boolean isCommentOwner(Integer commentId, Integer userId) {
+        PostComment comment = commentMapper.getCommentByCommentId(commentId);
+        return comment.getUserId().equals(userId);
+    }
+
+    @Override
+    public Boolean isReplyOwner(Integer replyId, Integer userId) {
+        PostCommentReply reply = commentMapper.getReplyByReplyId(replyId);
+        return reply.getFromUserId().equals(userId);
     }
 
     @Override

@@ -19,6 +19,30 @@
         insert into reply_like(reply_id, user_id)
         values(#{replyId}, #{userId})
     </insert>
+    <update id="updateComment" parameterType="gdufs.yixiu.pojo.PostComment">
+        update post_comment
+        <set>
+            <if test="content != null">
+                content = #{content},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        where comment_id = #{commentId}
+    </update>
+    <update id="updateReply" parameterType="gdufs.yixiu.pojo.PostCommentReply">
+        update post_comment_reply
+        <set>
+            <if test="content != null">
+                content = #{content},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        where reply_id = #{replyId}
+    </update>
     <delete id="deleteComment" parameterType="java.lang.Integer">
         delete from post_comment where comment_id = #{commentId}
     </delete>
@@ -32,7 +56,7 @@
         delete from reply_like where reply_id = #{replyId} and user_id = #{userId}
     </delete>
     <select id="listComments" resultType="gdufs.yixiu.pojo.PostComment" parameterType="java.lang.Integer">
-        select * from post_comment where post_id = #{postId}
+        select * from post_comment where post_id = #{postId} and status = 0
     </select>
     <select id="listReplies" resultType="gdufs.yixiu.pojo.PostCommentReply" parameterType="java.lang.Integer">
         select * from post_comment_reply where comment_id = #{commentId}
@@ -56,7 +80,13 @@
             #{commentId}
         </foreach>
     </select>
-    <select id="getCommentLikeCounts" resultType="gdufs.yixiu.dto.community.response.CommentStatisticCountVO">
+    <select id="selectLikedReplyIds" resultType="java.lang.Integer">
+        select reply_id from reply_like where user_id = #{userId} and reply_id in
+        <foreach item="replyId" collection="replyIds" open="(" separator="," close=")">
+            #{replyId}
+        </foreach>
+    </select>
+    <select id="getCommentLikeCounts" resultType="gdufs.yixiu.dto.community.vo.CommentStatisticCountVO">
         SELECT comment_id, COUNT(*) as `count`
         FROM comment_like
         WHERE comment_id IN
@@ -65,7 +95,7 @@
         </foreach>
         GROUP BY comment_id
     </select>
-    <select id="getCommentReplyCounts" resultType="gdufs.yixiu.dto.community.response.CommentStatisticCountVO">
+    <select id="getCommentReplyCounts" resultType="gdufs.yixiu.dto.community.vo.CommentStatisticCountVO">
         SELECT comment_id, COUNT(*) as `count`
         FROM post_comment_reply
         WHERE comment_id IN
@@ -74,4 +104,45 @@
         </foreach>
         GROUP BY comment_id
     </select>
+    <select id="getRepliesByCommentIds" resultType="gdufs.yixiu.pojo.PostCommentReply">
+        SELECT reply_id, comment_id, from_user_id, to_user_id, parent_reply_id, content, status, create_time FROM (
+        SELECT r.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY r.comment_id
+            ORDER BY r.create_time DESC
+        ) AS rn
+        FROM post_comment_reply r
+        WHERE r.comment_id IN
+        <foreach collection="commentIds" item="commentId" open="(" separator="," close=")">
+            #{commentId}
+        </foreach>
+        AND r.status = 0
+        ) t
+        WHERE t.rn <![CDATA[ <= ]]> #{limit}
+        ORDER BY t.comment_id, t.create_time DESC
+    </select>
+    <select id="getReplyLikeCounts" resultType="gdufs.yixiu.dto.community.vo.ReplyStatisticCountVO">
+        SELECT reply_id, COUNT(*) as `count`
+        FROM reply_like
+        WHERE reply_id IN
+        <foreach collection="replyIds" item="replyId" open="(" separator="," close=")">
+            #{replyId}
+        </foreach>
+        GROUP BY reply_id
+    </select>
+    <select id="getReplyByCommentId" resultType="gdufs.yixiu.pojo.PostCommentReply">
+        SELECT *
+        FROM post_comment_reply
+        WHERE comment_id = #{commentId}
+        ORDER BY create_time DESC
+    </select>
+    <select id="getCommentByCommentId" resultType="gdufs.yixiu.pojo.PostComment"
+            parameterType="java.lang.Integer">
+        select * from post_comment where comment_id = #{commentId}
+    </select>
+    <select id="getReplyByReplyId" resultType="gdufs.yixiu.pojo.PostCommentReply"
+            parameterType="java.lang.Integer">
+        select * from post_comment_reply where reply_id = #{replyId}
+    </select>
+
 </mapper>

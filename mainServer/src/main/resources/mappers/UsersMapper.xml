@@ -60,6 +60,13 @@
             </if>
         </where>
     </select>
+    <select id="findUserNameAndAvatarByIds" resultType="gdufs.yixiu.dto.community.vo.UserInfoVO">
+        select user_id,username,avatar from users where user_id in
+        <foreach item="userId" collection="userIds" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </select>
+
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

@@ -12,6 +12,7 @@ import MyTaskView from "../view/taskCenter/MyTaskView.vue";
 import {checkToken} from "../api/userApi.js";
 import {ElMessage} from "element-plus";
 import Cookie from "js-cookie";
+import CommunityCenter from "../view/community/CommunityCenter.vue";
 
 // 定义路由
 const routes = [
@@ -24,7 +25,8 @@ const routes = [
     { path: '/repair/history', component: RepairHistoryView},
     { path: '/admin/memberManage', component: MemberManageView },
     { path: '/taskCenter/list', component: TaskListView },
-    { path: '/taskCenter/myTask', component: MyTaskView }
+    { path: '/taskCenter/myTask', component: MyTaskView },
+    { path: '/community', component: CommunityCenter}
 ]
 
 // 创建router实例

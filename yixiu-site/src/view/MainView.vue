@@ -240,7 +240,7 @@ const logout = async () => {
                 消息中心
               </el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="6">
+            <el-menu-item index="6" @click="() => router.push('/community')">
               <el-icon>
                 <document/>
               </el-icon>

@@ -1,8 +1,10 @@
 package gdufs.yixiu.dao;
 
 import gdufs.yixiu.dto.VolunteerFilterDto;
+import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.Users;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -21,4 +23,5 @@ public interface UsersMapper {
     List<Users> findAllVolunteersExcludeMySelfByFilter(VolunteerFilterDto filterDto);
     Users findUserRealNameAndAvatarById(Integer userId);
     List<Users> findUserByName(String name);
+    List<UserInfoVO> findUserNameAndAvatarByIds(@Param("userIds") List<Integer> userIds);
 }

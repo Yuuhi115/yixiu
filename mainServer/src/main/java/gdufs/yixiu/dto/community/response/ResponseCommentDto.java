@@ -14,6 +14,8 @@ public class ResponseCommentDto {
     private Integer postId;
     private Integer commentId;
     private Integer userId;
+    private String username;
+    private String avatar;
     private String content;
     private Integer likeNum;
     private Integer replyNum;

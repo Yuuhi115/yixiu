@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/post")
+@RequestMapping("/api/v1/community/post")
 public class PostController {
     @Autowired
     private PostService postService;
@@ -36,6 +36,11 @@ public class PostController {
                               @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize){
         return Result.success(postService.listPostAll(pageNum, pageSize).getList());
     }
+    @UserLoginToken
+    @GetMapping("/allTags")
+    public Result getAllTags(){
+        return Result.success(postService.queryAllPostTags());
+    }
 
     @UserLoginToken
     @PostMapping("/create")
@@ -43,6 +48,7 @@ public class PostController {
         String token = request.getHeader("Authorization");
         requestPostDto.setUserId(jwtUtils.getInfoFromToken(token).getId());
         int postId = postService.createPost(requestPostDto);
+        log.info("用户No.{} 上传帖子No.{}", requestPostDto.getUserId(), postId);
         Map<String, Integer> result = new HashMap<>();
         result.put("postId", postId);
         return Result.success(result);
@@ -69,7 +75,7 @@ public class PostController {
     }
     @UserLoginToken
     @PostMapping("/modifyLike")
-    public Result modifyLike(@RequestParam("postId") Integer postId, HttpServletRequest request){
+    public Result modifyLike(Integer postId, HttpServletRequest request){
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();
         int result = postService.modifyLike(postId, userId);
@@ -77,7 +83,7 @@ public class PostController {
     }
     @UserLoginToken
     @PostMapping("/modifyFavorite")
-    public Result modifyFavorite(@RequestParam("postId") Integer postId, HttpServletRequest request){
+    public Result modifyFavorite(Integer postId, HttpServletRequest request){
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();
         int result = postService.modifyFavorite(postId, userId);
@@ -85,7 +91,7 @@ public class PostController {
     }
     @UserLoginToken
     @PostMapping("/addView")
-    public Result addView(@RequestParam("postId") Integer postId, HttpServletRequest request){
+    public Result addView(Integer postId, HttpServletRequest request){
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();
         String ip = IPUtils.getClientIP(request);
