@@ -1,12 +1,22 @@
 package gdufs.yixiu.service.impl;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import gdufs.yixiu.dao.PostMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
+import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
+import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
+import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.pojo.PostComment;
+import gdufs.yixiu.pojo.UserFollow;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
+import gdufs.yixiu.service.CommentService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.JWTUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +25,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -24,6 +37,10 @@ public class UsersServiceImpl implements UsersService {
     private UsersMapper usersMapper;
     @Autowired
     private VolunteerMapper volunteerMapper;
+    @Autowired
+    private PostMapper postMapper;
+    @Autowired
+    private CommentService commentService;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -134,4 +151,109 @@ public class UsersServiceImpl implements UsersService {
         userBasicInfoDto.setVolunteerInfo(volunteerInfo);
         return userBasicInfoDto;
     }
+
+    @Override
+    public int addFollow(Integer followerId, Integer followeeId) {
+        UserFollow userFollow = new UserFollow();
+        userFollow.setFollowerId(followerId);
+        userFollow.setFolloweeId(followeeId);
+        int isFollowed = usersMapper.isExistUserFollow(userFollow);
+        if (isFollowed == 0) {
+            return usersMapper.addUserFollow(userFollow);
+        }else {
+            userFollow.setStatus(1);
+            return usersMapper.updateUserFollow(userFollow);
+        }
+    }
+
+    @Override
+    public int cancelFollow(Integer followerId, Integer followeeId) {
+        UserFollow userFollow = new UserFollow();
+        userFollow.setFollowerId(followerId);
+        userFollow.setFolloweeId(followeeId);
+        int isFollowed = usersMapper.isExistUserFollow(userFollow);
+        if (isFollowed == 0) {
+            return 0;
+        }
+        userFollow.setStatus(0);
+        return usersMapper.updateUserFollow(userFollow);
+    }
+
+    @Override
+    public List<ResponseFollowListDto> userFollowToResponseFollowListDto(List<UserFollow> userFollowList,
+                                                                         List<Integer> queryIds, String type) {
+        Map<Integer, UserInfoVO> followUserInfoMap = commentService.getUserInfoMap(queryIds);
+        List<ResponseFollowListDto> responseFollowListDtos = new ArrayList<>();
+        for (UserFollow userFollow : userFollowList) {
+            ResponseFollowListDto responseFollowListDto = new ResponseFollowListDto();
+            responseFollowListDto.setFollowId(userFollow.getFollowId());
+            UserInfoVO userInfoVO;
+            if (type.equals("follow")) {
+                responseFollowListDto.setFollowUserId(userFollow.getFolloweeId());
+                userInfoVO = followUserInfoMap.get(userFollow.getFolloweeId());
+            }else {
+                responseFollowListDto.setFollowUserId(userFollow.getFollowerId());
+                userInfoVO = followUserInfoMap.get(userFollow.getFollowerId());
+            }
+            responseFollowListDto.setFollowUsername(userInfoVO.getUsername());
+            responseFollowListDto.setFollowUserAvatar(avatarPath + userInfoVO.getAvatar());
+            responseFollowListDto.setStatus(userFollow.getStatus());
+            responseFollowListDto.setCreateTime(userFollow.getCreateTime());
+            responseFollowListDto.setUpdateTime(userFollow.getUpdateTime());
+            responseFollowListDtos.add(responseFollowListDto);
+        }
+        return responseFollowListDtos;
+    }
+
+    @Override
+    public PageInfo<ResponseFollowListDto> queryFollowList(Integer userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        int followerId = userId;
+        List<UserFollow> userFollowList = usersMapper.findFolloweesByFollowerId(followerId);
+        PageInfo<UserFollow> userFollowPageInfo = new PageInfo<>(userFollowList);
+        List<Integer> followeeIds = userFollowList.stream()
+                .map(UserFollow::getFolloweeId)
+                .distinct() // 去重，避免重复查询
+                .toList();
+        List<ResponseFollowListDto> responseFollowList = userFollowToResponseFollowListDto(userFollowList, followeeIds, "follow");
+        PageInfo<ResponseFollowListDto> resultPageInfo = new PageInfo<>(responseFollowList);
+        resultPageInfo.setTotal(userFollowPageInfo.getTotal());
+        resultPageInfo.setPages(userFollowPageInfo.getPages());
+        resultPageInfo.setPageNum(userFollowPageInfo.getPageNum());
+        resultPageInfo.setPageSize(userFollowPageInfo.getPageSize());
+        return resultPageInfo;
+    }
+
+    @Override
+    public PageInfo<ResponseFollowListDto> queryFansList(Integer userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        int followeeId = userId;
+        List<UserFollow> userFollowList = usersMapper.findFollowersByFolloweeId(followeeId);
+        PageInfo<UserFollow> userFollowPageInfo = new PageInfo<>(userFollowList);
+        List<Integer> followerIds = userFollowList.stream()
+                .map(UserFollow::getFollowerId)
+                .distinct() // 去重，避免重复查询
+                .toList();
+        List<ResponseFollowListDto> responseFollowList = userFollowToResponseFollowListDto(userFollowList, followerIds, "fans");
+        PageInfo<ResponseFollowListDto> resultPageInfo = new PageInfo<>(responseFollowList);
+        resultPageInfo.setTotal(userFollowPageInfo.getTotal());
+        resultPageInfo.setPages(userFollowPageInfo.getPages());
+        resultPageInfo.setPageNum(userFollowPageInfo.getPageNum());
+        resultPageInfo.setPageSize(userFollowPageInfo.getPageSize());
+        return resultPageInfo;
+    }
+
+    @Override
+    public CommunityStatisticDto queryCommunityStatistic(Integer userId) {
+        CommunityStatisticDto communityStatisticDto = usersMapper.findCommunityStatistic(userId);
+        communityStatisticDto.setUserId(userId);
+        List<Integer> postIds = postMapper.getPostIdsByUserId(userId);
+        List<Integer> commentIds = postMapper.getCommentIdsByUserId(userId);
+        List<Integer> replyIds = postMapper.getReplyIdsByUserId(userId);
+        LikeListIdsVO likeListIdsVO = new LikeListIdsVO(postIds, commentIds, replyIds);
+        int likeCount = postMapper.getPostsAndCommentsLikeCount(likeListIdsVO);
+        communityStatisticDto.setGetLikeNum(likeCount);
+        return communityStatisticDto;
+    }
+
 }

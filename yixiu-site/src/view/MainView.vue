@@ -30,6 +30,7 @@ const userInfoRef = ref()
 
 const notificationStore = useNotificationStore()
 
+
 // 使用计算属性自动响应状态变化
 const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
@@ -64,22 +65,10 @@ onMounted(async () => {
       getUnreadNotify(),
       notificationStore.syncUnreadCount()
     ])
-
-    // if (!isPolling()) {
-    //   await startNotifyPoll((message) => {
-    //     if (message && message.unread !== undefined) {
-    //       unreadNotifyCount.value = message.unread
-    //     }
-    //   })
-    // }
     await saveRole()
   } finally {
     isLoading.value = false
   }
-})
-
-onUnmounted(()=>{
-  stopNotifyPoll()
 })
 
 const queryUserInfo = async () => {

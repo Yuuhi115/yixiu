@@ -2,6 +2,7 @@ package gdufs.yixiu.dao;
 
 import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
+import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
 import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
 import gdufs.yixiu.dto.community.vo.TagVO;
 import gdufs.yixiu.pojo.Post;
@@ -49,4 +50,8 @@ public interface PostMapper {
     List<PostCommentStatisticVO> getPostsFavoriteCounts(List<Integer> postIds);
     List<PostCommentStatisticVO> getPostsViewCounts(List<Integer> postIds);
     List<PostCommentStatisticVO> getPostsCommentCounts(List<Integer> postIds);
+    List<Integer> getPostIdsByUserId(Integer userId);
+    List<Integer> getCommentIdsByUserId(Integer userId);
+    List<Integer> getReplyIdsByUserId(Integer userId);
+    Integer getPostsAndCommentsLikeCount(LikeListIdsVO likeListIdsVO);
 }

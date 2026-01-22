@@ -5,6 +5,7 @@ import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.UsersService;
@@ -134,5 +135,48 @@ public class UsersController {
         usersService.updateUserBasicInfo(userModifyDto);
         return Result.success("更新成功");
     }
-
+    @UserLoginToken
+    @GetMapping("/userCommunityStatistic")
+    public Result getUserCommunityStatistic(HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        CommunityStatisticDto communityStatistic = usersService.queryCommunityStatistic(userId);
+        return Result.success(communityStatistic);
+    }
+    @UserLoginToken
+    @GetMapping("/followList")
+    public Result getUserFollowList(HttpServletRequest request,
+                                    @RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                    @RequestParam(name = "pageSize", defaultValue = "20") Integer pageSize) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(usersService.queryFollowList(userId, pageNum, pageSize));
+    }
+    @UserLoginToken
+    @GetMapping("/fansList")
+    public Result getUserFansList(HttpServletRequest request,
+                                  @RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                  @RequestParam(name = "pageSize", defaultValue = "20") Integer pageSize) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(usersService.queryFansList(userId, pageNum, pageSize));
+    }
+    @UserLoginToken
+    @PostMapping("/follow")
+    public Result follow(@RequestParam("followeeId") Integer followeeId,
+                         HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int followerId = jwtUtils.getInfoFromToken(token).getId();
+        int row = usersService.addFollow(followerId, followeeId);
+        return row == 1 ? Result.success("关注成功") : Result.fail("serve error");
+    }
+    @UserLoginToken
+    @PostMapping("/cancelFollow")
+    public Result cancelFollow(@RequestParam("followeeId") Integer followeeId,
+                               HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int followerId = jwtUtils.getInfoFromToken(token).getId();
+        int row = usersService.cancelFollow(followerId, followeeId);
+        return row == 1 ? Result.success("取消关注成功") : Result.fail("serve error");
+    }
 }

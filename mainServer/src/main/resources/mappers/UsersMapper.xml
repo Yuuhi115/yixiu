@@ -12,6 +12,10 @@
         values(#{email},#{username},#{role},"default_avatar.jpg",NOW())
     </insert>
     <insert id="addUserByOpenid" parameterType="gdufs.yixiu.pojo.Users"></insert>
+    <insert id="addUserFollow">
+        insert into user_follow(follower_id,followee_id)
+        values(#{followerId},#{followeeId})
+    </insert>
     <select id="findUserById" resultType="gdufs.yixiu.pojo.Users" parameterType="java.lang.Integer">
         select user_id,username,real_name,phone,email,avatar,role,status,last_login from users where user_id = #{userId}
     </select>
@@ -66,6 +70,21 @@
             #{userId}
         </foreach>
     </select>
+    <select id="findFolloweesByFollowerId" resultType="gdufs.yixiu.pojo.UserFollow">
+        select * from user_follow where follower_id = #{followerId} and status = 1
+    </select>
+    <select id="findFollowersByFolloweeId" resultType="gdufs.yixiu.pojo.UserFollow">
+        select * from user_follow where followee_id = #{followeeId} and status = 1
+    </select>
+    <select id="findCommunityStatistic" resultType="gdufs.yixiu.dto.community.response.CommunityStatisticDto">
+        select
+            (select count(1) from user_follow where follower_id = #{userId}) as followNum,
+            (select count(1) from user_follow where followee_id = #{userId}) as fansNum,
+            (select count(1) from post where user_id = #{userId}) as postNum
+    </select>
+    <select id="isExistUserFollow" resultType="java.lang.Integer">
+        select count(1) from user_follow where follower_id = #{followerId} and followee_id = #{followeeId}
+    </select>
 
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
@@ -94,6 +113,17 @@
         </set>
         <where>
             user_id = #{userId}
+        </where>
+    </update>
+    <update id="updateUserFollow">
+        update user_follow
+        <set>
+            <if test="status != null">
+                status = #{status},
+            </if>
+        </set>
+        <where>
+            follower_id = #{followerId} and followee_id = #{followeeId}
         </where>
     </update>
 </mapper>
