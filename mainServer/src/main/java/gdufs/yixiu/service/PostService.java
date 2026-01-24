@@ -6,6 +6,7 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.vo.TagVO;
+import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.Post;
 
 import java.util.List;
@@ -14,11 +15,13 @@ import java.util.Map;
 
 public interface PostService {
     int createPost(RequestPostDto requestPostDto);
-    Post getPostByPostId(Integer postId);
-    PageInfo<ResponsePostDto> listPostAll(Integer pageNum, Integer pageSize);
-    List<ResponsePostDto> getPostsDetail(List<Post> postList);
+    ResponsePostDto getPostByPostId(Integer postId, Integer userId);
+    PageInfo<ResponsePostDto> listPostAll(Integer pageNum, Integer pageSize, Integer userId);
+    List<ResponsePostDto> getPostsDetail(List<Post> postList, Integer userId);
     List<TagVO> queryAllPostTags();
     int modifyLike(Integer postId, Integer userId);
     int modifyFavorite(Integer postId, Integer userId);
     int addView(Integer postId, Integer userId, String ipAddress);
+    List<UserInfoVO> getUpdateUploaderInfo(Integer userId);
+    void clearFollowUpdate(Integer userId, Integer uploaderId);
 }

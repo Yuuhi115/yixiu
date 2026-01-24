@@ -85,6 +85,10 @@
     <select id="isExistUserFollow" resultType="java.lang.Integer">
         select count(1) from user_follow where follower_id = #{followerId} and followee_id = #{followeeId}
     </select>
+    <select id="findAllUserFollows" resultType="gdufs.yixiu.pojo.UserFollow">
+        select follower_id, followee_id from user_follow
+        where status = 1
+    </select>
 
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users

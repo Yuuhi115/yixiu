@@ -27,10 +27,14 @@ export function getPostList(params){
     return request.get("/community/post/list", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function addPostLike(postId){
-    return request.post("/community/post/modifyLike", {postId: postId} ,{headers: {Authorization: Cookie.get("Authorization")}})
+    const formData = new FormData()
+    formData.append('postId', postId)
+    return request.post("/community/post/modifyLike", formData ,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function addPostFavorite(postId){
-    return request.post("/community/post/modifyFavorite", {postId: postId} ,{headers: {Authorization: Cookie.get("Authorization")}})
+    const formData = new FormData()
+    formData.append('postId', postId)
+    return request.post("/community/post/modifyFavorite", formData ,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*
 * 获取数据库中的所有标签
@@ -60,7 +64,11 @@ export function deleteComment(commentId){
 * 默认获取20条评论，包括回复
 * */
 export function getCommentListByPostId(params){
-    return request.get("/community/comment/listByPostId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+    return request.get("/community/comment/listByPostId",
+        {
+            params: params,
+            headers: {Authorization: Cookie.get("Authorization")}
+        })
 }
 /*
 * data:
@@ -95,3 +103,12 @@ export function getReplyPages(params){
     return request.get("/community/comment/repliesPageByCommentId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
 }
 
+// 获取用户关注数，粉丝数，帖子数，获赞数
+export function getCommunityStatistics(){
+    return request.get("/users/userCommunityStatistic", {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+// 获取关注用户的更新提醒信息
+export function getFollowingUpdates(){
+    return request.get("/community/post/getUpdateInfo", {headers: {Authorization: Cookie.get("Authorization")}})
+}

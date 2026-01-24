@@ -37,4 +37,5 @@ public interface UsersMapper {
     // 获取粉丝列表
     List<UserFollow> findFollowersByFolloweeId(Integer followeeId);
     CommunityStatisticDto findCommunityStatistic(Integer userId);
+    List<UserFollow> findAllUserFollows();
 }

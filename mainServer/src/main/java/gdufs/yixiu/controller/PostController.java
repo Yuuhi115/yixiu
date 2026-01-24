@@ -33,8 +33,11 @@ public class PostController {
     @UserLoginToken
     @GetMapping("/list")
     public Result getAllPosts(@RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
-                              @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize){
-        return Result.success(postService.listPostAll(pageNum, pageSize).getList());
+                              @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize,
+                              HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(postService.listPostAll(pageNum, pageSize, userId));
     }
     @UserLoginToken
     @GetMapping("/allTags")
@@ -97,5 +100,21 @@ public class PostController {
         String ip = IPUtils.getClientIP(request);
         int result = postService.addView(postId, userId, ip);
         return result == 1 ? Result.success(null) : Result.fail("添加失败");
+    }
+    @UserLoginToken
+    @GetMapping("/getUpdateInfo")
+    public Result getUpdateInfo(HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(postService.getUpdateUploaderInfo(userId));
+    }
+    @UserLoginToken
+    @PostMapping("/clearFollowUpdate")
+    public Result clearFollowUpdate(@RequestParam("uploaderId") Integer uploaderId,
+                                    HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        postService.clearFollowUpdate(userId, uploaderId);
+        return Result.success(null);
     }
 }

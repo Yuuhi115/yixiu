@@ -25,6 +25,8 @@ public class ResponsePostDto {
     private Integer commentNum;
     private Integer viewNum;
     private Integer favoriteNum;
+    private Integer isLiked;
+    private Integer isFavorite;
     private Timestamp createTime;
     private Timestamp updateTime;
 }

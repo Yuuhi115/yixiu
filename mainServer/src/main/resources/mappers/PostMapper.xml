@@ -73,7 +73,7 @@
         </where>
     </select>
     <select id="queryAllPost" resultType="gdufs.yixiu.pojo.Post">
-        select * from post
+        select * from post order by create_time desc
     </select>
     <select id="countPostLikeFavViewNum" resultType="java.util.Map" parameterType="java.lang.Integer">
         select
@@ -107,9 +107,14 @@
     </select>
     <select id="queryAllTags" resultType="gdufs.yixiu.dto.community.vo.TagVO">
         select pt.tag_id, pt.tag_name
+        from post_tag pt
+        order by pt.tag_id asc
+    </select>
+    <select id="queryAllTagsFreq" resultType="gdufs.yixiu.dto.community.vo.TagVO">
+        select pt.tag_id, pt.tag_name
         from post_tag as pt
-            left join post_tag_rel as ptr
-                on pt.tag_id = ptr.tag_id
+                 left join post_tag_rel as ptr
+                           on pt.tag_id = ptr.tag_id
         group by pt.tag_id, pt.tag_name
         order by COUNT(ptr.tag_id) desc
     </select>
@@ -175,22 +180,63 @@
     </select>
     <select id="getPostsAndCommentsLikeCount" resultType="java.lang.Integer">
         SELECT
-        (SELECT COUNT(*) FROM post_like
+        COALESCE((SELECT COUNT(*) FROM post_like
+        WHERE post_id IN
+        <if test="postIds != null and postIds.size() > 0">
+            <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+                #{postId}
+            </foreach>
+        </if>
+        <if test="postIds == null or postIds.size() == 0">
+            (NULL)
+        </if>
+        ), 0) +
+        COALESCE((SELECT COUNT(*) FROM comment_like
+        WHERE comment_id IN
+        <if test="commentIds != null and commentIds.size() > 0">
+            <foreach collection="commentIds" item="commentId" open="(" separator="," close=")">
+                #{commentId}
+            </foreach>
+        </if>
+        <if test="commentIds == null or commentIds.size() == 0">
+            (NULL)
+        </if>
+        ), 0) +
+        COALESCE((SELECT COUNT(*) FROM reply_like
+        WHERE reply_id IN
+        <if test="replyIds != null and replyIds.size() > 0">
+            <foreach collection="replyIds" item="replyId" open="(" separator="," close=")">
+                #{replyId}
+            </foreach>
+        </if>
+        <if test="replyIds == null or replyIds.size() == 0">
+            (NULL)
+        </if>
+        ), 0)
+        AS `count`
+    </select>
+    <select id="getPostIsLiked" resultType="gdufs.yixiu.dto.community.vo.PostIdJudgeVO">
+        SELECT
+        post_id,
+        TRUE as `status`
+        FROM post_like
         WHERE post_id IN
         <foreach collection="postIds" item="postId" open="(" separator="," close=")">
             #{postId}
-        </foreach>) +
-        (SELECT COUNT(*) FROM comment_like
-        WHERE comment_id IN
-        <foreach collection="commentIds" item="commentId" open="(" separator="," close=")">
-            #{commentId}
-        </foreach>) +
-        (SELECT COUNT(*) FROM reply_like
-        WHERE reply_id IN
-        <foreach collection="replyIds" item="replyId" open="(" separator="," close=")">
-            #{replyId}
-        </foreach>)
-        AS `count`
+        </foreach>
+        AND user_id = #{userId}
     </select>
+    <select id="getPostIsFavorite" resultType="gdufs.yixiu.dto.community.vo.PostIdJudgeVO">
+        SELECT
+        post_id,
+        TRUE as `status`
+        FROM post_favorite
+        WHERE post_id IN
+        <foreach collection="postIds" item="postId" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        AND user_id = #{userId}
+    </select>
+
 
 </mapper>

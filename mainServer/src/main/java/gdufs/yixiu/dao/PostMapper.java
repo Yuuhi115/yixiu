@@ -4,6 +4,7 @@ import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
 import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
+import gdufs.yixiu.dto.community.vo.PostIdJudgeVO;
 import gdufs.yixiu.dto.community.vo.TagVO;
 import gdufs.yixiu.pojo.Post;
 import gdufs.yixiu.pojo.PostImg;
@@ -24,6 +25,7 @@ public interface PostMapper {
     List<Post> queryPostByUserId(Integer userId);
     List<Post> queryPostByFilter(PostFilterDto filterDto);
     List<TagVO> queryPostTags(Integer postId);
+    List<TagVO> queryAllTagsFreq();
     List<TagVO> queryAllTags();
     int updatePost(RequestPostDto requestPostDto);
     Map<String, Object> countPostLikeFavViewNum(Integer postId);
@@ -50,6 +52,10 @@ public interface PostMapper {
     List<PostCommentStatisticVO> getPostsFavoriteCounts(List<Integer> postIds);
     List<PostCommentStatisticVO> getPostsViewCounts(List<Integer> postIds);
     List<PostCommentStatisticVO> getPostsCommentCounts(List<Integer> postIds);
+    List<PostIdJudgeVO> getPostIsLiked(@Param("postIds") List<Integer> postIds,
+                                       @Param("userId") Integer userId);
+    List<PostIdJudgeVO> getPostIsFavorite(@Param("postIds") List<Integer> postIds,
+                                       @Param("userId") Integer userId);
     List<Integer> getPostIdsByUserId(Integer userId);
     List<Integer> getCommentIdsByUserId(Integer userId);
     List<Integer> getReplyIdsByUserId(Integer userId);

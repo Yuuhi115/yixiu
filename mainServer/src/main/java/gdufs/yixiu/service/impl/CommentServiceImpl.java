@@ -58,6 +58,9 @@ public class CommentServiceImpl implements CommentService {
         List<Integer> commentIds = postComments.stream()
                 .map(PostComment::getCommentId)
                 .toList();
+        if (commentIds.isEmpty()) {
+            return List.of();
+        }
 //        log.info("批量查询评论列表中点赞数和回复数，评论ID列表：{}", commentIds);
         List<Integer> likedIds = commentMapper.selectLikedCommentIds(userId, commentIds);
 

@@ -9,6 +9,7 @@ import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.response.ResponseReplyDto;
 import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
+import gdufs.yixiu.dto.community.vo.PostIdJudgeVO;
 import gdufs.yixiu.dto.community.vo.TagVO;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.Post;
@@ -19,12 +20,10 @@ import gdufs.yixiu.service.PostService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +37,8 @@ public class PostServiceImpl implements PostService {
     private CommentMapper commentMapper;
     @Autowired
     private CommentService commentService;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
     private String serviceCommunityUrl;
     @Value("${resources-path.service-community-url}")
     public void setServiceCommunityUrl(String serviceCommunityUrl) {
@@ -55,22 +56,36 @@ public class PostServiceImpl implements PostService {
         post.setTitle(requestPostDto.getTitle());
         post.setContent(requestPostDto.getContent());
         int row = postMapper.addPost(post);
+        if (row == 1) {
+            Set<Object> fans = redisTemplate.opsForSet()
+                    .members("follow:uploader:" + post.getUserId());
+            if (fans != null && !fans.isEmpty()) {
+                for (Object fanId : fans) {
+                    redisTemplate.opsForSet()
+                            .add("follow:update:" + fanId, post.getUserId());
+                }
+            }
+        }
         log.info("用户(id:{})上传帖子成功，帖子id为：{}",post.getUserId(), post.getPostId());
         postMapper.addPostTags(post.getPostId(), requestPostDto.getTagIdList());
         return row == 1 ? post.getPostId() : 0;
     }
 
     @Override
-    public Post getPostByPostId(Integer postId) {
-        return null;
+    public ResponsePostDto getPostByPostId(Integer postId, Integer userId) {
+        Post post = postMapper.queryPostById(postId);
+        List<Post> postList = new ArrayList<>();
+        postList.add(post);
+        List<ResponsePostDto> responsePostDtos = getPostsDetail(postList, userId);
+        return responsePostDtos.getFirst();
     }
 
     @Override
-    public PageInfo<ResponsePostDto> listPostAll(Integer pageNum, Integer pageSize) {
+    public PageInfo<ResponsePostDto> listPostAll(Integer pageNum, Integer pageSize, Integer userId) {
         PageHelper.startPage(pageNum,pageSize);
         List<Post> postList = postMapper.queryAllPost();
         PageInfo<Post> pageInfo = new PageInfo<>(postList);
-        List<ResponsePostDto> responsePostDtos = getPostsDetail(postList);
+        List<ResponsePostDto> responsePostDtos = getPostsDetail(postList, userId);
         PageInfo<ResponsePostDto> resultPageInfo = new PageInfo<>(responsePostDtos);
         resultPageInfo.setTotal(pageInfo.getTotal());
         resultPageInfo.setPages(pageInfo.getPages());
@@ -80,7 +95,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public List<ResponsePostDto> getPostsDetail(List<Post> postList) {
+    public List<ResponsePostDto> getPostsDetail(List<Post> postList, Integer userId) {
         // 提取用户ID列表
         List<Integer> userIds = postList.stream()
                 .map(Post::getUserId)
@@ -120,6 +135,20 @@ public class PostServiceImpl implements PostService {
                         PostCommentStatisticVO::getPostId,
                         PostCommentStatisticVO::getCount
                 ));
+        // 批量查询用户帖子点赞信息
+        List<PostIdJudgeVO> isLikedList = postMapper.getPostIsLiked(postIds, userId);
+        Map<Integer, Integer> isLikedMap = isLikedList.stream()
+                .collect(Collectors.toMap(
+                        PostIdJudgeVO::getPostId,
+                        PostIdJudgeVO::getStatus
+                ));
+        // 批量查询用户帖子收藏信息
+        List<PostIdJudgeVO> isFavoritedList = postMapper.getPostIsFavorite(postIds, userId);
+        Map<Integer, Integer> isFavoritedMap = isFavoritedList.stream()
+                .collect(Collectors.toMap(
+                        PostIdJudgeVO::getPostId,
+                        PostIdJudgeVO::getStatus
+                ));
         Map<Integer, UserInfoVO> userInfoMap = commentService.getUserInfoMap(userIds);
         List<ResponsePostDto> responsePostDtos = new ArrayList<>();
         for (Post post : postList){
@@ -140,6 +169,8 @@ public class PostServiceImpl implements PostService {
             responsePostDto.setLikeNum(postLikeCountMap.getOrDefault(post.getPostId(), 0));
             responsePostDto.setFavoriteNum(postFavoriteCountMap.getOrDefault(post.getPostId(), 0));
             responsePostDto.setViewNum(postViewCountMap.getOrDefault(post.getPostId(), 0));
+            responsePostDto.setIsLiked(isLikedMap.getOrDefault(post.getPostId(), 0));
+            responsePostDto.setIsFavorite(isFavoritedMap.getOrDefault(post.getPostId(), 0));
             List<String> imgUrls = postMapper.queryPostImgUrls(post.getPostId());
             List<String> imgUrlList = new ArrayList<>();
             for (String imgUrl : imgUrls){
@@ -190,5 +221,30 @@ public class PostServiceImpl implements PostService {
         }
         log.info("用户(user_id:{})浏览帖子(post_id:{})", userId, postId);
         return postMapper.addView(postId, ipAddress, userId);
+    }
+
+    @Override
+    public List<UserInfoVO> getUpdateUploaderInfo(Integer userId) {
+        Set<Object> updates = redisTemplate.opsForSet()
+                .members("follow:update:" + userId);
+        if (updates != null){
+            List<Integer> updateList = updates.stream()
+                    .map(obj -> Integer.parseInt(obj.toString()))
+                    .toList();
+            List<UserInfoVO> updateUserInfoList = commentService.getUserInfoMap(updateList).values().stream()
+                    .toList();
+            for (UserInfoVO updateUserInfo : updateUserInfoList){
+                updateUserInfo.setAvatar(serviceUserUrl + updateUserInfo.getAvatar());
+            }
+            return updateUserInfoList;
+        }else {
+            return null;
+        }
+    }
+
+    @Override
+    public void clearFollowUpdate(Integer userId, Integer uploaderId) {
+//        log.info("用户(user_id:{})已读关注用户(uploader_id:{})的帖子", userId, uploaderId);
+        redisTemplate.opsForSet().remove("follow:update:" + userId, uploaderId);
     }
 }

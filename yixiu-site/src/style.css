@@ -119,7 +119,7 @@ body {
 }
 .header_container {
     background-color: snow;
-    border-bottom: silver 1px solid;;
+    /*box-shadow: 0 2px 8px rgba(0,0,0,.1);*/
 }
 .main_container {
     background-color: snow;

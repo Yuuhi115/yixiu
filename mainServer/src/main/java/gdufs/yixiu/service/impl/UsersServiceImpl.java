@@ -44,7 +44,7 @@ public class UsersServiceImpl implements UsersService {
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     private String avatarPath;
 
@@ -158,12 +158,16 @@ public class UsersServiceImpl implements UsersService {
         userFollow.setFollowerId(followerId);
         userFollow.setFolloweeId(followeeId);
         int isFollowed = usersMapper.isExistUserFollow(userFollow);
+        int result;
         if (isFollowed == 0) {
-            return usersMapper.addUserFollow(userFollow);
+            result = usersMapper.addUserFollow(userFollow);
         }else {
             userFollow.setStatus(1);
-            return usersMapper.updateUserFollow(userFollow);
+            result = usersMapper.updateUserFollow(userFollow);
         }
+        redisTemplate.opsForSet().add("follow:user:" + followerId, followeeId);
+        redisTemplate.opsForSet().add("follow:uploader:" + followeeId, followerId);
+        return result;
     }
 
     @Override
@@ -176,7 +180,12 @@ public class UsersServiceImpl implements UsersService {
             return 0;
         }
         userFollow.setStatus(0);
-        return usersMapper.updateUserFollow(userFollow);
+        if (usersMapper.updateUserFollow(userFollow) == 1) {
+            redisTemplate.opsForSet().remove("follow:user:" + followerId, followeeId);
+            redisTemplate.opsForSet().remove("follow:uploader:" + followeeId, followerId);
+            return 1;
+        }
+        return 0;
     }
 
     @Override
