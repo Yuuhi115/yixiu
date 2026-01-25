@@ -16,6 +16,7 @@ import gdufs.yixiu.pojo.Post;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.CommentService;
+import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.PostService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,8 @@ public class PostServiceImpl implements PostService {
     private CommentService commentService;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private ImgUploadService imgUploadService;
     private String serviceCommunityUrl;
     @Value("${resources-path.service-community-url}")
     public void setServiceCommunityUrl(String serviceCommunityUrl) {
@@ -66,9 +69,40 @@ public class PostServiceImpl implements PostService {
                 }
             }
         }
-        log.info("用户(id:{})上传帖子成功，帖子id为：{}",post.getUserId(), post.getPostId());
+        log.info("用户(id:{})上传帖子成功，帖子id为：{}，帖子标签为{}",post.getUserId(), post.getPostId(), requestPostDto.getTagIdList());
         postMapper.addPostTags(post.getPostId(), requestPostDto.getTagIdList());
         return row == 1 ? post.getPostId() : 0;
+    }
+
+    @Override
+    public int deletePost(Integer postId, Integer userId, String role) {
+        Post post = postMapper.queryPostById(postId);
+        if (post == null) {
+            return 500;
+        }
+        if (role.equals("admin") || role.equals("super_admin")){
+            int row = postMapper.deletePost(postId);
+            if (row == 1){
+                log.info("管理员(id:{})删除帖子成功，帖子id为：{}",userId, postId);
+                imgUploadService.deletePostImg(postId);
+                return 200;
+            }else {
+                log.info("管理员(id:{})删除帖子失败，帖子id为：{}",userId, postId);
+                return 500;
+            }
+        }
+        if (!post.getUserId().equals(userId)) {
+            return 403;
+        }
+        int row = postMapper.deletePost(postId);
+        if (row == 1){
+            log.info("用户(id:{})删除帖子成功，帖子id为：{}",userId, postId);
+            imgUploadService.deletePostImg(postId);
+            return 200;
+        }else {
+            log.info("用户(id:{})删除帖子失败，帖子id为：{}",userId, postId);
+            return 500;
+        }
     }
 
     @Override

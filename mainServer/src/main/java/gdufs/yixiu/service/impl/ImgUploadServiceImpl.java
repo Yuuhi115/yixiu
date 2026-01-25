@@ -20,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -179,5 +181,23 @@ public class ImgUploadServiceImpl implements ImgUploadService {
             throw new RuntimeException(e);
         }
         return "postImg/" + fileName;
+    }
+
+    @Override
+    public List<String> deletePostImg(Integer postId) {
+        log.info("Deleting No.{} post's img", postId);
+        List<String> imgUrls = postMapper.queryPostImgUrls(postId);
+        List<String> deleteImgUrls = new ArrayList<>();
+        for (String imgUrl : imgUrls) {
+            Path path = Paths.get(postImgPath + imgUrl.substring(imgUrl.lastIndexOf("/") + 1));
+            try {
+                Files.deleteIfExists(path);
+                deleteImgUrls.add(imgUrl);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        log.info("Deleted No.{} post's img, file: {} has been deleted", postId, deleteImgUrls);
+        return deleteImgUrls;
     }
 }

@@ -51,7 +51,9 @@ export function addComment(data){
     return request.post("/community/comment/add", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function addCommentLike(commentId){
-    return request.post("/community/comment/modifyCommentLike", {commentId: commentId} ,{headers: {Authorization: Cookie.get("Authorization")}})
+    let data = new FormData()
+    data.append('commentId', commentId)
+    return request.post("/community/comment/modifyCommentLike", data ,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function deleteComment(commentId){
     return request.put("/community/comment/delete", {commentId: commentId}, {headers: {Authorization: Cookie.get("Authorization")}})
@@ -86,7 +88,9 @@ export function addReply(data){
     return request.post("/community/comment/addReply", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function addReplyLike(replyId){
-    return request.post("/community/comment/modifyCommentLike", {replyId: replyId} ,{headers: {Authorization: Cookie.get("Authorization")}})
+    let data = new FormData()
+    data.append('replyId', replyId)
+    return request.post("/community/comment/modifyCommentLike", data,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function deleteReply(replyId){
     return request.put("/community/comment/delete", {replyId: replyId}, {headers: {Authorization: Cookie.get("Authorization")}})
@@ -99,8 +103,8 @@ export function deleteReply(replyId){
 * 获取该一级评论的回复
 * 注意: 该接口仅用于获取从第二页开始的回复，默认是20条一页
 * */
-export function getReplyPages(params){
-    return request.get("/community/comment/repliesPageByCommentId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+export function getReplyByCommentId(params){
+    return request.get("/community/comment/replyListByCommentId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
 }
 
 // 获取用户关注数，粉丝数，帖子数，获赞数

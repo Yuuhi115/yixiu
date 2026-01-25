@@ -41,9 +41,9 @@ public class CommentController {
         return Result.success(commentService.listComments(postId, userId, pageNum, pageSize));
     }
     @UserLoginToken
-    @GetMapping("/repliesPageByCommentId")
+    @GetMapping("/replyListByCommentId")
     public Result repliesPageByCommentId(@RequestParam("commentId") Integer commentId,
-                                         @RequestParam(value = "pageNum", defaultValue = "2") Integer pageNum,
+                                         @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                          @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize,
                                          HttpServletRequest request){
         String token = request.getHeader("Authorization");

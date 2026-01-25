@@ -84,12 +84,12 @@ public class CommentServiceImpl implements CommentService {
                         CommentStatisticCountVO::getCommentId,
                         CommentStatisticCountVO::getCount
                 ));
-
+/* 防止数据库压力过大，2026.1.24废除以下注释代码 */
         // 默认加载前 20 条二级评论
-        List<PostCommentReply> replies = commentMapper.getRepliesByCommentIds(commentIds, 20);
+//        List<PostCommentReply> replies = commentMapper.getRepliesByCommentIds(commentIds, 20);
 
         // 组装二级评论
-        Map<Integer, List<ResponseReplyDto>> replyGroupMap = buildReplyGroup(replies, userId);
+//        Map<Integer, List<ResponseReplyDto>> replyGroupMap = buildReplyGroup(replies, userId);
 
         List<ResponseCommentDto> responseCommentDtos = new ArrayList<>();
 
@@ -110,7 +110,7 @@ public class CommentServiceImpl implements CommentService {
                 responseCommentDto.setUsername(userInfo.getUsername());
                 responseCommentDto.setAvatar(serviceUserUrl + userInfo.getAvatar());
             }
-            responseCommentDto.setReplyList(replyGroupMap.getOrDefault(comment.getCommentId(), List.of()));
+//            responseCommentDto.setReplyList(replyGroupMap.getOrDefault(comment.getCommentId(), List.of()));
             responseCommentDtos.add(responseCommentDto);
         }
         return responseCommentDtos;

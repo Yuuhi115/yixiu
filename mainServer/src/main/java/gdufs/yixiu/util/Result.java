@@ -15,7 +15,7 @@ public class Result<T> {
     public static <T> Result<T> fail(String msg) {
         return new Result<>(500, msg, null);
     }
-    public static <T> Result<T> fail(int code, String msg) {
-        return new Result<>(code, msg, null);
+    public static <T> Result<T> insufficientPermissions() {
+        return new Result<>(403, "Permission denied", null);
     }
 }

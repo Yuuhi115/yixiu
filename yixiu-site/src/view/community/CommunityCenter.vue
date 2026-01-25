@@ -8,12 +8,19 @@ import {
   getAllPostTags,
   uploadPost,
   uploadPostImage,
-  getCommunityStatistics, getFollowingUpdates, addPostLike, addPostFavorite, getCommentListByPostId, addComment
+  getCommunityStatistics,
+  getFollowingUpdates,
+  addPostLike,
+  addPostFavorite,
+  getCommentListByPostId,
+  addComment,
+  addReply,
+  getReplyByCommentId, addCommentLike, addReplyLike
 } from '../../api/communityApi.js'
 import Cookie from 'js-cookie'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import router from "../../router/index.js";
-import {Message} from "@element-plus/icons-vue";
+import {Message, Delete} from "@element-plus/icons-vue";
 import {useNotificationStore} from "../../stores/notificationInit.js";
 import {getUnreadNotifyCount} from "../../api/notificationApi.js";
 import {formatTime} from "../../utils/timeUtils.js";
@@ -76,7 +83,8 @@ const getUnreadNotify = async () => {
 
 // 标签数据
 const tags = ref([])
-const selectedTag = ref('')
+const selectedTag = ref([])
+const demonstrateTags = ref('')
 const postContent = ref('')
 const postTitle = ref('')
 const postImages = ref([])
@@ -131,6 +139,10 @@ const loadPostList = async () => {
         post.comments = []         // 存储评论数据
         post.commentInput = ''     // 当前帖子的评论输入框
         post.loadingComments = false // 评论加载状态
+        post.showReplies = {}      // 控制每条评论的回复显示状态
+        post.loadingReplies = {}   // 控制每条评论的回复加载状态
+        post.replyLists = {}       // 存储每条评论的回复列表
+        post.replySwitch = false //控制显示发表评论或回复
       });
     }
   } catch (error) {
@@ -143,6 +155,12 @@ const loadPostList = async () => {
 
 // 帖子评论分页参数
 const commentPagination = reactive({
+  currentPage: 1,
+  pageSize: 20,
+  total: 0
+})
+// 帖子回复分页参数
+const replyPagination = reactive({
   currentPage: 1,
   pageSize: 20,
   total: 0
@@ -169,6 +187,51 @@ const loadComments = async (post) => {
   }
 }
 
+// 获取评论的回复
+const loadReplies = async (post, comment) => {
+  const commentId = comment.commentId;
+  post.loadingReplies[commentId] = true;
+
+  try {
+    const params = {
+      commentId: commentId,
+      pageNum: replyPagination.currentPage,
+      pageSize: replyPagination.pageSize
+    };
+    const response = await getReplyByCommentId(params);
+    if (response.code === 200) {
+      post.replyLists[commentId] = response.data.list || [];
+    } else {
+      ElMessage.error(response.msg);
+    }
+  } catch (error) {
+    console.error('加载回复失败:', error);
+    ElMessage.error('加载回复失败');
+  } finally {
+    post.loadingReplies[commentId] = false;
+  }
+};
+
+// 切换回复显示状态
+const toggleReplies = async (post, comment) => {
+  const commentId = comment.commentId;
+
+  // 如果还没有加载过回复，则先加载
+  if (!post.replyLists[commentId] && !post.loadingReplies[commentId]) {
+    await loadReplies(post, comment);
+  }
+
+  // 切换显示状态
+  post.showReplies[commentId] = !post.showReplies[commentId];
+};
+
+const getSubmitCommentButtonText = (post) => {
+  return post.replySwitch ? '回复' : '发表评论'
+}
+const getSubmitCommentPlaceholder = (post) => {
+  return post.replySwitch ? '请输入回复...' : '请输入评论...'
+}
+
 const goToComment = async (post) => {
   // 切换评论区显示状态
   if (post.showComments) {
@@ -183,7 +246,7 @@ const goToComment = async (post) => {
 }
 
 // 提交评论函数
-const submitComment = async (post) => {
+const submitComment = async (post, parentCommentId = null, replyToUserId = null) => {
   if (!post.commentInput.trim()) {
     ElMessage.warning('请输入评论内容')
     return
@@ -195,23 +258,127 @@ const submitComment = async (post) => {
       content: post.commentInput,
     }
 
-    const response = await addComment(commentData)
-    if (response.code === 200) {
-      ElMessage.success('评论成功')
-      post.commentInput = ''
-      // 重新加载评论
-      await loadComments(post)
+    // 如果是通过回复按钮触发的，使用存储的回复信息
+    if (post.replyingTo) {
+      parentCommentId = post.replyingTo.parentCommentId;
+      replyToUserId = post.replyingTo.replyToUserId;
+      delete post.replyingTo; // 清除临时信息
+    }
 
-      // 更新帖子的评论数
-      post.commentNum += 1
+    // 如果是回复，则调用回复接口
+    if (post.replySwitch) {
+      commentData.commentId = parentCommentId
+      commentData.toUserId = replyToUserId
+      const response = await addReply(commentData)
+      if (response.code === 200) {
+        ElMessage.success('回复成功')
+        post.commentInput = ''
+
+        // 更新回复列表
+        await loadComments(post)
+        await loadReplies(post, post.comments.find(c => c.commentId === parentCommentId))
+
+        // 如果该评论的回复已经显示，则刷新显示
+        if (post.showReplies[parentCommentId]) {
+          post.showReplies[parentCommentId] = false;
+          await nextTick();
+          post.showReplies[parentCommentId] = true;
+        }else {
+          post.showReplies[parentCommentId] = true;
+        }
+        // 更新帖子的评论数
+        post.commentNum += 1
+        post.replySwitch = false
+      } else {
+        ElMessage.error(response.msg)
+      }
     } else {
-      ElMessage.error(response.msg)
+      // 普通评论
+      const response = await addComment(commentData)
+      if (response.code === 200) {
+        ElMessage.success('评论成功')
+        post.commentInput = ''
+        // 重新加载评论
+        await loadComments(post)
+
+        // 更新帖子的评论数
+        post.commentNum += 1
+      } else {
+        ElMessage.error(response.msg)
+      }
     }
   } catch (error) {
     console.error('评论失败:', error)
     ElMessage.error('评论失败')
   }
+};
+
+// 回复某条评论
+const replyToComment = (post, comment) => {
+  if (!post.replySwitch){
+    post.replySwitch = true
+  }
+  // 设置回复的逻辑
+  post.replyingTo = {
+    parentCommentId: comment.commentId,
+    replyToUserId: comment.userId
+  };
+};
+
+// 回复某人的回复
+const replyToReply = (post, comment, reply) => {
+  if (!post.replySwitch){
+    post.replySwitch = true
+  }
+  // 设置回复二级评论的逻辑
+  post.commentInput = `@${reply.fromUserName} `;
+  post.replyingTo = {
+    parentCommentId: comment.commentId,
+    replyToUserId: reply.fromUserId,
+    parentReplyId: reply.replyId
+  };
+};
+
+// 取消回复
+const cancelReply = (post) => {
+  post.replySwitch = false
+  post.commentInput = ''
 }
+
+// 添加评论点赞函数
+const toggleLikeComment = async (comment) => {
+  if (comment.isLike === 0) {
+    comment.likeNum += 1;
+    comment.isLike = 1;
+  } else {
+    comment.likeNum -= 1;
+    comment.isLike = 0;
+  }
+  const response = await addCommentLike(comment.commentId)
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+  }
+}
+
+// 添加回复点赞函数
+const toggleLikeReply = async (reply) => {
+  try {
+    if (reply.isLike === 0) {
+      reply.likeNum += 1;
+      reply.isLike = 1;
+    } else {
+      reply.likeNum -= 1;
+      reply.isLike = 0;
+    }
+    const response = await addReplyLike(reply.replyId)
+    if (response.code !== 200) {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    console.error('点赞失败:', error);
+    ElMessage.error('点赞失败');
+  }
+};
 
 // 加载关注用户的更新提醒
 const loadFollowingUpdates = async () => {
@@ -226,10 +393,6 @@ const loadFollowingUpdates = async () => {
   }
 }
 
-// 发布帖子
-const publishPostTemporary = async () => {
-  ElMessage.info('API开发中')
-}
 const publishPost = async () => {
   if (!postContent.value.trim()) {
     ElMessage.warning('请输入帖子内容')
@@ -240,15 +403,32 @@ const publishPost = async () => {
     const postData = {
       title: postTitle.value,
       content: postContent.value,
-      tagIdList: selectedTag.value ? [parseInt(selectedTag.value)] : []
+      tagIdList: selectedTag.value.map(tagId => parseInt(tagId))
     }
 
     const response = await uploadPost(postData)
     if (response.code === 200) {
+      if (postImages.value.length > 0){
+        const formData = new FormData();
+        postImages.value.forEach((imageObj, index) => {
+          formData.append(`img`, imageObj.file); // 使用原始文件
+        });
+        formData.append('postId', response.data.postId);
+
+        const imageResponse = await uploadPostImage(formData);
+        if (imageResponse.code !== 200) {
+          ElMessage.error(imageResponse.msg)
+        }
+      }
       ElMessage.success('发布成功')
       postTitle.value = ''
       postContent.value = ''
-      selectedTag.value = ''
+      selectedTag.value = []
+      // 释放临时 URL
+      postImages.value.forEach(imageObj => {
+        URL.revokeObjectURL(imageObj.url)
+      })
+      postImages.value = []
       // 重新加载列表
       await loadPostList()
     } else {
@@ -261,11 +441,32 @@ const publishPost = async () => {
 }
 
 // 处理图片上传
-const handleImageUpload = (event) => {
-  const files = event.target.files
-  for (let i = 0; i < files.length; i++) {
-    postImages.value.push(files[i])
+const handleImageUpload = (file, fileList) => {
+  // 检查文件是否存在
+  if (file && file.raw) {
+    // 如果有 raw 属性，说明是 Element Plus 封装的对象，取 raw 获取原始文件
+    const rawFile = file.raw;
+    // 创建临时 URL 用于预览
+    const tempUrl = URL.createObjectURL(rawFile);
+    postImages.value.push({
+      file: rawFile,
+      url: tempUrl
+    });
+  } else if (file && file instanceof File) {
+    // 如果是原始 File 对象，直接添加
+    const tempUrl = URL.createObjectURL(file);
+    postImages.value.push({
+      file: file,
+      url: tempUrl
+    });
   }
+}
+
+// 删除指定索引的图片
+const removeImage = (index) => {
+  // 释放对应图片的临时 URL
+  const removedImage = postImages.value.splice(index, 1)[0];
+  URL.revokeObjectURL(removedImage.url);
 }
 
 // 检查是否应该显示展开按钮
@@ -415,15 +616,15 @@ const toggleFavorite = async (post) => {
                   <el-select
                       v-model="selectedTag"
                       placeholder="选择标签"
-                      size="small"
-                      style="width: 150px; margin-right: 10px;"
+                      size="small"    style="width: 150px; margin-right: 10px;"
+                      multiple
                   >
-                    <el-option
-                        v-for="tag in tags"
-                        :key="tag.tagId"
-                        :label="tag.tagName"
-                        :value="tag.tagId.toString()"
-                    />
+                  <el-option
+                      v-for="tag in tags"
+                      :key="tag.tagId"
+                      :label="tag.tagName"
+                      :value="tag.tagId.toString()"
+                  />
                   </el-select>
 
                   <el-upload
@@ -433,11 +634,31 @@ const toggleFavorite = async (post) => {
                       :show-file-list="false"
                       :on-change="handleImageUpload"
                       multiple
+                      list-type="text"
                   >
                     <el-button type="primary" size="small" plain>上传图片</el-button>
                   </el-upload>
 
-                  <el-button type="primary" size="small" @click="publishPostTemporary">发布</el-button>
+                  <el-button type="primary" size="small" @click="publishPost">发布</el-button>
+                </div>
+                <!-- 显示已选择的图片缩略图 -->
+                <div v-if="postImages.length > 0" class="image-preview">
+                  <div
+                      v-for="(imageObj, index) in postImages"
+                      :key="index"
+                      class="thumbnail-wrapper"
+                  >
+                    <el-image
+                        :src="imageObj.url"
+                        class="thumbnail"
+                        fit="cover"
+                        :preview-src-list="postImages.map(imgObj => imgObj.url)"
+                        :initial-index="index"
+                    />
+                    <div class="delete-btn" @click="removeImage(index)">
+                      <el-icon><Delete /></el-icon>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -445,7 +666,7 @@ const toggleFavorite = async (post) => {
 
           <!-- 分区导航 -->
           <div class="section-nav">
-            <el-tabs v-model="selectedTag" type="card">
+            <el-tabs v-model="demonstrateTags" type="card">
               <el-tab-pane label="全部" name=""></el-tab-pane>
               <el-tab-pane
                   v-for="tag in tags.slice(0, 6)"
@@ -546,12 +767,13 @@ const toggleFavorite = async (post) => {
                         v-model="post.commentInput"
                         :rows="3"
                         type="textarea"
-                        placeholder="请输入评论..."
+                        :placeholder="getSubmitCommentPlaceholder(post)"
                         maxlength="200"
                         show-word-limit
                     />
                     <div class="submit-comment-btn">
-                      <el-button type="primary" @click="submitComment(post)">发表评论</el-button>
+                      <el-button v-if="post.replySwitch === true" type="danger" @click="cancelReply(post)">取消回复</el-button>
+                      <el-button type="primary" @click="submitComment(post)">{{getSubmitCommentButtonText(post)}}</el-button>
                     </div>
                   </div>
 
@@ -584,12 +806,62 @@ const toggleFavorite = async (post) => {
                       </div>
                       <div class="comment-content">{{ comment.content }}</div>
                       <div class="comment-actions">
-                        <el-button type="text" size="small" @click="toggleLikeComment(comment)">
-                          <el-icon v-if="comment.isLike === 0"><Position /></el-icon>
-                          <el-icon v-else><Promotion /></el-icon>
-                          {{ comment.likeNum || 0 }}
-                        </el-button>
-                        <el-button type="text" size="small">回复</el-button>
+                        <div style="margin-left: 20px">
+                          <el-button
+                              v-if="comment.replyNum > 0"
+                              type="text"
+                              size="small"
+                              @click="toggleReplies(post, comment)"
+                          >
+                            {{ post.showReplies[comment.commentId] ? '收起' : '查看回复' }}({{ comment.replyNum }})
+                          </el-button>
+                        </div>
+                        <div>
+                          <el-button type="text" size="small" @click="toggleLikeComment(comment)">
+                            <el-icon v-if="comment.isLike === 0"><Position /></el-icon>
+                            <el-icon v-else><Promotion /></el-icon>
+                            {{ comment.likeNum || 0 }}
+                          </el-button>
+                          <el-button type="text" size="small" @click="replyToComment(post, comment)">回复</el-button>
+                        </div>
+                      </div>
+
+                      <!-- 回复列表 -->
+                      <div
+                          v-if="post.showReplies[comment.commentId]"
+                          class="replies-container"
+                      >
+                        <div v-if="post.loadingReplies[comment.commentId]" class="loading-replies">
+                          <el-skeleton :rows="2" />
+                        </div>
+                        <div
+                            v-else
+                            v-for="reply in post.replyLists[comment.commentId] || []"
+                            :key="reply.replyId"
+                            class="reply-item"
+                        >
+                          <div class="reply-header">
+                            <el-avatar :size="24" :src="reply.fromUserAvatar" />
+                            <div class="reply-user-info">
+                              <div class="reply-username">
+                                <span style="font-weight: bold;">{{ reply.fromUserName }}</span>
+                                <span style="color: #999; margin: 0 5px;">回复</span>
+                                <span style="font-weight: bold;">{{ reply.toUserName }}</span>
+                                <el-tag v-if="reply.fromUserId === post.userId" size="small" type="success" style="margin-left: 5px;">作者</el-tag>
+                              </div>
+                              <div class="reply-time">{{ formatTime(reply.createTime) }}</div>
+                            </div>
+                          </div>
+                          <div class="reply-content">{{ reply.content }}</div>
+                          <div class="reply-actions">
+                            <el-button type="text" size="small" @click="toggleLikeReply(reply)">
+                              <el-icon v-if="reply.isLike === 0"><Position /></el-icon>
+                              <el-icon v-else><Promotion /></el-icon>
+                              {{ reply.likeNum || 0 }}
+                            </el-button>
+                            <el-button type="text" size="small" @click="replyToReply(post, comment, reply)">回复</el-button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -754,6 +1026,51 @@ const toggleFavorite = async (post) => {
   margin-top: 10px;
   gap: 10px;
 }
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #d9d9d9;
+}
+
+.thumbnail:hover {
+  opacity: 0.8;
+}
+
+.thumbnail-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background-color: gray;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 15px;
+  z-index: 10;
+}
+
+.delete-btn:hover {
+  opacity: 0.8;
+}
+
 
 .section-nav {
   background-color: white;
@@ -999,7 +1316,9 @@ const toggleFavorite = async (post) => {
 }
 
 .comment-actions {
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .no-comments {
@@ -1009,6 +1328,73 @@ const toggleFavorite = async (post) => {
 }
 
 .loading-comments {
+  padding: 10px 0;
+}
+
+/* 回复模块 */
+.replies-container {
+  margin-left: 40px;
+  margin-top: 10px;
+  padding-left: 15px;
+  border-left: 2px solid #eaeaea;
+}
+
+.reply-item {
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.reply-item:last-child {
+  border-bottom: none;
+}
+
+.reply-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.reply-user-info {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.reply-username {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.reply-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.reply-content {
+  text-align: left;
+  margin-left: 34px;
+  color: #666;
+  line-height: 1.4;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.reply-actions {
+  margin-left: 34px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.reply-actions .el-button {
+  padding: 2px 4px;
+  margin-right: 10px;
+}
+
+.loading-replies {
+  margin-left: 34px;
   padding: 10px 0;
 }
 

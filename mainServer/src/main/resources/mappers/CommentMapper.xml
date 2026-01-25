@@ -56,7 +56,7 @@
         delete from reply_like where reply_id = #{replyId} and user_id = #{userId}
     </delete>
     <select id="listComments" resultType="gdufs.yixiu.pojo.PostComment" parameterType="java.lang.Integer">
-        select * from post_comment where post_id = #{postId} and status = 0
+        select * from post_comment where post_id = #{postId} and status = 0 order by create_time desc
     </select>
     <select id="listReplies" resultType="gdufs.yixiu.pojo.PostCommentReply" parameterType="java.lang.Integer">
         select * from post_comment_reply where comment_id = #{commentId}

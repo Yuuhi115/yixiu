@@ -15,6 +15,7 @@ import java.util.Map;
 
 public interface PostService {
     int createPost(RequestPostDto requestPostDto);
+    int deletePost(Integer postId, Integer userId, String role);
     ResponsePostDto getPostByPostId(Integer postId, Integer userId);
     PageInfo<ResponsePostDto> listPostAll(Integer pageNum, Integer pageSize, Integer userId);
     List<ResponsePostDto> getPostsDetail(List<Post> postList, Integer userId);

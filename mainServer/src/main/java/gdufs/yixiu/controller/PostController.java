@@ -3,6 +3,7 @@ package gdufs.yixiu.controller;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
+import gdufs.yixiu.pojo.Post;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.PostService;
 import gdufs.yixiu.util.IPUtils;
@@ -55,6 +56,22 @@ public class PostController {
         Map<String, Integer> result = new HashMap<>();
         result.put("postId", postId);
         return Result.success(result);
+    }
+    @UserLoginToken
+    @DeleteMapping("/delete")
+    public Result deletePost(@RequestParam("postId") Integer postId,
+                             HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        String role = jwtUtils.getInfoFromToken(token).getRole();
+        int result = postService.deletePost(postId, userId, role);
+        if (result == 200){
+            return Result.success(null);
+        }else if (result == 403){
+            return Result.insufficientPermissions();
+        }else {
+            return Result.fail("未知问题");
+        }
     }
 
     @UserLoginToken
