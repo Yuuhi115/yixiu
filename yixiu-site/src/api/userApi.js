@@ -3,13 +3,14 @@ import Cookie from "js-cookie";
 import qs from 'qs';
 import {ElMessage} from "element-plus";
 import router from "../router/index.js";
-import {stopNotifyPoll} from "../utils/notificationUtils.js";
+import {useNotificationStore} from "../stores/notificationInit.js";
+
 
 export async function checkToken() {
     const isAuth = await request.get("/users/checkAuth", {headers: {Authorization: Cookie.get("Authorization")}})
     if (isAuth.code !== 200) {
         ElMessage.error("登录信息过期，将于3秒后跳转至登录页面")
-        await stopNotifyPoll()
+        await useNotificationStore().stopPolling()
         setTimeout(() => {
             Cookie.remove('Authorization')
             router.push('/login')

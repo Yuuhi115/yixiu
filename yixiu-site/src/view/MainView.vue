@@ -41,6 +41,7 @@ const userInfo = reactive({
   phone: "",
   email: "",
   avatar: "",
+  userSignature: "",
   role: "",
   status: "",
   lastLogin: "",
@@ -107,6 +108,7 @@ const handleClose = (key, keyPath) => {
 }
 const logout = async () => {
   Cookie.remove('Authorization')
+  await notificationStore.stopPolling()
   await router.push('/login')
 }
 </script>

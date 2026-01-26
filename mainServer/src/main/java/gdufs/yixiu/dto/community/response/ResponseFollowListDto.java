@@ -14,6 +14,7 @@ public class ResponseFollowListDto {
     private Integer followUserId;
     private String followUsername;
     private String followUserAvatar;
+    private String followUserSignature;
     private Integer status;
     private Integer isUpdate;
     private Timestamp createTime;

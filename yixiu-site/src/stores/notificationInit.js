@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { startNotifyPoll } from "../utils/notificationUtils.js"
+import {startNotifyPoll, stopNotifyPoll} from "../utils/notificationUtils.js"
 import {getUnreadNotifyCount} from "../api/notificationApi.js";
+import Cookie from "js-cookie";
 
 export const useNotificationStore = defineStore('notification', {
     // 状态
@@ -44,12 +45,29 @@ export const useNotificationStore = defineStore('notification', {
         },
         
         startPollingMonitor() {
-            // 定期检查轮询状态，如有问题自动重启
-            setInterval(() => {
-                if (!this.isPollingStarted) {
-                    this.restartPolling()
+            const checkPollingStatus = () => {
+                if (Cookie.get("Authorization") === undefined) {
+                    console.log("用户未登录，不开启轮询")
+                    this.stopPolling()
+                    clearInterval(this.pollingMonitorInterval)
+                    return false
+                } else {
+                    if (!this.isPollingStarted) {
+                        this.restartPolling()
+                    }
+                    return true
                 }
-            }, 30000) // 每30秒检查一次
+            }
+            const needRestart = checkPollingStatus()
+            if (!needRestart) {
+                return
+            }
+            this.pollingMonitorInterval = setInterval(checkPollingStatus, 30000)
+        },
+
+        async stopPolling() {
+            stopNotifyPoll()
+            this.isPollingStarted = false
         },
 
         async restartPolling() {

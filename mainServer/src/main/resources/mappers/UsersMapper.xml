@@ -17,7 +17,7 @@
         values(#{followerId},#{followeeId})
     </insert>
     <select id="findUserById" resultType="gdufs.yixiu.pojo.Users" parameterType="java.lang.Integer">
-        select user_id,username,real_name,phone,email,avatar,role,status,last_login from users where user_id = #{userId}
+        select user_id,username,real_name,phone,email,avatar,user_signature,role,status,last_login from users where user_id = #{userId}
     </select>
     <select id="findUserByPhoneAndRole" resultType="gdufs.yixiu.pojo.Users">
         select * from users where phone = #{phone} and role = #{role}
@@ -65,7 +65,7 @@
         </where>
     </select>
     <select id="findUserNameAndAvatarByIds" resultType="gdufs.yixiu.dto.community.vo.UserInfoVO">
-        select user_id,username,avatar from users where user_id in
+        select user_id,username,avatar,user_signature from users where user_id in
         <foreach item="userId" collection="userIds" open="(" separator="," close=")">
             #{userId}
         </foreach>
@@ -113,6 +113,9 @@
             </if>
             <if test="role != null">
                 role = #{role},
+            </if>
+            <if test="userSignature != null">
+                user_signature = #{userSignature},
             </if>
         </set>
         <where>

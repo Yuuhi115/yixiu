@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.CommentMapper;
 import gdufs.yixiu.dao.PostMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.response.ResponseReplyDto;
@@ -129,6 +130,23 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PageInfo<ResponsePostDto> listPostByFilter(PostFilterDto postFilterDto, Integer pageNum, Integer pageSize, Integer userId) {
+        PageHelper.startPage(pageNum,pageSize);
+        List<Post> postList = postMapper.queryPostByFilter(postFilterDto);
+        PageInfo<Post> pageInfo = new PageInfo<>(postList);
+        if (postList.isEmpty()) {
+            return PageInfo.of(new ArrayList<>());
+        }
+        List<ResponsePostDto> responsePostDtos = getPostsDetail(postList, userId);
+        PageInfo<ResponsePostDto> resultPageInfo = new PageInfo<>(responsePostDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+        return resultPageInfo;
+    }
+
+    @Override
     public List<ResponsePostDto> getPostsDetail(List<Post> postList, Integer userId) {
         // 提取用户ID列表
         List<Integer> userIds = postList.stream()
@@ -198,6 +216,7 @@ public class PostServiceImpl implements PostService {
             if (userInfo != null) {
                 responsePostDto.setUsername(userInfo.getUsername());
                 responsePostDto.setAvatar(serviceUserUrl + userInfo.getAvatar());
+                responsePostDto.setUserSignature(userInfo.getUserSignature());
             }
             responsePostDto.setCommentNum(postCommentCountMap.getOrDefault(post.getPostId(), 0));
             responsePostDto.setLikeNum(postLikeCountMap.getOrDefault(post.getPostId(), 0));

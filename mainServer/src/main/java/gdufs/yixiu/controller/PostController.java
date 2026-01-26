@@ -1,6 +1,7 @@
 package gdufs.yixiu.controller;
 
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.pojo.Post;
@@ -39,6 +40,16 @@ public class PostController {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         return Result.success(postService.listPostAll(pageNum, pageSize, userId));
+    }
+    @UserLoginToken
+    @GetMapping("/listByFilter")
+    public Result getAllPostsByFilter(PostFilterDto postFilterDto,
+                                      @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
+                                      @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize,
+                                      HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(postService.listPostByFilter(postFilterDto, pageNum, pageSize, userId));
     }
     @UserLoginToken
     @GetMapping("/allTags")

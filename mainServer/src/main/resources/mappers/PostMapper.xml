@@ -62,15 +62,82 @@
     </select>
     <select id="queryPostByFilter" resultType="gdufs.yixiu.pojo.Post"
             parameterType="gdufs.yixiu.dto.community.request.PostFilterDto">
-        select * from post
+        SELECT
+        p.*,
+        IFNULL(l.like_num,0) AS like_num,
+        IFNULL(f.favorite_num,0) AS favorite_num,
+        IFNULL(c.comment_num,0) AS comment_num
+        FROM post p
+
+        LEFT JOIN (
+        SELECT post_id, COUNT(*) like_num
+        FROM post_like GROUP BY post_id
+        ) l ON p.post_id = l.post_id
+
+        LEFT JOIN (
+        SELECT post_id, COUNT(*) favorite_num
+        FROM post_favorite GROUP BY post_id
+        ) f ON p.post_id = f.post_id
+
+        LEFT JOIN (
+        SELECT post_id, SUM(cnt) AS comment_num
+        FROM (
+        SELECT post_id, COUNT(*) AS cnt
+        FROM post_comment
+        GROUP BY post_id
+
+        UNION ALL
+
+        SELECT pc.post_id, COUNT(*) AS cnt
+        FROM post_comment_reply r
+        JOIN post_comment pc ON r.comment_id = pc.comment_id
+        GROUP BY pc.post_id
+        ) t
+        GROUP BY post_id
+        ) c ON p.post_id = c.post_id
+
         <where>
             <if test="status != null">
-                and status = #{status}
+                AND p.status = #{status}
+            </if>
+            <if test="postUserId != null">
+                AND p.user_id = #{postUserId}
             </if>
             <if test="tagId != null">
-                and tag_id = #{tagId}
+                AND EXISTS (
+                SELECT 1 FROM post_tag_rel ptr
+                WHERE ptr.post_id = p.post_id
+                AND ptr.tag_id = #{tagId}
+                )
             </if>
         </where>
+
+        <choose>
+            <when test="orderType == 'update_time'">
+                ORDER BY p.update_time
+            </when>
+            <when test="orderType == 'like_num'">
+                ORDER BY like_num
+            </when>
+            <when test="orderType == 'comment_num'">
+                ORDER BY comment_num
+            </when>
+            <when test="orderType == 'favorite_num'">
+                ORDER BY favorite_num
+            </when>
+            <otherwise>
+                ORDER BY p.update_time
+            </otherwise>
+        </choose>
+
+        <choose>
+            <when test="order == 'asc'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
     </select>
     <select id="queryAllPost" resultType="gdufs.yixiu.pojo.Post">
         select * from post order by create_time desc

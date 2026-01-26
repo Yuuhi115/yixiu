@@ -11,4 +11,5 @@ public class UserInfoVO {
     private Integer userId;
     private String username;
     private String avatar;
+    private String userSignature;
 }

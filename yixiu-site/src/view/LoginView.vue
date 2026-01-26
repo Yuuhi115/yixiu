@@ -6,6 +6,7 @@ import { sendLREmailVerificationCode,
 import Cookie from "js-cookie"
 import router from "../router/index.js";
 import { ElLoading } from 'element-plus'
+import {useNotificationStore} from "../stores/notificationInit.js";
 
 const formRef = ref()
 const loginMethod = ref('email')
@@ -20,6 +21,7 @@ onMounted(async () => {
     }
   }
 )
+const notificationStore = useNotificationStore()
 
 const form = reactive({
   role: 'student',
@@ -148,6 +150,7 @@ const handleLogin = () => {
       // window.$ws = new WebSocket(`ws://localhost:8080/ws/notify?token=${token}`)
       ElMessage.success('登录成功！')
       await router.replace('/')
+      await notificationStore.initPolling()
     } else {
       ElMessage.error('请检查输入内容')
     }

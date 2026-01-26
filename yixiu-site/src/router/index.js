@@ -12,7 +12,9 @@ import MyTaskView from "../view/taskCenter/MyTaskView.vue";
 import {checkToken} from "../api/userApi.js";
 import {ElMessage} from "element-plus";
 import Cookie from "js-cookie";
-import CommunityCenter from "../view/community/CommunityCenter.vue";
+import CommunityCenterView from "../view/community/CommunityCenterView.vue";
+import FollowListView from "../view/community/FollowListView.vue";
+import MyFavoriteView from "../view/community/MyFavoriteView.vue";
 
 // 定义路由
 const routes = [
@@ -26,7 +28,14 @@ const routes = [
     { path: '/admin/memberManage', component: MemberManageView },
     { path: '/taskCenter/list', component: TaskListView },
     { path: '/taskCenter/myTask', component: MyTaskView },
-    { path: '/community', component: CommunityCenter}
+    {
+        path: '/community',
+        name: 'CommunityCenter',
+        component: CommunityCenterView,
+        props: true  // 启用路由props
+    },
+    { path: '/community/followList', component: FollowListView },
+    { path: '/community/myFavorite', component: MyFavoriteView}
 ]
 
 // 创建router实例

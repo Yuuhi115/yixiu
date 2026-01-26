@@ -16,6 +16,7 @@ public class ResponsePostDto {
     private Integer userId;
     private String username;
     private String avatar;
+    private String userSignature;
     private String title;
     private String content;
     private List<String> imgUrls;

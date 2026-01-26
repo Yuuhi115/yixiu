@@ -8,6 +8,9 @@ import { sendLREmailVerificationCode,
 import { volunteerRegisterByEmailVerification } from '../api/volunteerApi.js';
 import router from "../router/index.js";
 import Cookie from "js-cookie";
+import {useNotificationStore} from "../stores/notificationInit.js";
+
+const notificationStore = useNotificationStore()
 
 const formRef = ref()
 const registerMethod = ref('email')
@@ -124,6 +127,7 @@ const handleRegister = () => {
       localStorage.setItem('role', form.role)
       ElMessage.success('注册成功！')
       await router.push('/')
+      await notificationStore.initPolling()
     } else {
       ElMessage.error('请检查输入内容')
     }

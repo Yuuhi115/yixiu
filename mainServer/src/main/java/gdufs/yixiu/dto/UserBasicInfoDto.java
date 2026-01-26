@@ -18,6 +18,7 @@ public class UserBasicInfoDto {
     private String email;
     private String avatar;
     private String role;
+    private String userSignature;
     private String status;
     private Date lastLogin;
     private VolunteerInfo volunteerInfo;

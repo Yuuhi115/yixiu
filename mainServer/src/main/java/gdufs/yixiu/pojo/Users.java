@@ -18,6 +18,7 @@ public class Users {
     private String phone;
     private String email;
     private String avatar;
+    private String userSignature;
     private String openid;
     private String unionid;
     private String wxNickname;

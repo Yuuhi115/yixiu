@@ -144,6 +144,7 @@ public class UsersServiceImpl implements UsersService {
         userBasicInfoDto.setPhone(user.getPhone());
         userBasicInfoDto.setEmail(user.getEmail());
         userBasicInfoDto.setAvatar(avatarPath + user.getAvatar());
+        userBasicInfoDto.setUserSignature(user.getUserSignature());
         userBasicInfoDto.setRole(user.getRole());
         userBasicInfoDto.setStatus(user.getStatus());
         userBasicInfoDto.setLastLogin(user.getLastLogin());
@@ -206,6 +207,7 @@ public class UsersServiceImpl implements UsersService {
             }
             responseFollowListDto.setFollowUsername(userInfoVO.getUsername());
             responseFollowListDto.setFollowUserAvatar(avatarPath + userInfoVO.getAvatar());
+            responseFollowListDto.setFollowUserSignature(userInfoVO.getUserSignature());
             responseFollowListDto.setStatus(userFollow.getStatus());
             responseFollowListDto.setCreateTime(userFollow.getCreateTime());
             responseFollowListDto.setUpdateTime(userFollow.getUpdateTime());

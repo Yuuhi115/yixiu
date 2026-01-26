@@ -26,6 +26,9 @@ export function uploadPostImage(data){
 export function getPostList(params){
     return request.get("/community/post/list", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
 }
+export function getPostListByFilter(params){
+    return request.get("/community/post/listByFilter", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+}
 export function addPostLike(postId){
     const formData = new FormData()
     formData.append('postId', postId)

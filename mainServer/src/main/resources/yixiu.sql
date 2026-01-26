@@ -11,7 +11,7 @@
  Target Server Version : 80033 (8.0.33)
  File Encoding         : 65001
 
- Date: 13/01/2026 15:49:17
+ Date: 25/01/2026 22:07:45
 */
 
 SET NAMES utf8mb4;
@@ -75,23 +75,34 @@ CREATE TABLE `broadcast_read`  (
   INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
   CONSTRAINT `fk_notify` FOREIGN KEY (`notify_id`) REFERENCES `notification` (`notify_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 205 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知已读记录表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 216 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知已读记录表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of broadcast_read
 -- ----------------------------
-INSERT INTO `broadcast_read` VALUES (1, 4, 10, 0, '2025-12-18 21:15:22', '2025-12-18 21:15:22');
+INSERT INTO `broadcast_read` VALUES (1, 4, 10, 1, '2025-12-18 21:15:22', '2026-01-22 16:46:20');
 INSERT INTO `broadcast_read` VALUES (2, 4, 11, 1, '2025-12-18 21:15:22', '2025-12-19 15:15:07');
 INSERT INTO `broadcast_read` VALUES (3, 4, 12, 0, '2025-12-18 21:15:22', '2025-12-18 21:15:22');
 INSERT INTO `broadcast_read` VALUES (4, 4, 17, 0, '2025-12-18 21:15:22', '2025-12-18 21:15:22');
 INSERT INTO `broadcast_read` VALUES (5, 4, 16, 1, '2025-12-18 21:15:22', '2026-01-08 17:30:34');
 INSERT INTO `broadcast_read` VALUES (6, 4, 13, 1, '2025-12-18 21:15:22', '2025-12-29 14:39:35');
-INSERT INTO `broadcast_read` VALUES (19, 7, 10, 0, '2025-12-19 15:31:34', '2025-12-19 15:31:34');
+INSERT INTO `broadcast_read` VALUES (19, 7, 10, 1, '2025-12-19 15:31:34', '2026-01-22 16:46:19');
 INSERT INTO `broadcast_read` VALUES (20, 7, 11, 1, '2025-12-19 15:31:34', '2025-12-19 15:46:22');
 INSERT INTO `broadcast_read` VALUES (21, 7, 12, 0, '2025-12-19 15:31:34', '2025-12-19 15:31:34');
 INSERT INTO `broadcast_read` VALUES (22, 7, 17, 0, '2025-12-19 15:31:34', '2025-12-19 15:31:34');
 INSERT INTO `broadcast_read` VALUES (23, 7, 16, 1, '2025-12-19 15:31:34', '2026-01-08 17:30:33');
 INSERT INTO `broadcast_read` VALUES (24, 7, 13, 1, '2025-12-19 15:31:34', '2025-12-29 14:39:33');
+INSERT INTO `broadcast_read` VALUES (205, 111, 10, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (206, 111, 11, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (207, 111, 12, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (208, 111, 17, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (209, 111, 22, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (210, 111, 19, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (211, 111, 20, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (212, 111, 16, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (213, 111, 18, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (214, 111, 21, 0, '2026-01-25 21:55:41', '2026-01-25 21:55:41');
+INSERT INTO `broadcast_read` VALUES (215, 111, 13, 1, '2026-01-25 21:55:41', '2026-01-25 21:55:45');
 
 -- ----------------------------
 -- Table structure for comment_like
@@ -104,11 +115,18 @@ CREATE TABLE `comment_like`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`like_id`) USING BTREE,
   UNIQUE INDEX `uk_comment_user_like`(`comment_id` ASC, `user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '评论点赞表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '评论点赞表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of comment_like
 -- ----------------------------
+INSERT INTO `comment_like` VALUES (2, 1, 16, '2026-01-14 17:03:55');
+INSERT INTO `comment_like` VALUES (3, 1, 21, '2026-01-14 17:27:20');
+INSERT INTO `comment_like` VALUES (4, 1, 10, '2026-01-14 17:27:38');
+INSERT INTO `comment_like` VALUES (5, 3, 21, '2026-01-14 17:29:23');
+INSERT INTO `comment_like` VALUES (6, 2, 10, '2026-01-16 17:07:12');
+INSERT INTO `comment_like` VALUES (7, 3, 13, '2026-01-25 11:32:46');
+INSERT INTO `comment_like` VALUES (8, 9, 13, '2026-01-25 20:34:04');
 
 -- ----------------------------
 -- Table structure for feedback
@@ -148,7 +166,7 @@ CREATE TABLE `notification`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`notify_id`) USING BTREE,
   INDEX `idx_receiver_read`(`receiver_id` ASC, `is_read` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 99 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 112 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '通知表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of notification
@@ -173,6 +191,16 @@ INSERT INTO `notification` VALUES (45, 16, 13, '账户身份变更通知', '您�
 INSERT INTO `notification` VALUES (46, 16, 13, '账户身份变更通知', '您的账户身份已由【志愿者】更改为【管理员】', 'USER', 1, NULL, '2026-01-08 17:44:16');
 INSERT INTO `notification` VALUES (97, 21, 13, '账户身份变更通知', '您的账户身份已由【志愿者】更改为【管理员】', 'USER', 1, NULL, '2026-01-09 16:27:12');
 INSERT INTO `notification` VALUES (98, 18, 13, '账户身份变更通知', '您的账户身份已由【志愿者】更改为【管理员】', 'USER', 0, NULL, '2026-01-09 16:29:42');
+INSERT INTO `notification` VALUES (99, 22, 0, '报修审核通过通知', '您的电脑维修申请(申请编号: 26)已通过审核，请继续等待义修志愿者接收任务', 'SYSTEM', 1, '/repair/history', '2026-01-17 16:14:41');
+INSERT INTO `notification` VALUES (103, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 16:46:54');
+INSERT INTO `notification` VALUES (104, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 16:48:07');
+INSERT INTO `notification` VALUES (105, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:01:02');
+INSERT INTO `notification` VALUES (106, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:01:39');
+INSERT INTO `notification` VALUES (107, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:07:36');
+INSERT INTO `notification` VALUES (108, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:11:52');
+INSERT INTO `notification` VALUES (109, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:14:17');
+INSERT INTO `notification` VALUES (110, 10, 13, '测试弹出', 'test content', 'USER', 1, NULL, '2026-01-22 17:14:59');
+INSERT INTO `notification` VALUES (111, 0, 0, '社区模块开发通告', '社区模块开发啦，快来测（目前关注列表及收藏信息未开发）', 'BROADCAST', 0, NULL, '2026-01-25 21:55:41');
 
 -- ----------------------------
 -- Table structure for post
@@ -189,11 +217,14 @@ CREATE TABLE `post`  (
   PRIMARY KEY (`post_id`) USING BTREE,
   INDEX `idx_post_user`(`user_id` ASC) USING BTREE,
   CONSTRAINT `fk_post_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社区帖子表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '社区帖子表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post
 -- ----------------------------
+INSERT INTO `post` VALUES (1, 16, '测试帖子标题', '测试帖子内容, 长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试，长文本测试', 0, '2026-01-13 19:28:07', '2026-01-23 17:46:20');
+INSERT INTO `post` VALUES (3, 13, '测试关注更新提醒', '关注更新提醒帖子内容', 0, '2026-01-24 16:06:15', '2026-01-24 16:06:15');
+INSERT INTO `post` VALUES (8, 10, '测试网站发帖功能', '啦啦啦', 0, '2026-01-25 15:18:17', '2026-01-25 15:18:17');
 
 -- ----------------------------
 -- Table structure for post_comment
@@ -209,11 +240,17 @@ CREATE TABLE `post_comment`  (
   PRIMARY KEY (`comment_id`) USING BTREE,
   INDEX `idx_comment_post`(`post_id` ASC) USING BTREE,
   CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`post_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子一级评论表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子一级评论表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_comment
 -- ----------------------------
+INSERT INTO `post_comment` VALUES (1, 1, 13, '牛逼', 0, '2026-01-14 16:15:33');
+INSERT INTO `post_comment` VALUES (2, 1, 16, '顶级', 0, '2026-01-14 16:16:15');
+INSERT INTO `post_comment` VALUES (3, 1, 10, '测试评论2', 0, '2026-01-14 17:28:00');
+INSERT INTO `post_comment` VALUES (6, 3, 13, '666', 0, '2026-01-24 18:47:53');
+INSERT INTO `post_comment` VALUES (7, 8, 13, '测试网站回复', 0, '2026-01-25 18:02:51');
+INSERT INTO `post_comment` VALUES (9, 8, 10, '结灯好看🙂', 0, '2026-01-25 20:15:09');
 
 -- ----------------------------
 -- Table structure for post_comment_reply
@@ -231,11 +268,16 @@ CREATE TABLE `post_comment_reply`  (
   PRIMARY KEY (`reply_id`) USING BTREE,
   INDEX `idx_reply_comment`(`comment_id` ASC) USING BTREE,
   CONSTRAINT `fk_reply_comment` FOREIGN KEY (`comment_id`) REFERENCES `post_comment` (`comment_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子二级评论表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子二级评论表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_comment_reply
 -- ----------------------------
+INSERT INTO `post_comment_reply` VALUES (1, 1, 16, 13, NULL, '测试回复一级评论', 0, '2026-01-14 16:17:05');
+INSERT INTO `post_comment_reply` VALUES (2, 1, 21, 16, 1, '确实', 0, '2026-01-14 16:19:29');
+INSERT INTO `post_comment_reply` VALUES (9, 9, 16, 10, NULL, '确实好看', 0, '2026-01-25 20:20:34');
+INSERT INTO `post_comment_reply` VALUES (10, 9, 13, 16, NULL, '@微型校园接收机 赞同', 0, '2026-01-25 20:26:57');
+INSERT INTO `post_comment_reply` VALUES (11, 6, 13, 13, NULL, '测试回复列表弹出', 0, '2026-01-25 20:27:38');
 
 -- ----------------------------
 -- Table structure for post_favorite
@@ -248,11 +290,14 @@ CREATE TABLE `post_favorite`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`favorite_id`) USING BTREE,
   UNIQUE INDEX `uk_post_user_fav`(`post_id` ASC, `user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子收藏表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子收藏表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_favorite
 -- ----------------------------
+INSERT INTO `post_favorite` VALUES (1, 1, 13, '2026-01-14 15:07:48');
+INSERT INTO `post_favorite` VALUES (2, 1, 16, '2026-01-23 18:42:34');
+INSERT INTO `post_favorite` VALUES (3, 4, 13, '2026-01-24 17:29:28');
 
 -- ----------------------------
 -- Table structure for post_img
@@ -265,11 +310,15 @@ CREATE TABLE `post_img`  (
   PRIMARY KEY (`img_id`) USING BTREE,
   INDEX `idx_post_img`(`post_id` ASC) USING BTREE,
   CONSTRAINT `fk_post_img` FOREIGN KEY (`post_id`) REFERENCES `post` (`post_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子图片表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子图片表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_img
 -- ----------------------------
+INSERT INTO `post_img` VALUES (1, 1, 'postImg/post_1_img_1.jpg');
+INSERT INTO `post_img` VALUES (2, 1, 'postImg/post_1_img_2.jpg');
+INSERT INTO `post_img` VALUES (6, 8, 'postImg/post_8_img_1.jpg');
+INSERT INTO `post_img` VALUES (7, 8, 'postImg/post_8_img_2.jpg');
 
 -- ----------------------------
 -- Table structure for post_like
@@ -282,11 +331,18 @@ CREATE TABLE `post_like`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`like_id`) USING BTREE,
   UNIQUE INDEX `uk_post_user_like`(`post_id` ASC, `user_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子点赞表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子点赞表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_like
 -- ----------------------------
+INSERT INTO `post_like` VALUES (1, 1, 16, '2026-01-14 15:05:36');
+INSERT INTO `post_like` VALUES (3, 1, 10, '2026-01-16 16:38:57');
+INSERT INTO `post_like` VALUES (5, 4, 13, '2026-01-24 17:29:27');
+INSERT INTO `post_like` VALUES (8, 3, 13, '2026-01-25 11:40:05');
+INSERT INTO `post_like` VALUES (9, 8, 10, '2026-01-25 15:19:20');
+INSERT INTO `post_like` VALUES (10, 8, 13, '2026-01-25 15:19:29');
+INSERT INTO `post_like` VALUES (11, 8, 16, '2026-01-25 15:19:54');
 
 -- ----------------------------
 -- Table structure for post_tag
@@ -299,7 +355,7 @@ CREATE TABLE `post_tag`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`tag_id`) USING BTREE,
   UNIQUE INDEX `uk_tag_name`(`tag_name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子标签表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子标签表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_tag
@@ -309,6 +365,7 @@ INSERT INTO `post_tag` VALUES (2, '经验分享', 0, '2026-01-13 15:47:59');
 INSERT INTO `post_tag` VALUES (3, '资源分享', 0, '2026-01-13 15:48:08');
 INSERT INTO `post_tag` VALUES (4, '杂谈', 0, '2026-01-13 15:48:23');
 INSERT INTO `post_tag` VALUES (5, '精华', 0, '2026-01-13 15:49:06');
+INSERT INTO `post_tag` VALUES (6, '其它', 0, '2026-01-16 15:55:45');
 
 -- ----------------------------
 -- Table structure for post_tag_rel
@@ -323,11 +380,17 @@ CREATE TABLE `post_tag_rel`  (
   INDEX `fk_ptr_tag`(`tag_id` ASC) USING BTREE,
   CONSTRAINT `fk_ptr_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`post_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_ptr_tag` FOREIGN KEY (`tag_id`) REFERENCES `post_tag` (`tag_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子标签关联表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子标签关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_tag_rel
 -- ----------------------------
+INSERT INTO `post_tag_rel` VALUES (1, 1, 1);
+INSERT INTO `post_tag_rel` VALUES (2, 1, 4);
+INSERT INTO `post_tag_rel` VALUES (5, 3, 4);
+INSERT INTO `post_tag_rel` VALUES (6, 3, 5);
+INSERT INTO `post_tag_rel` VALUES (13, 8, 4);
+INSERT INTO `post_tag_rel` VALUES (12, 8, 5);
 
 -- ----------------------------
 -- Table structure for post_view
@@ -341,11 +404,13 @@ CREATE TABLE `post_view`  (
   `create_time` datetime NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`view_id`) USING BTREE,
   INDEX `idx_view_post`(`post_id` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子浏览记录表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '帖子浏览记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of post_view
 -- ----------------------------
+INSERT INTO `post_view` VALUES (1, 1, 13, '127.0.0.1', '2026-01-14 15:14:39');
+INSERT INTO `post_view` VALUES (2, 1, 16, '127.0.0.1', '2026-01-14 15:23:35');
 
 -- ----------------------------
 -- Table structure for repair_assignment
@@ -365,7 +430,7 @@ CREATE TABLE `repair_assignment`  (
   INDEX `fk_assign_volunteer`(`volunteer_id` ASC) USING BTREE,
   INDEX `idx_assign_status`(`status` ASC) USING BTREE,
   CONSTRAINT `fk_assign_request` FOREIGN KEY (`request_id`) REFERENCES `repair_request` (`request_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修任务分配表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '维修任务分配表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of repair_assignment
@@ -378,6 +443,7 @@ INSERT INTO `repair_assignment` VALUES (16, 5, 3, 0, '2025-12-24 15:26:49', 1, '
 INSERT INTO `repair_assignment` VALUES (17, 10, 3, 1, '2025-12-26 13:16:57', 1, '', '2025-12-29 15:16:15');
 INSERT INTO `repair_assignment` VALUES (18, 24, 5, 1, '2025-12-28 20:50:56', 0, '', '2025-12-28 20:50:56');
 INSERT INTO `repair_assignment` VALUES (19, 24, 3, 0, '2025-12-28 20:51:15', 0, '', '2025-12-28 20:53:00');
+INSERT INTO `repair_assignment` VALUES (20, 26, 3, 1, '2026-01-17 16:14:49', 0, '', '2026-01-17 16:14:49');
 
 -- ----------------------------
 -- Table structure for repair_evaluate
@@ -475,7 +541,7 @@ CREATE TABLE `repair_request`  (
   INDEX `fk_request_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_request_status`(`status` ASC) USING BTREE,
   CONSTRAINT `fk_request_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 27 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '报修请求表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of repair_request
@@ -503,6 +569,7 @@ INSERT INTO `repair_request` VALUES (22, 17, 'wechat', '114514', '大份', '新�
 INSERT INTO `repair_request` VALUES (23, 17, 'email', '1521427714@qq.com', 'phone', 'Android', 'Xiaomi 12X', '屏幕损坏', 0, '一饭一', '周一全天', '', 0, '2025-12-26 13:47:48', NULL, '2025-12-26 13:47:48');
 INSERT INTO `repair_request` VALUES (24, 17, 'wechat', '1919810', '腚脑', '大皮鼓os', '不知道', '你是一个一个一个byd报错', 0, '女生宿舍', '1919年8月10号', '不知道填啥', 2, '2025-12-26 13:57:30', NULL, '2025-12-28 20:50:56');
 INSERT INTO `repair_request` VALUES (25, 17, 'wechat', '1145141919810', '1', '1', '1', 'This is a test', 0, 'i dont know', '1', '1', 0, '2025-12-29 15:51:52', NULL, '2025-12-29 15:51:52');
+INSERT INTO `repair_request` VALUES (26, 22, 'phone', '56454654654', 'laptop', 'windows', '12125765', 'buhzidao', 0, '4545646', '121', '', 2, '2026-01-17 16:14:06', NULL, '2026-01-17 16:14:49');
 
 -- ----------------------------
 -- Table structure for repair_request_img
@@ -524,6 +591,63 @@ CREATE TABLE `repair_request_img`  (
 INSERT INTO `repair_request_img` VALUES (6, 5, 'request/request_5_img_1.jpg', '2025-11-17 15:46:35');
 INSERT INTO `repair_request_img` VALUES (7, 5, 'request/request_5_img_2.jpg', '2025-11-17 15:46:35');
 INSERT INTO `repair_request_img` VALUES (8, 10, 'request/request_10_img_1.png', '2025-12-19 14:27:42');
+
+-- ----------------------------
+-- Table structure for reply_like
+-- ----------------------------
+DROP TABLE IF EXISTS `reply_like`;
+CREATE TABLE `reply_like`  (
+  `like_id` bigint NOT NULL AUTO_INCREMENT COMMENT '点赞记录ID',
+  `reply_id` bigint NOT NULL COMMENT '二级评论ID',
+  `user_id` bigint NOT NULL COMMENT '点赞用户ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`like_id`) USING BTREE,
+  UNIQUE INDEX `uk_reply_user`(`reply_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_reply_id`(`reply_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  CONSTRAINT `fk_reply_id` FOREIGN KEY (`reply_id`) REFERENCES `post_comment_reply` (`reply_id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '二级评论点赞表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of reply_like
+-- ----------------------------
+INSERT INTO `reply_like` VALUES (2, 2, 13, '2026-01-14 17:17:07');
+INSERT INTO `reply_like` VALUES (3, 1, 13, '2026-01-14 17:19:08');
+INSERT INTO `reply_like` VALUES (4, 2, 16, '2026-01-14 17:19:43');
+INSERT INTO `reply_like` VALUES (5, 2, 10, '2026-01-14 17:19:55');
+INSERT INTO `reply_like` VALUES (6, 1, 21, '2026-01-14 17:20:52');
+INSERT INTO `reply_like` VALUES (8, 1, 10, '2026-01-16 17:09:22');
+INSERT INTO `reply_like` VALUES (9, 9, 13, '2026-01-25 20:34:15');
+INSERT INTO `reply_like` VALUES (10, 10, 13, '2026-01-25 21:52:05');
+
+-- ----------------------------
+-- Table structure for user_follow
+-- ----------------------------
+DROP TABLE IF EXISTS `user_follow`;
+CREATE TABLE `user_follow`  (
+  `follow_id` bigint NOT NULL AUTO_INCREMENT COMMENT '关注记录ID',
+  `follower_id` bigint NOT NULL COMMENT '关注者用户ID（谁关注）',
+  `followee_id` bigint NOT NULL COMMENT '被关注者用户ID（关注谁）',
+  `status` tinyint NOT NULL DEFAULT 1 COMMENT '关注状态：1=已关注，0=已取消',
+  `is_update` tinyint(1) NOT NULL DEFAULT 0 COMMENT '被关注者是否更新',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`follow_id`) USING BTREE,
+  UNIQUE INDEX `uk_follower_followee`(`follower_id` ASC, `followee_id` ASC) USING BTREE,
+  INDEX `idx_follower`(`follower_id` ASC) USING BTREE,
+  INDEX `idx_followee`(`followee_id` ASC) USING BTREE,
+  CONSTRAINT `chk_no_self_follow` CHECK (`follower_id` <> `followee_id`)
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户关注关系表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_follow
+-- ----------------------------
+INSERT INTO `user_follow` VALUES (1, 16, 13, 1, 0, '2026-01-22 21:08:40', '2026-01-22 21:08:40');
+INSERT INTO `user_follow` VALUES (2, 16, 10, 1, 0, '2026-01-22 21:08:47', '2026-01-22 21:08:47');
+INSERT INTO `user_follow` VALUES (3, 13, 16, 1, 0, '2026-01-22 21:09:02', '2026-01-22 21:09:02');
+INSERT INTO `user_follow` VALUES (4, 10, 13, 1, 0, '2026-01-22 21:09:14', '2026-01-22 21:09:14');
+INSERT INTO `user_follow` VALUES (5, 10, 16, 1, 0, '2026-01-22 21:09:24', '2026-01-22 21:09:24');
+INSERT INTO `user_follow` VALUES (6, 22, 10, 1, 0, '2026-01-22 21:17:38', '2026-01-22 21:22:30');
 
 -- ----------------------------
 -- Table structure for users
@@ -550,21 +674,22 @@ CREATE TABLE `users`  (
   UNIQUE INDEX `uk_openid`(`openid` ASC) USING BTREE,
   UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE,
   INDEX `idx_user_role`(`role` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户信息表（支持微信登录）' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of users
 -- ----------------------------
-INSERT INTO `users` VALUES (10, 'yuuhi0115', NULL, '刘同学', NULL, '1521427714@qq.com', 'user_10_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2025-11-01 18:08:53', '2026-01-08 16:25:00', '2026-01-08 00:00:00');
+INSERT INTO `users` VALUES (10, 'yuuhi0115', NULL, '刘同学', NULL, '1521427714@qq.com', 'user_10_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2025-11-01 18:08:53', '2026-01-24 16:20:19', '2026-01-24 00:00:00');
 INSERT INTO `users` VALUES (11, 'user_1274406252@qq.com', NULL, '结灯', NULL, '1274406252@qq.com', 'user_11_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2025-11-07 18:28:19', '2025-12-29 15:15:51', '2025-12-29 00:00:00');
 INSERT INTO `users` VALUES (12, 'user_13712871903', NULL, NULL, '13712871903', NULL, 'default_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2025-11-11 14:49:02', '2025-11-20 19:01:15', '2025-11-11 14:49:02');
-INSERT INTO `users` VALUES (13, 'superAdmin', NULL, '测试超管', NULL, '1521427714@qq.com', 'user_13_avatar.jpg', NULL, NULL, NULL, NULL, 'super_admin', 1, '2025-11-20 16:21:39', '2026-01-08 16:25:18', '2026-01-08 00:00:00');
-INSERT INTO `users` VALUES (16, '微型校园接收机', NULL, '刘同学', NULL, '1274406252@qq.com', 'user_16_avatar.jpg', NULL, NULL, NULL, NULL, 'admin', 1, '2025-11-28 17:24:32', '2026-01-08 17:50:09', '2026-01-08 00:00:00');
+INSERT INTO `users` VALUES (13, 'superAdmin', NULL, '测试超管', NULL, '1521427714@qq.com', 'user_13_avatar.jpg', NULL, NULL, NULL, NULL, 'super_admin', 1, '2025-11-20 16:21:39', '2026-01-25 21:50:10', '2026-01-25 00:00:00');
+INSERT INTO `users` VALUES (16, '微型校园接收机', NULL, '刘同学', NULL, '1274406252@qq.com', 'user_16_avatar.jpg', NULL, NULL, NULL, NULL, 'admin', 1, '2025-11-28 17:24:32', '2026-01-23 16:35:28', '2026-01-23 00:00:00');
 INSERT INTO `users` VALUES (17, 'user_2546281371@qq.com', NULL, 'j同学', NULL, '2546281371@qq.com', 'user_17_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2025-12-08 14:43:34', '2026-01-09 11:45:59', '2026-01-09 00:00:00');
 INSERT INTO `users` VALUES (18, 'volunteer_2546281371@qq.com', NULL, '答哥', NULL, '2546281371@qq.com', 'user_18_avatar.jpg', NULL, NULL, NULL, NULL, 'admin', 1, '2025-12-28 11:00:34', '2026-01-09 16:29:41', '2025-12-29 00:00:00');
 INSERT INTO `users` VALUES (19, 'volunteer_1147529784@qq.com', NULL, '野兽后辈', NULL, '1147529784@qq.com', 'user_19_avatar.jpg', NULL, NULL, NULL, NULL, 'volunteer', 1, '2025-12-28 20:40:28', '2025-12-28 21:05:49', '2025-12-28 00:00:00');
 INSERT INTO `users` VALUES (20, 'volunteer_eriana23333@gmail.com', NULL, '千早爱音', NULL, 'eriana23333@gmail.com', 'user_20_avatar.jpg', NULL, NULL, NULL, NULL, 'volunteer', 1, '2025-12-29 14:30:06', '2025-12-29 14:34:13', '2025-12-29 00:00:00');
 INSERT INTO `users` VALUES (21, 'volunteer_aidealrays@gmail.com', NULL, '刘同学2', NULL, 'aidealrays@gmail.com', 'user_21_avatar.jpg', NULL, NULL, NULL, NULL, 'admin', 1, '2026-01-09 16:14:21', '2026-01-09 18:37:45', '2026-01-09 00:00:00');
+INSERT INTO `users` VALUES (22, 'user_2784521898@qq.com', NULL, '李同学', NULL, '2784521898@qq.com', 'user_22_avatar.jpg', NULL, NULL, NULL, NULL, 'student', 1, '2026-01-17 16:08:06', '2026-01-17 16:13:28', '2026-01-17 00:00:00');
 
 -- ----------------------------
 -- Table structure for volunteer_info
