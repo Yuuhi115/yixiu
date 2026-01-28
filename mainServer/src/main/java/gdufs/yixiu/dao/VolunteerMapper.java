@@ -3,8 +3,10 @@ package gdufs.yixiu.dao;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface VolunteerMapper {
@@ -17,4 +19,5 @@ public interface VolunteerMapper {
     String findVolunteerNameByVolunteerId(Integer volunteerId);
     Integer findVolunteerIdByUserId(Integer userId);
     List<Users> findVolunteersByName(String name);
+    Map<String, Object> getVolunteerRepairStats(@Param("volunteerId") Integer volunteerId);
 }

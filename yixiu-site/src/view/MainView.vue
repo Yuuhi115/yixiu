@@ -203,10 +203,10 @@ const logout = async () => {
                 </el-icon>
                 <span>任务中心</span>
               </template>
-              <el-menu-item index="4-1" @click="JumpToTaskList(userInfo)">
+              <el-menu-item index="4-1" @click="JumpToTaskList(userInfo, '/taskCenter/list')">
                 任务列表
               </el-menu-item>
-              <el-menu-item index="4-2" @click="() => router.push('/taskCenter/myTask')">
+              <el-menu-item index="4-2" @click="JumpToTaskList(userInfo, '/taskCenter/myTask')">
                 我的任务
               </el-menu-item>
             </el-sub-menu>

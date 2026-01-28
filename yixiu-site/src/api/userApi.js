@@ -54,6 +54,10 @@ export function sendLREmailVerificationCode(email) {
 export function getUserInfo(token) {
     return request.get("/users/userInfo", {headers: {Authorization: token}})
 }
+
+export function getUserInfoVO(userId){
+    return request.get("/users/userInfoVO", {params: {userId: userId} ,headers: {Authorization: Cookie.get("Authorization")}})
+}
 /*更改头像*/
 export function updateAvatar(data) {
     return request.put("/users/avatar", data, {headers: {Authorization: Cookie.get("Authorization")}})
@@ -90,4 +94,24 @@ export function getRepairFormByFilterLimitUser(queryFilter) {
 /*添加维修评价*/
 export function addEvaluation(data){
     return request.post("/task/addEvaluation", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function getFollowListByFilter(params) {
+    if (params.fansOrFollow === "follow"){
+        return request.get("/users/followListByFilter", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+    }else {
+        return request.get("/users/fansListByFilter", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+    }
+}
+
+export function cancelFollow(followeeId) {
+    let formData = new FormData()
+    formData.append('followeeId', followeeId)
+    return request.post("/users/cancelFollow", formData, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function addFollow(followeeId) {
+    let formData = new FormData()
+    formData.append('followeeId', followeeId)
+    return request.post("/users/follow", formData, {headers: {Authorization: Cookie.get("Authorization")}})
 }

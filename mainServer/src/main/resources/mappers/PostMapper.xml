@@ -103,6 +103,12 @@
             <if test="postUserId != null">
                 AND p.user_id = #{postUserId}
             </if>
+            <if test="keyword != null">
+                AND (
+                p.title LIKE CONCAT('%', #{keyword}, '%')
+                OR p.content LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
             <if test="tagId != null">
                 AND EXISTS (
                 SELECT 1 FROM post_tag_rel ptr

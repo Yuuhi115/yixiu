@@ -13,4 +13,5 @@ public class PostFilterDto {
     private Integer tagId;
     private String orderType; // 排序方式 1. update_time 2. like_num 3. comment_num 4. favorite_num
     private String order; // desc asc, 默认为desc
+    private String keyword; // 搜索关键字
 }

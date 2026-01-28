@@ -8,6 +8,7 @@ import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
+import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.VolunteerService;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -179,5 +181,24 @@ public class VolunteerServiceImpl implements VolunteerService {
         pageInfoResult.setPageSize(pageInfo.getPageSize());
         pageInfoResult.setTotal(pageInfo.getTotal());
         return pageInfoResult;
+    }
+
+    @Override
+    public VolunteerDataVO queryVolunteerDataVO(Integer userId) {
+        VolunteerDataVO volunteerDataVO = new VolunteerDataVO();
+        VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(userId);
+        if (volunteerInfo == null){
+            return null;
+        }else {
+            volunteerDataVO.setVolunteerId(volunteerInfo.getVolunteerId());
+            volunteerDataVO.setGrade(volunteerInfo.getGrade());
+            volunteerDataVO.setStatus(volunteerInfo.getStatus());
+            volunteerDataVO.setContactType(volunteerInfo.getContactType());
+            volunteerDataVO.setContactNumber(volunteerInfo.getContactNumber());
+            Map<String, Object> stats = volunteerMapper.getVolunteerRepairStats(volunteerDataVO.getVolunteerId());
+            volunteerDataVO.setFixedNum(((Number) stats.get("fixedNum")).intValue());
+            volunteerDataVO.setFinishRate(((Number) stats.get("finishRate")).doubleValue());
+            return volunteerDataVO;
+        }
     }
 }

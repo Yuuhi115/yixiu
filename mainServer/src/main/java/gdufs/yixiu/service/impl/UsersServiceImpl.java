@@ -8,7 +8,9 @@ import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
+import gdufs.yixiu.dto.community.request.FollowListFilterDto;
 import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
+import gdufs.yixiu.dto.community.response.ProfileDto;
 import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
 import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
@@ -18,6 +20,7 @@ import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.CommentService;
 import gdufs.yixiu.service.UsersService;
+import gdufs.yixiu.service.VolunteerService;
 import gdufs.yixiu.util.JWTUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +44,8 @@ public class UsersServiceImpl implements UsersService {
     private PostMapper postMapper;
     @Autowired
     private CommentService commentService;
+    @Autowired
+    private VolunteerService volunteerService;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -217,10 +222,41 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public PageInfo<ResponseFollowListDto> queryFollowList(Integer userId, Integer pageNum, Integer pageSize) {
+    public UserInfoVO queryUserInfoVOById(Integer userId) {
+        Users user = usersMapper.findUserById(userId);
+        return new UserInfoVO(user.getUserId(), user.getUsername(), user.getAvatar(), user.getUserSignature());
+    }
+
+    @Override
+    public int addProfileView(Integer viewerId, Integer userId, String ip) {
+        return usersMapper.upsertProfileView(viewerId, userId, ip);
+    }
+
+    @Override
+    public ProfileDto queryProfileDtoByUserId(Integer userId, Integer viewerId) {
+        UserFollow userFollow = new UserFollow();
+        Users user = usersMapper.findUserById(userId);
+        userFollow.setFollowerId(viewerId);
+        userFollow.setFolloweeId(userId);
+        int isFollowed = usersMapper.isExistUserFollowing(userFollow);
+        ProfileDto profileDto = new ProfileDto();
+        profileDto.setCommunityStatisticDto(queryCommunityStatistic(userId));
+        UserInfoVO userInfoVO = queryUserInfoVOById(userId);
+        String avatar = avatarPath + user.getAvatar();
+        userInfoVO.setAvatar(avatar);
+        profileDto.setUserInfoVO(userInfoVO);
+        profileDto.setIsFollow(isFollowed == 1);
+        profileDto.setLastLoginTime(user.getLastLogin());
+        profileDto.setVolunteerDataVO(volunteerService.queryVolunteerDataVO(userId));
+        profileDto.setVisitedNum(usersMapper.findProfileViewCount(userId));
+        profileDto.setRole(user.getRole());
+        return profileDto;
+    }
+
+    @Override
+    public PageInfo<ResponseFollowListDto> queryFollowListByFilter(FollowListFilterDto filterDto, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
-        int followerId = userId;
-        List<UserFollow> userFollowList = usersMapper.findFolloweesByFollowerId(followerId);
+        List<UserFollow> userFollowList = usersMapper.findFolloweesByFilter(filterDto);
         PageInfo<UserFollow> userFollowPageInfo = new PageInfo<>(userFollowList);
         List<Integer> followeeIds = userFollowList.stream()
                 .map(UserFollow::getFolloweeId)
@@ -236,10 +272,9 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public PageInfo<ResponseFollowListDto> queryFansList(Integer userId, Integer pageNum, Integer pageSize) {
+    public PageInfo<ResponseFollowListDto> queryFansList(FollowListFilterDto filterDto, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
-        int followeeId = userId;
-        List<UserFollow> userFollowList = usersMapper.findFollowersByFolloweeId(followeeId);
+        List<UserFollow> userFollowList = usersMapper.findFollowersByFilter(filterDto);
         PageInfo<UserFollow> userFollowPageInfo = new PageInfo<>(userFollowList);
         List<Integer> followerIds = userFollowList.stream()
                 .map(UserFollow::getFollowerId)

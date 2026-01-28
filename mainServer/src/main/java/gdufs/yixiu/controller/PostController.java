@@ -138,7 +138,7 @@ public class PostController {
     }
     @UserLoginToken
     @PostMapping("/clearFollowUpdate")
-    public Result clearFollowUpdate(@RequestParam("uploaderId") Integer uploaderId,
+    public Result clearFollowUpdate(Integer uploaderId,
                                     HttpServletRequest request){
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();

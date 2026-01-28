@@ -1,77 +1,65 @@
 <script setup>
-import {ref, reactive, onMounted, computed, nextTick, inject} from 'vue'
-import CommonLayout from '../../components/CommunityLayout.vue'
-import {watch} from 'vue'
+import {ref, reactive, onMounted, computed, nextTick} from 'vue'
+import {watchEffect, watch} from 'vue'
 import {Star, ChatRound, Position, StarFilled, Promotion, ArrowDown, SortDown, SortUp, Search} from "@element-plus/icons-vue";
 import {ElCollapseTransition} from 'element-plus';
 import {
   getPostList,
   getAllPostTags,
-  uploadPost,
-  uploadPostImage,
   addPostLike,
   addPostFavorite,
   getCommentListByPostId,
   addComment,
   addReply,
   getReplyByCommentId, addCommentLike, addReplyLike, getPostListByFilter
-} from '../../api/communityApi.js'
-import Cookie from 'js-cookie'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import router from "../../router/index.js";
-import {useRoute} from 'vue-router'
-import {Message, Delete} from "@element-plus/icons-vue";
-import {useNotificationStore} from "../../stores/notificationInit.js";
-import {formatTime} from "../../utils/timeUtils.js";
+} from '../api/communityApi.js'
+import {ElMessage} from "element-plus"
+import {formatTime} from "../utils/timeUtils.js";
 
-const notificationStore = useNotificationStore()
+// 定义 props，允许父组件传入自定义参数
+const props = defineProps({
+  initialFilters: {
+    type: Object,
+    default: () => ({})
+  },
+  enableTagFilter: {
+    type: Boolean,
+    default: true
+  },
+  enableSearch: {
+    type: Boolean,
+    default: true
+  },
+  enableSort: {
+    type: Boolean,
+    default: true
+  }
+})
 
 // 标签数据
 const tags = ref([])
-const selectedTag = ref([])
-const demonstrateTags = ref('')
-const postContent = ref('')
-const postTitle = ref('')
-const postImages = ref([])
-
 
 // 动态列表
 const postList = ref([])
 const loading = ref(false)
 
-
-// 获取路由参数
-const route = useRoute()
-
+// 初始化时加载数据
 onMounted(async () => {
-  // 从路由参数中获取筛选条件
-  if (route.query.orderType) {
-    postFilterForm.orderType = route.query.orderType
-  }
-  if (route.query.order) {
-    postFilterForm.order = route.query.order
-  }
-  if (route.query.tagId) {
-    postFilterForm.tagId = route.query.tagId
-  }
-  if (route.query.postUserId) {
-    postFilterForm.postUserId = route.query.postUserId
-  }
-  if (route.query.keyword) {  // 新增搜索关键词参数解析
-    postFilterForm.keyword = route.query.keyword
-  }
   await loadAllTags()
+  // 使用初始过滤参数更新过滤表单
+  Object.assign(postFilterForm, props.initialFilters)
   await handlePostFilter()
-  await notificationStore.syncUnreadCount()
 })
 
+// 传入的过滤参数
 const postFilterForm = reactive({
   orderType: 'update_time',
   order: 'desc',
   tagId: '',
   postUserId: '',
   status: 0,
-  keyword: ''
+  keyword: '',
+  ...props.initialFilters  // 合并传入的初始过滤参数
 })
 
 // 控制搜索框显示状态
@@ -103,13 +91,6 @@ const buildPostQueryParams = () => {
     params.keyword = postFilterForm.keyword
   }
   return params
-}
-
-const resetPostFilterForm = () => {
-  postFilterForm.orderType = 'update_time'
-  postFilterForm.order = 'desc'
-  postFilterForm.tagId = ''
-  postFilterForm.postUserId = ''
 }
 
 // 加载所有标签
@@ -206,25 +187,24 @@ const loadTaskListCondition = () => {
 const selectTag = (tagId) => {
   // 更新过滤条件中的标签ID
   postFilterForm.tagId = tagId
-  updateRouteParams()
+  handlePostFilter()
 }
 
 // 切换排序类型
 const changeOrderType = (type) => {
   postFilterForm.orderType = type
-  updateRouteParams()
-
+  handlePostFilter()
 }
 
 // 切换排序方向
 const toggleOrderDirection = () => {
   postFilterForm.order = postFilterForm.order === 'asc' ? 'desc' : 'asc'
-  updateRouteParams()
+  handlePostFilter()
 }
 
 // 搜索功能
 const searchPosts = () => {
-  updateRouteParams()
+  handlePostFilter()
   // 搜索后隐藏搜索框
   showSearchBar.value = false
 }
@@ -232,7 +212,7 @@ const searchPosts = () => {
 // 清空搜索
 const clearSearch = () => {
   postFilterForm.keyword = ''
-  updateRouteParams()
+  handlePostFilter()
 }
 
 // 切换搜索框显示状态
@@ -249,59 +229,6 @@ const getOrderTypeLabel = computed(() => {
   const option = orderOptions.find(opt => opt.value === postFilterForm.orderType)
   return option ? option.label : '最新更新'
 })
-
-// 更新路由参数
-const updateRouteParams = () => {
-  const params = {}
-  if (postFilterForm.orderType !== 'update_time') {
-    params.orderType = postFilterForm.orderType
-  }
-  if (postFilterForm.order !== 'desc') {
-    params.order = postFilterForm.order
-  }
-  if (postFilterForm.tagId) {
-    params.tagId = postFilterForm.tagId
-  }
-  if (postFilterForm.keyword) {
-    params.keyword = postFilterForm.keyword
-  }
-
-  router.push({
-    name: 'CommunityCenter',
-    query: params
-  })
-}
-
-// 监听路由参数变化
-watch(() => route.query, (newQuery) => {
-  let changed = false
-
-  if (newQuery.orderType && newQuery.orderType !== postFilterForm.orderType) {
-    postFilterForm.orderType = newQuery.orderType
-    changed = true
-  }
-  if (newQuery.order && newQuery.order !== postFilterForm.order) {
-    postFilterForm.order = newQuery.order
-    changed = true
-  }
-  if (newQuery.tagId !== postFilterForm.tagId) {
-    postFilterForm.tagId = newQuery.tagId || ''
-    changed = true
-  }
-  if (newQuery.postUserId !== postFilterForm.postUserId) {
-    postFilterForm.postUserId = newQuery.postUserId || ''
-    changed = true
-  }
-  if (newQuery.keyword !== postFilterForm.keyword) {
-    postFilterForm.keyword = newQuery.keyword || ''
-    changed = true
-  }
-
-  if (changed) {
-    loadTaskListCondition()
-  }
-}, {immediate: true})
-
 
 // 帖子评论分页参数
 const commentPagination = reactive({
@@ -530,82 +457,6 @@ const toggleLikeReply = async (reply) => {
   }
 };
 
-const publishPost = async () => {
-  if (!postContent.value.trim()) {
-    ElMessage.warning('请输入帖子内容')
-    return
-  }
-
-  try {
-    const postData = {
-      title: postTitle.value,
-      content: postContent.value,
-      tagIdList: selectedTag.value.map(tagId => parseInt(tagId))
-    }
-
-    const response = await uploadPost(postData)
-    if (response.code === 200) {
-      if (postImages.value.length > 0) {
-        const formData = new FormData();
-        postImages.value.forEach((imageObj, index) => {
-          formData.append(`img`, imageObj.file); // 使用原始文件
-        });
-        formData.append('postId', response.data.postId);
-
-        const imageResponse = await uploadPostImage(formData);
-        if (imageResponse.code !== 200) {
-          ElMessage.error(imageResponse.msg)
-        }
-      }
-      ElMessage.success('发布成功')
-      postTitle.value = ''
-      postContent.value = ''
-      selectedTag.value = []
-      // 释放临时 URL
-      postImages.value.forEach(imageObj => {
-        URL.revokeObjectURL(imageObj.url)
-      })
-      postImages.value = []
-      // 重新加载列表
-      await loadPostList()
-    } else {
-      ElMessage.error(response.msg || '发布失败')
-    }
-  } catch (error) {
-    console.error('发布失败:', error)
-    ElMessage.error('发布失败')
-  }
-}
-
-// 处理图片上传
-const handleImageUpload = (file, fileList) => {
-  // 检查文件是否存在
-  if (file && file.raw) {
-    // 如果有 raw 属性，说明是 Element Plus 封装的对象，取 raw 获取原始文件
-    const rawFile = file.raw;
-    // 创建临时 URL 用于预览
-    const tempUrl = URL.createObjectURL(rawFile);
-    postImages.value.push({
-      file: rawFile,
-      url: tempUrl
-    });
-  } else if (file && file instanceof File) {
-    // 如果是原始 File 对象，直接添加
-    const tempUrl = URL.createObjectURL(file);
-    postImages.value.push({
-      file: file,
-      url: tempUrl
-    });
-  }
-}
-
-// 删除指定索引的图片
-const removeImage = (index) => {
-  // 释放对应图片的临时 URL
-  const removedImage = postImages.value.splice(index, 1)[0];
-  URL.revokeObjectURL(removedImage.url);
-}
-
 // 检查是否应该显示展开按钮
 const shouldShowExpandButton = (post) => {
   if (!post.content) return false;
@@ -617,10 +468,6 @@ const shouldShowExpandButton = (post) => {
 const toggleExpand = (post) => {
   post.expanded = !post.expanded;
 };
-const logout = async () => {
-  Cookie.remove('Authorization')
-  await router.push('/login')
-}
 
 const toggleLike = async (post) => {
   if (post.isLiked === 0) {
@@ -649,85 +496,11 @@ const toggleFavorite = async (post) => {
     ElMessage.error(response.msg)
   }
 }
+
 </script>
 
 <template>
-  <CommonLayout active-menu="1" v-slot="{ userInfo }">
-    <!-- 发布动态栏 -->
-    <div class="publish-box">
-      <div class="user-info">
-        <el-avatar :size="40" :src="userInfo.avatar"/>
-        <div class="input-area">
-          <el-input
-              style="margin-bottom: 10px;"
-              v-model="postTitle"
-              placeholder="请输入标题..."
-              maxlength="50"
-              show-word-limit
-          />
-          <el-input
-              v-model="postContent"
-              :rows="3"
-              type="textarea"
-              placeholder="分享新鲜事..."
-              maxlength="500"
-              show-word-limit
-          />
-
-          <div class="publish-options">
-            <el-select
-                v-model="selectedTag"
-                placeholder="选择标签"
-                size="small" style="width: 150px; margin-right: 10px;"
-                multiple
-            >
-              <el-option
-                  v-for="tag in tags"
-                  :key="tag.tagId"
-                  :label="tag.tagName"
-                  :value="tag.tagId.toString()"
-              />
-            </el-select>
-
-            <el-upload
-                class="upload-btn"
-                action="#"
-                :auto-upload="false"
-                :show-file-list="false"
-                :on-change="handleImageUpload"
-                multiple
-                list-type="text"
-            >
-              <el-button type="primary" size="small" plain>上传图片</el-button>
-            </el-upload>
-
-            <el-button type="primary" size="small" @click="publishPost">发布</el-button>
-          </div>
-          <!-- 显示已选择的图片缩略图 -->
-          <div v-if="postImages.length > 0" class="image-preview">
-            <div
-                v-for="(imageObj, index) in postImages"
-                :key="index"
-                class="thumbnail-wrapper"
-            >
-              <el-image
-                  :src="imageObj.url"
-                  class="thumbnail"
-                  fit="cover"
-                  :preview-src-list="postImages.map(imgObj => imgObj.url)"
-                  :initial-index="index"
-              />
-              <div class="delete-btn" @click="removeImage(index)">
-                <el-icon>
-                  <Delete/>
-                </el-icon>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+  <div>
     <!-- 分区导航 -->
     <div class="section-nav-menu">
       <div class="tag-buttons">
@@ -1032,82 +805,12 @@ const toggleFavorite = async (post) => {
         <el-skeleton :rows="4" animated/>
       </div>
     </div>
-  </CommonLayout>
+  </div>
 </template>
 
+
+
 <style scoped>
-
-.publish-box {
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 10px;
-  margin-top: -30px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
-  width: 760px;
-}
-
-.user-info {
-  display: flex;
-  gap: 15px;
-}
-
-.input-area {
-  flex: 1;
-}
-
-.publish-options {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-  gap: 10px;
-}
-
-.image-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.thumbnail {
-  width: 80px;
-  height: 80px;
-  border-radius: 4px;
-  cursor: pointer;
-  border: 1px solid #d9d9d9;
-}
-
-.thumbnail:hover {
-  opacity: 0.8;
-}
-
-.thumbnail-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.delete-btn {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 20px;
-  height: 20px;
-  background-color: gray;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white;
-  font-size: 15px;
-  z-index: 10;
-}
-
-.delete-btn:hover {
-  opacity: 0.8;
-}
-
 .section-nav-menu {
   display: flex;
   align-items: center;
@@ -1115,6 +818,8 @@ const toggleFavorite = async (post) => {
   border-radius: 8px;
   padding: 10px 20px;
   margin-bottom: 10px;
+  margin-left: auto;
+  margin-right: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
   width: 760px;
 }
@@ -1504,5 +1209,4 @@ const toggleFavorite = async (post) => {
   margin-left: 34px;
   padding: 10px 0;
 }
-
 </style>

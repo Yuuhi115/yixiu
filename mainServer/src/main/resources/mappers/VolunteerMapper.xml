@@ -77,4 +77,17 @@
             AND role IN ('volunteer', 'admin', 'super_admin')
         </where>
     </select>
+    <select id="getVolunteerRepairStats" resultType="java.util.Map">
+        SELECT
+            COUNT(CASE WHEN status = 1 THEN 1 END) AS fixedNum,
+            CASE
+                WHEN COUNT(*) = 0 THEN 0
+                ELSE ROUND(
+                        COUNT(CASE WHEN status = 1 THEN 1 END) * 1.0 / COUNT(*),
+                        4
+                     )
+                END AS finishRate
+        FROM repair_assignment
+        WHERE volunteer_id = #{volunteerId}
+    </select>
 </mapper>

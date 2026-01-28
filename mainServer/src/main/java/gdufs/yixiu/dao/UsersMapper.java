@@ -1,9 +1,11 @@
 package gdufs.yixiu.dao;
 
 import gdufs.yixiu.dto.VolunteerFilterDto;
+import gdufs.yixiu.dto.community.request.FollowListFilterDto;
 import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
 import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
 import gdufs.yixiu.pojo.UserFollow;
 import gdufs.yixiu.pojo.Users;
 import org.apache.ibatis.annotations.Mapper;
@@ -31,11 +33,16 @@ public interface UsersMapper {
     // 社区
     int addUserFollow(UserFollow userFollow);
     int isExistUserFollow(UserFollow userFollow);
+    int isExistUserFollowing(UserFollow userFollow);
     int updateUserFollow(UserFollow userFollow);
     // 获取关注列表
-    List<UserFollow> findFolloweesByFollowerId(Integer followerId);
+    List<UserFollow> findFolloweesByFilter(FollowListFilterDto filterDto);
     // 获取粉丝列表
-    List<UserFollow> findFollowersByFolloweeId(Integer followeeId);
+    List<UserFollow> findFollowersByFilter(FollowListFilterDto filterDto);
     CommunityStatisticDto findCommunityStatistic(Integer userId);
     List<UserFollow> findAllUserFollows();
+    int upsertProfileView(@Param("viewerId") Integer viewerId,
+                          @Param("userId") Integer userId,
+                          @Param("ip") String ip);
+    Integer findProfileViewCount(@Param("viewedId") Integer viewedId);
 }

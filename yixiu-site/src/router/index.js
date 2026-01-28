@@ -15,6 +15,7 @@ import Cookie from "js-cookie";
 import CommunityCenterView from "../view/community/CommunityCenterView.vue";
 import FollowListView from "../view/community/FollowListView.vue";
 import MyFavoriteView from "../view/community/MyFavoriteView.vue";
+import UserProfileView from "../view/community/UserProfileView.vue";
 
 // 定义路由
 const routes = [
@@ -34,7 +35,18 @@ const routes = [
         component: CommunityCenterView,
         props: true  // 启用路由props
     },
-    { path: '/community/followList', component: FollowListView },
+    {
+        path: '/community/followList/:type/:userId', // type: 粉丝还是关注 fans or follow
+        name: 'FollowingList',
+        component: FollowListView,
+        props: true
+    },
+    {
+        path: '/community/profile/:userId',
+        name: 'UserProfile',
+        component: UserProfileView,
+        props: true
+    },
     { path: '/community/myFavorite', component: MyFavoriteView}
 ]
 

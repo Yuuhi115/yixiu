@@ -8,7 +8,7 @@ import { ElMessage } from 'element-plus'
 import router from "../router/index.js"
 import { useNotificationStore } from "../stores/notificationInit.js"
 import { getUnreadNotifyCount } from "../api/notificationApi.js"
-import {getCommunityStatistics, getFollowingUpdates} from "../api/communityApi.js";
+import {getCommunityStatistics, getFollowingUpdates, hasReadUpdate} from "../api/communityApi.js";
 
 // 用户信息状态
 const userInfo = reactive({
@@ -38,6 +38,14 @@ const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 // 模拟关注用户的动态提醒
 const followingsWithNewPosts = ref([])
 
+onMounted(async () => {
+  await queryUserInfo()
+  await loadFollowingUpdates()
+  await getUnreadNotify()
+  await queryCommunityStatistics()
+  await notificationStore.syncUnreadCount()
+})
+
 // 加载用户信息
 const queryUserInfo = async () => {
   const token = Cookie.get('Authorization')
@@ -48,6 +56,10 @@ const queryUserInfo = async () => {
   }
   Object.assign(userInfo, response.data)
 }
+
+const currentUserId = computed(() => {
+  return userInfo.userId || '0' // 提供默认值以防用户信息未加载
+})
 
 const queryCommunityStatistics = async () => {
   const response = await getCommunityStatistics()
@@ -82,18 +94,24 @@ const loadFollowingUpdates = async () => {
   }
 }
 
+// 跳转到对应的用户动态
+const goToUserPosts = async (user) => {
+  user.hasNew = false
+  await router.push({
+    path: '/community',
+    query: { postUserId: user.userId }
+  })
+  const response = await hasReadUpdate(user.userId)
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+  }
+}
+
 const logout = async () => {
   Cookie.remove('Authorization')
   await router.push('/login')
 }
 
-onMounted(async () => {
-  await queryUserInfo()
-  await loadFollowingUpdates()
-  await getUnreadNotify()
-  await queryCommunityStatistics()
-  await notificationStore.syncUnreadCount()
-})
 
 defineProps({
   activeMenu: String // 用于标识当前激活的菜单项
@@ -121,9 +139,9 @@ defineProps({
                 :ellipsis="false"
             >
               <el-menu-item index="1" @click="() => router.push('/community')">社区主页</el-menu-item>
-              <el-menu-item index="2" @click="() => router.push('/taskCenter/list')">关注列表</el-menu-item>
+              <el-menu-item index="2" @click="() => router.push(`/community/followList/follow/${currentUserId}`)">关注列表</el-menu-item>
               <el-menu-item index="3" @click="() => router.push('/taskCenter/list')">我的收藏</el-menu-item>
-              <el-menu-item index="4" @click="() => router.push('/taskCenter/list')">资源区</el-menu-item>
+              <el-menu-item index="4" @click="() => router.push(`/community/profile/${currentUserId}`)">个人主页</el-menu-item>
             </el-menu>
           </div>
         </el-col>
@@ -154,11 +172,11 @@ defineProps({
           <p>{{ userInfo.realName }}</p>
 
           <div class="stats">
-            <div class="stat-item">
+            <div class="stat-item" @click="() => router.push('/community/followList/follow/'+currentUserId)">
               <span class="number">{{ communityStatistics.followNum || 0 }}</span>
               <span class="label">关注</span>
             </div>
-            <div class="stat-item">
+            <div class="stat-item" @click="() => router.push('/community/followList/fans/'+currentUserId)">
               <span class="number">{{ communityStatistics.fansNum || 0 }}</span>
               <span class="label">粉丝</span>
             </div>
@@ -173,8 +191,9 @@ defineProps({
           <h4>关注的人有更新</h4>
           <div
               v-for="user in followingsWithNewPosts"
-              :key="user.id"
+              :key="user.userId"
               class="following-item"
+              @click="goToUserPosts(user)"
           >
             <div class="avatar-wrapper">
               <el-avatar :size="30" :src="user.avatar" />
@@ -197,6 +216,7 @@ defineProps({
 </template>
 
 <style scoped>
+
 .el-main {
   background-image: url('../assets/login_backgroud.png');
   background-size: cover;
@@ -211,28 +231,16 @@ defineProps({
   padding-right: 50px;
 }
 
-.main-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 .community-page {
-  min-height: 100vh;
   background-color: #f4f5f7;
-  padding-top: 60px;
 }
 
 .header_container {
+  width: 100%;
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
   z-index: 1000;
   background-color: snow;
-}
-
-.main-container {
-  height: calc(100vh - 60px);
 }
 
 .grid-content {
@@ -246,8 +254,10 @@ defineProps({
 
 .left-sidebar {
   background-color: snow;
-  padding: 20px;
-  height: calc(100vh - 60px);
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 90px;
+  height: 100vh;
   position: fixed;
   overflow-y: auto;
   width: 250px;
@@ -279,6 +289,21 @@ defineProps({
 
 .stat-item {
   text-align: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  background-color: #f5f5f5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item:active {
+  transform: translateY(0);
+  background-color: #ebebeb;
 }
 
 .number {
@@ -301,6 +326,19 @@ defineProps({
   display: flex;
   align-items: center;
   padding: 5px 0;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.following-item:hover {
+  background-color: #f5f5f5;
+  transform: translateX(4px);
+}
+
+.following-item:active {
+  transform: translateX(0);
+  background-color: #ebebeb;
 }
 
 .avatar-wrapper {
@@ -326,7 +364,7 @@ defineProps({
 
 .main-content {
   margin-left: 220px;
-  padding: 20px;
+  padding-top: 90px;
   display: flex;
   flex-direction: column;
   align-items: center;

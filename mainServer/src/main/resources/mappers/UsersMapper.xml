@@ -16,6 +16,13 @@
         insert into user_follow(follower_id,followee_id)
         values(#{followerId},#{followeeId})
     </insert>
+    <insert id="upsertProfileView">
+        INSERT INTO user_profile_view (viewer_id, viewed_user_id, viewer_ip, view_count)
+        VALUES (#{viewerId}, #{userId}, #{ip}, 1)
+            ON DUPLICATE KEY UPDATE
+            view_count = IF(TIMESTAMPDIFF(MINUTE, update_time, NOW()) >= 30, view_count + 1, view_count),
+            update_time = IF(TIMESTAMPDIFF(MINUTE, update_time, NOW()) >= 30, NOW(), update_time);
+    </insert>
     <select id="findUserById" resultType="gdufs.yixiu.pojo.Users" parameterType="java.lang.Integer">
         select user_id,username,real_name,phone,email,avatar,user_signature,role,status,last_login from users where user_id = #{userId}
     </select>
@@ -70,11 +77,35 @@
             #{userId}
         </foreach>
     </select>
-    <select id="findFolloweesByFollowerId" resultType="gdufs.yixiu.pojo.UserFollow">
-        select * from user_follow where follower_id = #{followerId} and status = 1
+    <select id="findFolloweesByFilter" resultType="gdufs.yixiu.pojo.UserFollow">
+        select * from user_follow uf
+        <where>
+            uf.follower_id = #{userId}
+            <if test="status != null">
+                AND uf.status = #{status}
+            </if>
+            <if test="keyword != null">
+                AND EXISTS
+                (select 1 from users u
+                 where u.user_id = uf.followee_id
+                 and u.username like CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
     </select>
-    <select id="findFollowersByFolloweeId" resultType="gdufs.yixiu.pojo.UserFollow">
-        select * from user_follow where followee_id = #{followeeId} and status = 1
+    <select id="findFollowersByFilter" resultType="gdufs.yixiu.pojo.UserFollow">
+        select * from user_follow uf
+        <where>
+            uf.followee_id = #{userId}
+            <if test="status != null">
+                AND uf.status = #{status}
+            </if>
+            <if test="keyword != null">
+                AND EXISTS
+                (select 1 from users u
+                where u.user_id = uf.followee_id
+                and u.username like CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
     </select>
     <select id="findCommunityStatistic" resultType="gdufs.yixiu.dto.community.response.CommunityStatisticDto">
         select
@@ -85,11 +116,16 @@
     <select id="isExistUserFollow" resultType="java.lang.Integer">
         select count(1) from user_follow where follower_id = #{followerId} and followee_id = #{followeeId}
     </select>
+    <select id="isExistUserFollowing" resultType="java.lang.Integer">
+        select count(1) from user_follow where follower_id = #{followerId} and followee_id = #{followeeId} and status = 1
+    </select>
     <select id="findAllUserFollows" resultType="gdufs.yixiu.pojo.UserFollow">
         select follower_id, followee_id from user_follow
         where status = 1
     </select>
-
+    <select id="findProfileViewCount" resultType="java.lang.Integer">
+        select sum(view_count) from user_profile_view where viewed_user_id = #{viewedId}
+    </select>
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

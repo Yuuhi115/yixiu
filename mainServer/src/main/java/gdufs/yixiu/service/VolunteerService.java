@@ -5,6 +5,7 @@ import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
+import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
 import gdufs.yixiu.pojo.Users;
 
 public interface VolunteerService {
@@ -19,4 +20,5 @@ public interface VolunteerService {
     UserBasicInfoDto userToVolunteerBasicInfoDto(Users user);
     PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId);
     PageInfo<UserBasicInfoDto> queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto, Integer pageNum, Integer pageSize);
+    VolunteerDataVO queryVolunteerDataVO(Integer userId);
 }

@@ -119,3 +119,13 @@ export function getCommunityStatistics(){
 export function getFollowingUpdates(){
     return request.get("/community/post/getUpdateInfo", {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function hasReadUpdate(uploaderId){
+    let data = new FormData()
+    data.append('uploaderId', uploaderId)
+    return request.post("/community/post/clearFollowUpdate",data , {headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function getUserProfileByUserId(userId){
+    return request.get("/users/profile", {params: {userId: userId}, headers: {Authorization: Cookie.get("Authorization")}})
+}

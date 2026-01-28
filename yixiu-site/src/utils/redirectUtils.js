@@ -9,10 +9,16 @@ export function JumpToRepairForm(userInfo){
     }
 }
 
-export function JumpToTaskList(userInfo) {
-    if (userInfo.realName === '' || userInfo.realName === null) {
+export function JumpToTaskList(userInfo, path) {
+    if (userInfo.realName === '' ||
+        userInfo.realName === null ||
+        userInfo.volunteerInfo.contactType === '' ||
+        userInfo.volunteerInfo.contactType === null ||
+        userInfo.volunteerInfo.contactNumber === '' ||
+        userInfo.volunteerInfo.contactNumber === null
+    ) {
         ElMessage.warning("请先完善个人信息")
     } else {
-        router.push('/taskCenter/list')
+        router.push(path)
     }
 }
