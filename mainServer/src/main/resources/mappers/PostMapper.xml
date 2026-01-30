@@ -310,6 +310,20 @@
         </foreach>
         AND user_id = #{userId}
     </select>
+    <select id="queryPostsByFavorite" resultType="gdufs.yixiu.pojo.Post">
+        SELECT
+        p.post_id, p.user_id, p.title, p.create_time
+        FROM post p
+        <where>
+            p.post_id IN (
+            SELECT pf.post_id
+            FROM post_favorite pf
+            WHERE pf.user_id = #{userId}
+            )
+            AND p.status = 0
+        </where>
+        ORDER BY p.create_time DESC
+    </select>
 
 
 </mapper>

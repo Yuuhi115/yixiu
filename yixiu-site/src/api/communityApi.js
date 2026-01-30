@@ -129,3 +129,7 @@ export function hasReadUpdate(uploaderId){
 export function getUserProfileByUserId(userId){
     return request.get("/users/profile", {params: {userId: userId}, headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function getFavoritePostInfoList(params){
+    return request.get("/community/post/getFavoritePostInfo", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+}

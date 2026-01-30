@@ -106,14 +106,14 @@
         select * from repair_request where request_id = #{requestId}
     </select>
     <select id="findAllTask" resultType="gdufs.yixiu.pojo.RepairRequest">
-        select * from repair_request order by create_time desc
+        select * from repair_request order by update_time desc
     </select>
     <select id="findTaskByUserId" resultType="gdufs.yixiu.pojo.RepairRequest"
             parameterType="java.lang.Integer">
-        select * from repair_request where user_id = #{userId} order by create_time desc
+        select * from repair_request where user_id = #{userId} order by update_time desc
     </select>
     <select id="findTaskByStatus" resultType="gdufs.yixiu.pojo.RepairRequest" parameterType="java.lang.String">
-        select * from repair_request where status = #{status} order by create_time desc
+        select * from repair_request where status = #{status} order by update_time desc
     </select>
     <select id="findRequestImgByRequestId" resultType="gdufs.yixiu.pojo.RepairRequestImg"
             parameterType="java.lang.Integer">
@@ -139,6 +139,7 @@
                 AND user_id = #{userId}
             </if>
         </where>
+        order by create_time desc
     </select>
     <select id="findIsExist" resultType="java.lang.Integer" parameterType="java.lang.Integer">
         select count(1) from repair_request where request_id = #{requestId}
@@ -163,7 +164,7 @@
     </select>
     <select id="findMyTaskAssignmentIdsByVolunteerId" resultType="java.lang.Integer"
             parameterType="java.lang.Integer">
-        select request_id from repair_assignment where volunteer_id = #{volunteerId}
+        select request_id from repair_assignment where volunteer_id = #{volunteerId} order by update_time desc
     </select>
     <select id="findMyTaskIdsByFilterDto" resultType="java.lang.Integer"
             parameterType="gdufs.yixiu.dto.TaskFilterDto">
@@ -182,12 +183,20 @@
                 AND repair_assignment.volunteer_id = #{volunteerId}
             </if>
         </where>
+        order by repair_request.update_time desc
     </select>
     <select id="findTaskEvaluateByRequestId" resultType="gdufs.yixiu.pojo.RepairEvaluate">
         select * from repair_evaluate where request_id = #{requestId}
     </select>
     <select id="findRepairLogsWithDate" resultType="gdufs.yixiu.pojo.RepairLog">
         SELECT * FROM repair_log WHERE volunteer_id = #{volunteerId} AND DATE(upload_time) BETWEEN #{startDate} AND #{endDate}
+    </select>
+    <select id="findTaskMemberIdsByRequestId" resultType="java.lang.Integer">
+        SELECT u.user_id
+        FROM repair_assignment ra
+                 JOIN volunteer_info vi ON ra.volunteer_id = vi.volunteer_id
+                 JOIN users u ON vi.user_id = u.user_id
+        WHERE ra.request_id = #{requestId};
     </select>
 
 </mapper>

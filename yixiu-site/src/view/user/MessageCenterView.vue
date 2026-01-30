@@ -241,7 +241,7 @@ const handleSizeChange = (val) => {
 }
 
 const handleCurrentChange = (val) => {
-  pagination.pageSize = val
+  pagination.pageNum = val
   loadNotificationCondition()
 }
 

@@ -47,7 +47,12 @@ const routes = [
         component: UserProfileView,
         props: true
     },
-    { path: '/community/myFavorite', component: MyFavoriteView}
+    {
+        path: '/community/favorite/:userId',
+        name: 'MyFavorite',
+        component: MyFavoriteView,
+        props: true
+    }
 ]
 
 // 创建router实例

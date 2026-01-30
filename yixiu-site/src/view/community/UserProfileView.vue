@@ -1,7 +1,7 @@
 <script setup>import {Message} from "@element-plus/icons-vue";
 import {computed, onMounted, reactive, ref, nextTick} from "vue";
 import Cookie from "js-cookie";
-import {getUserInfo} from "../../api/userApi.js";
+import {addFollow, cancelFollow, getUserInfo} from "../../api/userApi.js";
 import {ElMessage} from "element-plus";
 import router from "../../router/index.js";
 import {useNotificationStore} from "../../stores/notificationInit.js";
@@ -18,14 +18,13 @@ const viewerInfo = ref({})  // 当前登录用户信息
 const userProfile = ref({})  // 被访问的用户主页信息
 
 onMounted(async () => {
-  await queryViewerInfo()
-  await getUnreadNotify()
-
   // 获取被访问用户的主页信息
   const visitedUserId = router.currentRoute.value.params.userId
   if (visitedUserId) {
     await loadUserProfile(visitedUserId)
   }
+  await queryViewerInfo()
+  await getUnreadNotify()
 })
 
 const currentUserId = computed(() => {  //被访问的用户id
@@ -75,11 +74,20 @@ const loadUserProfile = async (userId) => {
   }
 }
 
-// 关注/取消关注
-const toggleFollow = async () => {
-  // 实现关注/取消关注功能
-  // 这里需要调用API
+// 关注
+const createFollow = async () => {
   userProfile.value.isFollow = !userProfile.value.isFollow
+  const response = await addFollow(currentUserId.value)
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+  }
+}
+const deleteFollow = async () => {
+  userProfile.value.isFollow = !userProfile.value.isFollow
+  const response = await cancelFollow(currentUserId.value)
+  if (response.code !== 200) {
+    ElMessage.error(response.msg)
+  }
 }
 
 // 格式化联系类型
@@ -102,6 +110,26 @@ const getStatusText = (status) => {
     default: return '未知'
   }
 }
+
+const getRoleText = (role) => {
+  switch(role) {
+    case 'admin': return '管理员'
+    case 'super_admin': return '超级管理员'
+    case 'volunteer': return '志愿者'
+    case 'student': return '普通用户'
+    default: return '未知'
+  }
+}
+
+const getRoleType = (role) => {
+  switch(role) {
+    case 'admin': return 'warning'
+    case 'super_admin': return 'danger'
+    case 'volunteer': return 'success'
+    case 'student': return 'primary'
+    default: return 'info'
+  }
+}
 </script>
 
 <template>
@@ -117,14 +145,14 @@ const getStatusText = (status) => {
           <el-col :span="12">
             <div class="grid-content ep-bg-purple">
               <el-menu
-                  default-active="1"
+                  default-active="4"
                   class="el-menu-demo"
                   mode="horizontal"                  style="border-bottom: silver solid 1px;background-color: snow"
                   :ellipsis="false"
               >
                 <el-menu-item index="1" @click="() => router.push('/community')">社区主页</el-menu-item>
                 <el-menu-item index="2" @click="() => router.push(`/community/followList/follow/${currentViewerId}`)">关注列表</el-menu-item>
-                <el-menu-item index="3" @click="() => router.push('/taskCenter/list')">我的收藏</el-menu-item>
+                <el-menu-item index="3" @click="() => router.push(`/community/favorite/${currentViewerId}`)">我的收藏</el-menu-item>
                 <el-menu-item index="4">个人主页</el-menu-item>
               </el-menu>
             </div>
@@ -156,8 +184,8 @@ const getStatusText = (status) => {
               <h3>{{ userProfile.userInfoVO?.username }}</h3>
               <p class="signature">{{ userProfile.userInfoVO?.userSignature || '这个人很神秘，什么都没有写...' }}</p>
               <div class="user-role">
-                <el-tag size="small" :type="userProfile.role === 'admin' || userProfile.role === 'super_admin' ? 'warning' : 'info'">
-                  {{ userProfile.role }}
+                <el-tag size="small" :type="getRoleType(userProfile.role)">
+                  {{ getRoleText(userProfile.role) }}
                 </el-tag>
               </div>
             </div>
@@ -186,9 +214,18 @@ const getStatusText = (status) => {
               <el-button
                   type="primary"
                   :class="{ 'is-followed': userProfile.isFollow }"
-                  @click="toggleFollow"
+                  @click="createFollow"
+                  v-if="!userProfile.isFollow"
               >
-                {{ userProfile.isFollow ? '已关注' : '关注' }}
+                关注
+              </el-button>
+              <el-button
+                  type="primary"
+                  :class="{ 'is-followed': userProfile.isFollow }"
+                  @click="deleteFollow"
+                  v-if="userProfile.isFollow"
+              >
+                已关注
               </el-button>
             </div>
 
@@ -203,8 +240,6 @@ const getStatusText = (status) => {
                     {{ getStatusText(userProfile.volunteerDataVO.status) }}
                   </el-tag>
                 </p>
-                <p><strong>维修数:</strong> {{ userProfile.volunteerDataVO.fixedNum }}</p>
-                <p><strong>完成率:</strong> {{ (userProfile.volunteerDataVO.finishRate * 100).toFixed(2) }}%</p>
                 <p><strong>联系方式:</strong> {{ getContactTypeText(userProfile.volunteerDataVO.contactType) }}: {{ userProfile.volunteerDataVO.contactNumber }}</p>
               </div>
             </div>
@@ -257,11 +292,11 @@ const getStatusText = (status) => {
           </div>
 
           <div class="activity-card">
-            <h4>近期活动</h4>
-            <div class="activity-item">
-              <div class="activity-desc">发布了新帖子</div>
-              <div class="activity-time">{{ formatTime(userProfile.lastLoginTime) }}</div>
-            </div>
+<!--            <h4>近期活动</h4>-->
+<!--            <div class="activity-item">-->
+<!--              <div class="activity-desc">发布了新帖子</div>-->
+<!--              <div class="activity-time">{{ formatTime(userProfile.lastLoginTime) }}</div>-->
+<!--            </div>-->
           </div>
         </el-aside>
       </el-container>

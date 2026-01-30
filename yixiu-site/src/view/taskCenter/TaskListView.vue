@@ -17,7 +17,12 @@ import {
   getFilteredRepairList
 } from "../../api/volunteerApi.js";
 import {checkVolunteerPermission} from "../../utils/userUtils.js"
-import {sendSystemNoticeToUser} from "../../api/notificationApi.js";
+import {
+  sendRepairTaskAcceptNotification,
+  sendRepairTaskApproveNotification,
+  sendRepairTaskRejectNotification,
+  sendSystemNoticeToUser
+} from "../../api/notificationApi.js";
 import {Plus} from "@element-plus/icons-vue";
 import {
   RepairAssignArrayCheck, ThisVolunteerIsAttended,
@@ -56,6 +61,8 @@ const pagination = reactive({
   total: 0
 })
 
+const taskListLoading = ref(false)
+
 // 筛选条件
 const filterForm = reactive({
   createTime: [],
@@ -72,6 +79,7 @@ const statusOptions = [
   {label: '已取消', value: 4},
   {label: '用户自行解决', value: 5},
   {label: '已被拒绝', value: 6},
+  {label: '已完成评价', value: 7}
 ]
 
 // 可更改的状态选项
@@ -106,6 +114,7 @@ const queryUserInfo = async () => {
 const activeNames = ref([])
 
 const loadTaskList = async () => {
+  taskListLoading.value = true
   const response = await getAllRepairList(pagination.currentPage, pagination.pageSize)
   if (response.code === 200) {
     // 赋值给 taskListRef 列表
@@ -115,6 +124,7 @@ const loadTaskList = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 // 处理任务筛选
@@ -124,6 +134,7 @@ const handleFilter = async () => {
   queryParams.pageNum = pagination.currentPage
   queryParams.pageSize = pagination.pageSize
 
+  taskListLoading.value = true
   const response = await getFilteredRepairList(queryParams)
 
   if (response.code === 200) {
@@ -133,6 +144,7 @@ const handleFilter = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 // 添加分页改变处理函数
@@ -147,11 +159,11 @@ const handleSizeChange = (newSize) => {
   loadTaskListCondition()
 }
 
-const loadTaskListCondition = () =>{
+const loadTaskListCondition = async () =>{
   if (filterForm.createTime?.length || filterForm.updateTime?.length || filterForm.status !== '') {
-    handleFilter()
+    await handleFilter()
   } else {
-    loadTaskList()
+    await loadTaskList()
   }
 }
 
@@ -210,6 +222,8 @@ const getStatusType = (status) => {
       return 'success'  // 用户自行解决
     case 6:
       return 'danger' //已被拒绝
+    case 7:
+    return 'success'   // 已完成评价
   }
 }
 
@@ -248,7 +262,8 @@ const changeTaskStatus = (task, newStatus, action) => {
 const rejectDialogVisible = ref(false)
 const rejectForm = reactive({
   taskId: '',
-  reason: ''
+  remark: '',
+  receiverId: ''
 })
 const rejectFormRef = ref()
 
@@ -276,10 +291,6 @@ const approveTask = async (task) => {
         type: 'warning',
       }
   ).then(async () => {
-    let data = {
-      requestId: task.requestId,
-      status: 1
-    }
     const response = await updateRepairFormStatus(task.requestId, 1)
     if (response.code !== 200){
       ElMessage.error(response.msg)
@@ -287,14 +298,13 @@ const approveTask = async (task) => {
       // ElMessage.success(response.msg)
       task.status = 1
       let msgData = {
+        taskId: task.requestId,
         receiverId: task.userId,
-        title: '报修审核通过通知',
-        content: `您的电脑维修申请(申请编号: ${task.requestId})已通过审核，请继续等待义修志愿者接收任务`,
-        link: '/repair/history'
       }
-      const responseMsg = await sendSystemNoticeToUser(msgData)
+      const responseMsg = await sendRepairTaskApproveNotification(msgData)
       if (responseMsg.code === 200) {
-        ElMessage.success(responseMsg.data)
+        ElMessage.success("操作成功")
+        await loadTaskListCondition()
       } else {
         ElMessage.error(responseMsg.msg)
       }
@@ -322,8 +332,18 @@ const addTaskAssignment = async (volunteerId, remarks, task) => {
     }
     const responseAdd = await addTaskAssign(data)
     if (responseAdd.code === 200) {
-      ElMessage.success(responseAdd.msg)
-      loadTaskListCondition()
+      let msgData = {
+        taskId: task.requestId,
+        receiverId: task.userId,
+        senderId: userInfo.userId
+      }
+      const msgResponse = await sendRepairTaskAcceptNotification(msgData)
+      if (msgResponse.code === 200) {
+        ElMessage.success("接收成功")
+      } else {
+        ElMessage.error(msgResponse.msg)
+      }
+      await loadTaskListCondition()
     } else {
       ElMessage.error(responseAdd.msg)
     }
@@ -361,7 +381,8 @@ const applyToJoinTask = async (task) => {
 // 显示拒绝对话框
 const showRejectDialog = (task) => {
   rejectForm.taskId = task.requestId
-  rejectForm.reason = ''
+  rejectForm.receiverId = task.userId
+  rejectForm.remark = ''
   rejectDialogVisible.value = true
 }
 
@@ -470,10 +491,21 @@ const handleExceed = (files, uploadFiles) => {
 // 提交拒绝原因
 const submitRejectReason = async () => {
   // 这里需要调用后端API提交拒绝原因
-  // await submitRejectReasonAPI(rejectForm)
+  const response = await sendRepairTaskRejectNotification(rejectForm)
+  if (response.code !== 200) {
+    ElMessage.error('拒绝原因提交失败: ' + response.msg)
+    return
+  }else {
+    ElMessage.success('提交成功')
+  }
   // 然后更新任务状态为6
-  changeTaskStatus({requestId: rejectForm.taskId}, 6, '拒绝')
+  const responseUpdate = await updateRepairFormStatus(rejectForm.taskId, 6)
+  if (responseUpdate.code !== 200) {
+    ElMessage.error('任务状态更新失败: ' + responseUpdate.msg)
+    return
+  }
   rejectDialogVisible.value = false
+  await loadTaskListCondition()
 }
 </script>
 
@@ -590,7 +622,7 @@ const submitRejectReason = async () => {
           </div>
 
           <!-- 任务列表 -->
-          <el-card class="records-card">
+          <el-card class="records-card" v-loading="taskListLoading">
             <template #header>
               <div class="card-header">
                 <span>维修任务详情</span>
@@ -784,7 +816,7 @@ const submitRejectReason = async () => {
         <el-form :model="rejectForm" ref="rejectFormRef">
           <el-form-item label="拒绝原因" prop="reason">
             <el-input
-                v-model="rejectForm.reason"
+                v-model="rejectForm.remark"
                 type="textarea"
                 placeholder="请输入拒绝原因"
             />

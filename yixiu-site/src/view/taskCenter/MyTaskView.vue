@@ -15,11 +15,12 @@ import {
   getMyTaskListFiltered
 } from "../../api/volunteerApi.js";
 import { checkVolunteerPermission } from "../../utils/userUtils.js"
-import { sendSystemNoticeToUser } from "../../api/notificationApi.js";
+import {sendRepairCompleteNotification, sendSystemNoticeToUser} from "../../api/notificationApi.js";
 import {
+  HaveApplyForThisTask,
   RepairLogArrayCheck, ThisVolunteerHasSubmittedLog,
   ThisVolunteerIsAttended,
-  ThisVolunteerIsRejectedFromApply,
+  ThisVolunteerIsRejectedFromApply, ThisVolunteerNeedFillLog,
   ThisVolunteerWaitingForApplyResult
 } from "../../utils/conditionJudgeUtils.js";
 
@@ -45,6 +46,8 @@ const userInfo = reactive({
     contactNumber: "",
   }
 })
+
+const taskListLoading = ref(false)
 
 // 任务数据
 const taskListRef = ref([])
@@ -72,6 +75,8 @@ const statusOptions = [
   { label: '已完成评价', value: 7 },
   { label: '等待同意加入', value: 10 },
   { label: '已被拒绝加入', value: 11 },
+  { label: '申请加入待审批', value: 12},
+  { label: '请填写维修日志', value: 13 },
 ]
 
 // 可更改的状态选项
@@ -100,6 +105,7 @@ const queryUserInfo = async () => {
 
 // 加载任务列表
 const loadTaskList = async () => {
+  taskListLoading.value = true
   const response = await getMyTaskList(pagination.currentPage, pagination.pageSize)
   if (response.code === 200) {
     // 赋值给 taskListRef 列表
@@ -109,6 +115,7 @@ const loadTaskList = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 /* 任务筛选模块 */
@@ -117,9 +124,8 @@ const handleFilter = async () => {
   const queryParams = buildQueryParams()
   queryParams.pageNum = pagination.currentPage
   queryParams.pageSize = pagination.pageSize
-
+  taskListLoading.value = true
   const response = await getMyTaskListFiltered(queryParams)
-
   if (response.code === 200) {
     taskListRef.value = response.data.list
     pagination.total = response.data.total
@@ -127,6 +133,7 @@ const handleFilter = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 // 构建筛选条件
@@ -196,6 +203,12 @@ const getStatusType = (task) => {
   if (ThisVolunteerIsRejectedFromApply(task, userInfo)){
     task.status = 11
   }
+  if (HaveApplyForThisTask(task, userInfo)){
+    task.status = 12
+  }
+  if (ThisVolunteerNeedFillLog(task, userInfo)){
+    task.status = 13
+  }
   switch (task.status) {
     case 2:
       return 'primary'  // 已接收
@@ -213,6 +226,10 @@ const getStatusType = (task) => {
       return 'danger' // 等待同意加入
     case 11:
       return 'danger' // 已被拒绝加入
+    case 12:
+      return 'warning' // 申请加入待审批
+    case 13:
+      return 'warning' // 请填写维修日志
   }
 }
 
@@ -322,6 +339,14 @@ const submitMaintenanceLog = async () => {
       await uploadMaintenanceImages(response.data.logId)
     }
     completeDialogVisible.value = false
+    let msgData = {
+      taskId: completeForm.taskId,
+    }
+    const msgResponse = await sendRepairCompleteNotification(msgData)
+    if (msgResponse.code !== 200) {
+      ElMessage.error(msgResponse.msg)
+      return
+    }
     ElMessage.success('维修日志提交成功')
     loadTaskListCondition()
   } catch (error) {
@@ -506,7 +531,7 @@ const isTaskLeader = (task) => {
           </div>
 
           <!-- 任务列表 -->
-          <el-card class="records-card">
+          <el-card class="records-card"  v-loading="taskListLoading">
             <template #header>
               <div class="card-header">
                 <span>我的维修任务</span>
@@ -739,7 +764,7 @@ const isTaskLeader = (task) => {
                         </template>
 
                         <!-- 填写维修日志按钮：当任务状态为3且用户已参与任务但未提交日志时显示 -->
-                        <template v-if="task.status === 3 &&
+                        <template v-if="[3, 13].includes(task.status) &&
                         RepairLogArrayCheck(task) &&
                         ThisVolunteerIsAttended(task, userInfo) &&
                         !ThisVolunteerHasSubmittedLog(task, userInfo)">

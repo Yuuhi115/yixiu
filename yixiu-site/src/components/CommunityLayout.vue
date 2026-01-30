@@ -140,7 +140,7 @@ defineProps({
             >
               <el-menu-item index="1" @click="() => router.push('/community')">社区主页</el-menu-item>
               <el-menu-item index="2" @click="() => router.push(`/community/followList/follow/${currentUserId}`)">关注列表</el-menu-item>
-              <el-menu-item index="3" @click="() => router.push('/taskCenter/list')">我的收藏</el-menu-item>
+              <el-menu-item index="3" @click="() => router.push(`/community/favorite/${currentUserId}`)">我的收藏</el-menu-item>
               <el-menu-item index="4" @click="() => router.push(`/community/profile/${currentUserId}`)">个人主页</el-menu-item>
             </el-menu>
           </div>

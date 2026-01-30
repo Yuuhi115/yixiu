@@ -9,6 +9,7 @@ import {addFollow, cancelFollow, getFollowListByFilter, getUserInfoVO} from "../
 import {ElMessage} from "element-plus";
 import { Plus } from "@element-plus/icons-vue";
 import router from "../../router/index.js";
+import {JumpToUserProfile} from "../../utils/redirectUtils.js";
 
 // 获取路由参数
 const route = useRoute()
@@ -138,11 +139,6 @@ const followUser = async (user) => {
   }
 }
 
-// 跳转到用户个人资料页面
-const goToUserProfile = (targetUserId) => {
-  router.push(`/community/profile/${targetUserId}`)
-}
-
 // 发送消息
 const sendMessage = (targetUserId) => {
   router.push(`/message/chat/${targetUserId}`)
@@ -191,7 +187,7 @@ const sendMessage = (targetUserId) => {
             v-for="user in followingList"
             :key="user.followUserId"
             class="user-card"
-            @click="goToUserProfile(user.followUserId)"
+            @click="JumpToUserProfile(user.followUserId)"
         >
           <div class="user-info">
             <el-avatar :size="60" :src="user.followUserAvatar" />

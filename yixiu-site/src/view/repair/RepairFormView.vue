@@ -403,6 +403,7 @@ const resetForm = () => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   --el-box-shadow: ;
   background: white;
+  padding-bottom: 30px;
 }
 
 .repair-form {

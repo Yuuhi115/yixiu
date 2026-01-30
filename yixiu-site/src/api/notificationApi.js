@@ -34,3 +34,19 @@ export function sendUserNoticeToUser(data){
 export function sendRoleChangeNotification(data){
     return request.post("/notify/roleChange", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function sendRepairTaskApproveNotification(data){
+    return request.post("/notify/taskApprove", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function sendRepairTaskRejectNotification(data){
+    return request.post("/notify/taskReject", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function sendRepairTaskAcceptNotification(data){
+    return request.post("/notify/taskAccept", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function sendRepairCompleteNotification(data){
+    return request.post("/notify/taskComplete", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function sendRepairEvaluateCompleteNotification(data){
+    return request.post("/notify/taskEvaluateComplete", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

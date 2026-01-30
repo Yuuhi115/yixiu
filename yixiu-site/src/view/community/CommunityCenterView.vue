@@ -23,6 +23,7 @@ import {useRoute} from 'vue-router'
 import {Message, Delete} from "@element-plus/icons-vue";
 import {useNotificationStore} from "../../stores/notificationInit.js";
 import {formatTime} from "../../utils/timeUtils.js";
+import {JumpToUserProfile} from "../../utils/redirectUtils.js";
 
 const notificationStore = useNotificationStore()
 
@@ -38,6 +39,34 @@ const postImages = ref([])
 // 动态列表
 const postList = ref([])
 const loading = ref(false)
+// 滚动加载相关状态
+const isLoadingMore = ref(false)  // 是否正在加载更多
+const hasMore = ref(true)         // 是否还有更多数据
+
+// 评论和回复加载状态
+const commentLoadStates = reactive({
+  loading: {},
+  hasMore: {},
+  currentPage: {}
+})
+
+const replyLoadStates = reactive({
+  loading: {},
+  hasMore: {},
+  currentPage: {}
+})
+// 帖子评论分页参数
+const commentPagination = reactive({
+  currentPage: 1,
+  pageSize: 20,
+  total: 0
+})
+// 帖子回复分页参数
+const replyPagination = reactive({
+  currentPage: 1,
+  pageSize: 20,
+  total: 0
+})
 
 
 // 获取路由参数
@@ -45,6 +74,9 @@ const route = useRoute()
 
 onMounted(async () => {
   // 从路由参数中获取筛选条件
+  if (route.query.postId) {
+    postFilterForm.postId = route.query.postId
+  }
   if (route.query.orderType) {
     postFilterForm.orderType = route.query.orderType
   }
@@ -71,7 +103,8 @@ const postFilterForm = reactive({
   tagId: '',
   postUserId: '',
   status: 0,
-  keyword: ''
+  keyword: '',
+  postId: ''
 })
 
 // 控制搜索框显示状态
@@ -102,6 +135,9 @@ const buildPostQueryParams = () => {
   if (postFilterForm.keyword !== '' && postFilterForm.keyword != null) {
     params.keyword = postFilterForm.keyword
   }
+  if (postFilterForm.postId !== '' && postFilterForm.postId != null) {
+    params.postId = postFilterForm.postId
+  }
   return params
 }
 
@@ -126,28 +162,34 @@ const postPagination = reactive({
   total: 0
 })
 
-// 加载帖子列表
-const loadPostList = async () => {
+// 加载初始帖子列表
+const loadInitialPosts = async () => {
   loading.value = true
+  postPagination.currentPage = 1  // 重置页码
   try {
-    const params = {
-      pageNum: postPagination.currentPage,
-      pageSize: postPagination.pageSize
-    }
-    const response = await getPostList(params)
+    const params = buildPostQueryParams()
+    params.pageNum = postPagination.currentPage
+    params.pageSize = postPagination.pageSize
+
+    const response = await getPostListByFilter(params)
     if (response.code === 200) {
       postList.value = response.data.list || []
+      postPagination.total = response.data.total
+
+      // 检查是否还有更多数据
+      hasMore.value = postList.value.length < postPagination.total
+
       // 为每个帖子添加扩展状态
       postList.value.forEach(post => {
-        post.expanded = false; // 默认不展开全部内容
-        post.showComments = false  // 控制评论区显示
-        post.comments = []         // 存储评论数据
-        post.commentInput = ''     // 当前帖子的评论输入框
-        post.loadingComments = false // 评论加载状态
-        post.showReplies = {}      // 控制每条评论的回复显示状态
-        post.loadingReplies = {}   // 控制每条评论的回复加载状态
-        post.replyLists = {}       // 存储每条评论的回复列表
-        post.replySwitch = false //控制显示发表评论或回复
+        post.expanded = false;
+        post.showComments = false;
+        post.comments = [];
+        post.commentInput = '';
+        post.loadingComments = false;
+        post.showReplies = {};
+        post.loadingReplies = {};
+        post.replyLists = {};
+        post.replySwitch = false;
       });
     }
   } catch (error) {
@@ -155,6 +197,50 @@ const loadPostList = async () => {
     ElMessage.error('加载帖子失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 加载更多帖子
+const loadMorePosts = async () => {
+  if (isLoadingMore.value || !hasMore.value) return  // 防止重复加载
+
+  isLoadingMore.value = true
+  try {
+    postPagination.currentPage++
+    const params = buildPostQueryParams()
+    params.pageNum = postPagination.currentPage
+    params.pageSize = postPagination.pageSize
+
+    const response = await getPostListByFilter(params)
+    if (response.code === 200) {
+      const morePosts = response.data.list || []
+      postList.value = [...postList.value, ...morePosts]
+
+      // 检查是否还有更多数据
+      hasMore.value = postList.value.length < postPagination.total
+
+      // 为新加载的帖子添加扩展状态
+      for (let i = postList.value.length - morePosts.length; i < postList.value.length; i++) {
+        const post = postList.value[i]
+        if (!post.expanded) {
+          post.expanded = false
+          post.showComments = false
+          post.comments = []
+          post.commentInput = ''
+          post.loadingComments = false
+          post.showReplies = {}
+          post.loadingReplies = {}
+          post.replyLists = {}
+          post.replySwitch = false
+        }
+      }
+    }
+  } catch (error) {
+    console.error('加载更多帖子失败:', error)
+    postPagination.currentPage--  // 加载失败时回退页码
+    ElMessage.error('加载更多帖子失败')
+  } finally {
+    isLoadingMore.value = false
   }
 }
 
@@ -195,11 +281,12 @@ const loadTaskListCondition = () => {
       postFilterForm.status !== 0 ||
       postFilterForm.orderType !== 'update_time' ||
       postFilterForm.order !== 'desc' ||
-      postFilterForm.keyword !== ''
+      postFilterForm.keyword !== '' ||
+      postFilterForm.postId !== ''
   ) {
     handlePostFilter()
   } else {
-    loadPostList()
+    loadInitialPosts()
   }
 }
 
@@ -265,6 +352,9 @@ const updateRouteParams = () => {
   if (postFilterForm.keyword) {
     params.keyword = postFilterForm.keyword
   }
+  if (postFilterForm.postId) {
+    params.postId = postFilterForm.postId
+  }
 
   router.push({
     name: 'CommunityCenter',
@@ -296,6 +386,10 @@ watch(() => route.query, (newQuery) => {
     postFilterForm.keyword = newQuery.keyword || ''
     changed = true
   }
+  if (newQuery.postId !== postFilterForm.postId) {
+    postFilterForm.postId = newQuery.postId || ''
+    changed = true
+  }
 
   if (changed) {
     loadTaskListCondition()
@@ -303,71 +397,115 @@ watch(() => route.query, (newQuery) => {
 }, {immediate: true})
 
 
-// 帖子评论分页参数
-const commentPagination = reactive({
-  currentPage: 1,
-  pageSize: 20,
-  total: 0
-})
-// 帖子回复分页参数
-const replyPagination = reactive({
-  currentPage: 1,
-  pageSize: 20,
-  total: 0
-})
-
-const loadComments = async (post) => {
+const loadComments = async (post, reset = true) => {
+  if (reset) {
+    post.comments = []
+    commentLoadStates.currentPage[post.postId] = 1
+    commentLoadStates.hasMore[post.postId] = true
+  } else {
+    commentLoadStates.currentPage[post.postId]++
+  }
+  const pageNum = commentLoadStates.currentPage[post.postId]
   try {
     let params = {
       postId: post.postId,
-      pageNum: commentPagination.currentPage,
+      pageNum: pageNum,
       pageSize: commentPagination.pageSize
     }
     const response = await getCommentListByPostId(params)
     if (response.code === 200) {
-      post.comments = response.data.list || []
+      const comments = response.data.list || []
+      if (reset) {
+        post.comments = comments
+      } else {
+        post.comments = [...post.comments, ...comments]
+      }
+      // 更新分页信息
+      commentLoadStates.hasMore[post.postId] = post.comments.length < response.data.total
     } else {
       ElMessage.error(response.msg)
     }
   } catch (error) {
     console.error('加载评论失败:', error)
     ElMessage.error('加载评论失败')
+    if (!reset) {
+      commentLoadStates.currentPage[post.postId]--  // 加载失败时回退页码
+    }
   } finally {
-    post.loadingComments = false
+    commentLoadStates.loading[post.postId] = false
   }
 }
 
-// 获取评论的回复
-const loadReplies = async (post, comment) => {
-  const commentId = comment.commentId;
-  post.loadingReplies[commentId] = true;
+// 加载更多评论
+const loadMoreComments = async (post) => {
+  if (!commentLoadStates.loading[post.postId] && commentLoadStates.hasMore[post.postId]) {
+    commentLoadStates.loading[post.postId] = true
+    await loadComments(post, false)  // false 表示不重置，加载更多
+  }
+  commentLoadStates.loading[post.postId] = false
+}
 
+// 获取评论的回复
+const loadReplies = async (post, comment, reset = true) => {
+  const commentId = comment.commentId;
+
+  if (!replyLoadStates.currentPage[commentId]) {
+    replyLoadStates.currentPage[commentId] = 1
+  } else if (!reset) {
+    replyLoadStates.currentPage[commentId]++
+  }
+  // post.loadingReplies[commentId] = true;
+  const pageNum = replyLoadStates.currentPage[commentId]
+  replyLoadStates.loading[commentId] = true;
   try {
     const params = {
       commentId: commentId,
-      pageNum: replyPagination.currentPage,
+      pageNum: pageNum,
       pageSize: replyPagination.pageSize
     };
     const response = await getReplyByCommentId(params);
     if (response.code === 200) {
-      post.replyLists[commentId] = response.data.list || [];
+      const replies = response.data.list || []
+      if (!post.replyLists[commentId]) {
+        post.replyLists[commentId] = replies
+      } else if (reset) {
+        post.replyLists[commentId] = replies
+      } else {
+        post.replyLists[commentId] = [...post.replyLists[commentId], ...replies]
+      }
+
+      // 更新分页信息
+      replyLoadStates.hasMore[commentId] = post.replyLists[commentId].length < response.data.total
     } else {
       ElMessage.error(response.msg);
     }
   } catch (error) {
     console.error('加载回复失败:', error);
     ElMessage.error('加载回复失败');
+    if (!reset) {
+      replyLoadStates.currentPage[commentId]--  // 加载失败时回退页码
+    }
   } finally {
-    post.loadingReplies[commentId] = false;
+    replyLoadStates.loading[commentId] = false;
   }
 };
+
+// 加载更多回复
+const loadMoreReplies = async (post, comment) => {
+  const commentId = comment.commentId;
+  if (!replyLoadStates.loading[commentId] && replyLoadStates.hasMore[commentId]) {
+    replyLoadStates.loading[commentId] = true
+    await loadReplies(post, comment, false)  // false 表示不重置，加载更多
+  }
+  replyLoadStates.loading[commentId] = false;
+}
 
 // 切换回复显示状态
 const toggleReplies = async (post, comment) => {
   const commentId = comment.commentId;
 
   // 如果还没有加载过回复，则先加载
-  if (!post.replyLists[commentId] && !post.loadingReplies[commentId]) {
+  if (!post.replyLists[commentId] && !replyLoadStates.loading[commentId]) {
     await loadReplies(post, comment);
   }
 
@@ -391,7 +529,7 @@ const goToComment = async (post) => {
 
   // 显示评论区并加载评论
   post.showComments = true
-  post.loadingComments = true
+  commentLoadStates.loading[post.postId] = true
   await loadComments(post)
 }
 
@@ -567,7 +705,7 @@ const publishPost = async () => {
       })
       postImages.value = []
       // 重新加载列表
-      await loadPostList()
+      await loadInitialPosts()
     } else {
       ElMessage.error(response.msg || '发布失败')
     }
@@ -820,7 +958,7 @@ const toggleFavorite = async (post) => {
           <div class="user-header">
             <el-avatar :size="40" :src="post.avatar"/>
             <div class="user-details">
-              <div class="username">{{ post.username }}</div>
+              <div class="username" @click="JumpToUserProfile(post.userId)">{{ post.username }}</div>
               <div class="time">{{ formatTime(post.createTime) }}</div>
             </div>
           </div>
@@ -980,11 +1118,7 @@ const toggleFavorite = async (post) => {
                       v-if="post.showReplies[comment.commentId]"
                       class="replies-container"
                   >
-                    <div v-if="post.loadingReplies[comment.commentId]" class="loading-replies">
-                      <el-skeleton :rows="2"/>
-                    </div>
                     <div
-                        v-else
                         v-for="reply in post.replyLists[comment.commentId] || []"
                         :key="reply.replyId"
                         class="reply-item"
@@ -1017,19 +1151,52 @@ const toggleFavorite = async (post) => {
                         <el-button type="text" size="small" @click="replyToReply(post, comment, reply)">回复</el-button>
                       </div>
                     </div>
+                    <!-- 加载更多回复按钮 -->
+                    <div v-if="replyLoadStates.hasMore[comment.commentId] && !replyLoadStates.loading[comment.commentId]"
+                         class="load-more-container-reply">
+                      <el-button type="text" @click="loadMoreReplies(post, comment)" class="load-more-btn-reply">
+                        点击加载更多回复
+                      </el-button>
+                    </div>
+
+                    <!-- 回复加载中提示 -->
+                    <div v-if="replyLoadStates.loading[comment.commentId]" class="loading-replies">
+                      <el-skeleton :rows="1" />
+                    </div>
                   </div>
+                </div>
+                <!-- 加载更多评论按钮 -->
+                <div v-if="commentLoadStates.hasMore[post.postId] && !commentLoadStates.loading[post.postId]"
+                     class="load-more-container-comment">
+                  <el-button type="text" @click="loadMoreComments(post)" class="load-more-btn-comment">
+                    点击加载更多评论
+                  </el-button>
+                </div>
+
+                <!-- 评论加载中提示 -->
+                <div v-if="commentLoadStates.loading[post.postId]" class="loading-comments">
+                  <el-skeleton :rows="2" animated />
                 </div>
               </div>
             </div>
           </el-collapse-transition>
         </div>
       </div>
-      <div v-else-if="!loading" class="no-posts">
-        <el-empty description="暂无帖子"/>
+      <!-- 加载更多按钮 -->
+      <div v-if="hasMore && !isLoadingMore" class="load-more-container">
+        <el-button type="text" @click="loadMorePosts" class="load-more-btn">
+          点击加载更多帖子
+        </el-button>
       </div>
-      <!-- 加载更多 -->
-      <div v-if="loading" class="loading-more">
-        <el-skeleton :rows="4" animated/>
+
+      <!-- 加载中提示 -->
+      <div v-if="isLoadingMore" class="loading-more">
+        <el-skeleton :rows="2" animated />
+      </div>
+
+      <!-- 没有更多数据提示 -->
+      <div v-if="!hasMore && !isLoadingMore && postList.length > 0" class="no-more-data">
+        <p style="text-align: center; color: #999;padding-top: 10px">没有更多数据了</p>
       </div>
     </div>
   </CommonLayout>
@@ -1210,6 +1377,22 @@ const toggleFavorite = async (post) => {
   font-weight: bold;
   color: #409eff;
   margin-bottom: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 4px 8px;  /* 添加内边距增加可点击区域 */
+  border-radius: 4px;  /* 添加圆角 */
+  display: inline-block;  /* 使内边距生效 */
+}
+
+.user-details .username:hover {
+  background-color: #f0f9ff;  /* 悬浮时背景色 */
+  color: #66b1ff;
+  transform: translateY(-1px);  /* 悬浮时轻微上移 */
+}
+
+.user-details .username:active {
+  background-color: #ecf5ff;  /* 点击时背景色 */
+  transform: translateY(0);  /* 点击时回到原位 */
 }
 
 .user-details .time {
@@ -1504,5 +1687,69 @@ const toggleFavorite = async (post) => {
   margin-left: 34px;
   padding: 10px 0;
 }
+.load-more-container {
+  background-color: white;
+  border-radius: 10px;
+  height: 45px;
+}
 
+.load-more-btn {
+  margin-top: 5px;
+  font-size: 16px;
+  color: #409eff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+  color: #66b1ff;
+  transform: translateY(-2px);
+}
+
+.loading-more {
+  padding: 20px;
+  text-align: center;
+}
+
+.no-more-data {
+  background-color: white;
+  border-radius: 10px;
+  text-align: center;
+  color: #999;
+  height: 45px;
+}
+
+.load-more-container-comment {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.load-more-btn-comment {
+  font-size: 14px;
+  color: #409eff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn-comment:hover {
+  color: #66b1ff;
+  transform: translateY(-1px);
+}
+
+.load-more-container-reply {
+  text-align: center;
+  padding: 8px 0;
+  margin-left: 34px;
+}
+
+.load-more-btn-reply {
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn-reply:hover {
+  color: #66b1ff;
+}
 </style>

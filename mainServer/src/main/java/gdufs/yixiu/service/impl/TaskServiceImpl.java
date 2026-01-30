@@ -325,6 +325,11 @@ public class TaskServiceImpl implements TaskService {
 
         return excelDataList;
     }
+    // 从任务分配表里面获取到参与维修的用户id，排除传入的userId
+    @Override
+    public List<Integer> findTaskMemberIds(Integer requestId) {
+        return taskMapper.findTaskMemberIdsByRequestId(requestId);
+    }
 
     @Override
     public RepairRequestDto repairRequestPojoToDto(Users users, RepairRequest repairRequest) {

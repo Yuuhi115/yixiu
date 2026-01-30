@@ -1,5 +1,6 @@
 import {ElMessage} from "element-plus";
 import router from "../router/index.js";
+import {addProfileView} from "../api/userApi.js";
 
 export function JumpToRepairForm(userInfo){
     if(userInfo.realName === '' || userInfo.realName === null){
@@ -20,5 +21,13 @@ export function JumpToTaskList(userInfo, path) {
         ElMessage.warning("请先完善个人信息")
     } else {
         router.push(path)
+    }
+}
+
+export async function JumpToUserProfile(userId) {
+    await router.push('/community/profile/' + userId)
+    const response = await addProfileView(userId)
+    if (response.code !== 200) {
+        ElMessage.error(response.msg)
     }
 }

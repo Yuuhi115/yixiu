@@ -7,6 +7,7 @@ import gdufs.yixiu.dao.PostMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
+import gdufs.yixiu.dto.community.response.PostFavoriteInfoDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.response.ResponseReplyDto;
 import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
@@ -71,7 +72,9 @@ public class PostServiceImpl implements PostService {
             }
         }
         log.info("用户(id:{})上传帖子成功，帖子id为：{}，帖子标签为{}",post.getUserId(), post.getPostId(), requestPostDto.getTagIdList());
-        postMapper.addPostTags(post.getPostId(), requestPostDto.getTagIdList());
+        if (requestPostDto.getTagIdList() != null && !requestPostDto.getTagIdList().isEmpty()) {
+            postMapper.addPostTags(post.getPostId(), requestPostDto.getTagIdList());
+        }
         return row == 1 ? post.getPostId() : 0;
     }
 
@@ -299,5 +302,30 @@ public class PostServiceImpl implements PostService {
     public void clearFollowUpdate(Integer userId, Integer uploaderId) {
 //        log.info("用户(user_id:{})已读关注用户(uploader_id:{})的帖子", userId, uploaderId);
         redisTemplate.opsForSet().remove("follow:update:" + userId, uploaderId);
+    }
+
+    @Override
+    public PageInfo<PostFavoriteInfoDto> listFavoritePost(Integer userId, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<Post> postList = postMapper.queryPostsByFavorite(userId);
+        PageInfo<Post> pageInfo = new PageInfo<>(postList);
+        List<PostFavoriteInfoDto> postFavoriteInfoDtos = new ArrayList<>();
+        for (Post post : postList){
+            PostFavoriteInfoDto postFavoriteInfoDto = new PostFavoriteInfoDto();
+            postFavoriteInfoDto.setPostId(post.getPostId());
+            UserInfoVO userInfoVO = commentService.getUserInfoMap(List.of(post.getUserId())).get(post.getUserId());
+            postFavoriteInfoDto.setPostUserId(post.getUserId());
+            postFavoriteInfoDto.setPostUserAvatar(serviceUserUrl + userInfoVO.getAvatar());
+            postFavoriteInfoDto.setTitle(post.getTitle());
+            postFavoriteInfoDto.setTags(postMapper.queryPostTags(post.getPostId()));
+            postFavoriteInfoDto.setCreateTime(post.getCreateTime());
+            postFavoriteInfoDtos.add(postFavoriteInfoDto);
+        }
+        PageInfo<PostFavoriteInfoDto> resultPageInfo = new PageInfo<>(postFavoriteInfoDtos);
+        resultPageInfo.setTotal(pageInfo.getTotal());
+        resultPageInfo.setPages(pageInfo.getPages());
+        resultPageInfo.setPageNum(pageInfo.getPageNum());
+        resultPageInfo.setPageSize(pageInfo.getPageSize());
+        return resultPageInfo;
     }
 }

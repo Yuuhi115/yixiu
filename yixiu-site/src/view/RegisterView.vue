@@ -77,10 +77,9 @@ const sendCaptcha = async () => {
     return
   }
   if (countdown.value > 0) return
-
+  startCountdown()
   if (registerMethod.value === 'email') {
     let result = await sendLREmailVerificationCode(form.email);
-    startCountdown()
     if (result.code === 200) {
       ElMessage.success('验证码已发送')
     } else {

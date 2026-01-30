@@ -109,8 +109,8 @@
     </select>
     <select id="findCommunityStatistic" resultType="gdufs.yixiu.dto.community.response.CommunityStatisticDto">
         select
-            (select count(1) from user_follow where follower_id = #{userId}) as followNum,
-            (select count(1) from user_follow where followee_id = #{userId}) as fansNum,
+            (select count(1) from user_follow where follower_id = #{userId} and status = 1) as followNum,
+            (select count(1) from user_follow where followee_id = #{userId} and status = 1) as fansNum,
             (select count(1) from post where user_id = #{userId}) as postNum
     </select>
     <select id="isExistUserFollow" resultType="java.lang.Integer">

@@ -45,5 +45,6 @@ public interface TaskMapper {
     List<RepairLog> findRepairLogsWithDate(@Param("volunteerId") Integer volunteerId,
                                            @Param("startDate") String startDate,
                                            @Param("endDate") String endDate);
+    List<Integer> findTaskMemberIdsByRequestId(Integer requestId);
 
 }

@@ -34,5 +34,5 @@ public interface TaskService {
     Integer addTaskEvaluate(RepairEvaluate repairEvaluate);
 
     List<VolunteerStatisticsDto> exportRepairLogsWithDate(Integer volunteerId, String startDate, String endDate);
-
+    List<Integer> findTaskMemberIds(Integer requestId);
 }

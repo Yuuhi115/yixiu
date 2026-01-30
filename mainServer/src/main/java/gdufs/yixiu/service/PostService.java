@@ -5,6 +5,7 @@ package gdufs.yixiu.service;
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
+import gdufs.yixiu.dto.community.response.PostFavoriteInfoDto;
 import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.vo.TagVO;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
@@ -27,4 +28,5 @@ public interface PostService {
     int addView(Integer postId, Integer userId, String ipAddress);
     List<UserInfoVO> getUpdateUploaderInfo(Integer userId);
     void clearFollowUpdate(Integer userId, Integer uploaderId);
+    PageInfo<PostFavoriteInfoDto> listFavoritePost(Integer userId, Integer pageNum, Integer pageSize);
 }

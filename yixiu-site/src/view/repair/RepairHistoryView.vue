@@ -6,6 +6,7 @@ import {addEvaluation, getRepairFormByFilterLimitUser, getRepairFormByUserId, ge
 import { ElMessage } from "element-plus"
 import router from "../../router/index.js"
 import { ElRate, ElDialog } from 'element-plus'
+import {sendRepairEvaluateCompleteNotification} from "../../api/notificationApi.js";
 
 
 const userInfoRef = ref()
@@ -25,6 +26,8 @@ const userInfo = reactive({
 // 维修记录数据
 const repairRecordsRef = ref([])
 const evaluationFormRef = ref()
+
+const taskListLoading = ref(false)
 
 const pagination = reactive({
   currentPage: 1,
@@ -72,6 +75,7 @@ const queryUserInfo = async () => {
 const activeNames = ref([])
 
 const loadRepairHistory = async () => {
+  taskListLoading.value = true
   const response = await getRepairFormByUserId(pagination.currentPage, pagination.pageSize)
   if (response.code === 200) {
     // 赋值给 repairRecordsRef 列表
@@ -81,6 +85,7 @@ const loadRepairHistory = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 // 构建筛选条件
@@ -114,6 +119,7 @@ const handleFilter = async () => {
   queryParams.pageSize = pagination.pageSize
   queryParams.userId = userInfo.userId
 
+  taskListLoading.value = true
   const response = await getRepairFormByFilterLimitUser(queryParams)
 
   if (response.code === 200) {
@@ -123,6 +129,7 @@ const handleFilter = async () => {
   } else {
     ElMessage.error(response.msg)
   }
+  taskListLoading.value = false
 }
 
 // 重置筛选
@@ -233,7 +240,13 @@ const submitEvaluation = async () => {
         satisfaction: evaluationForm.satisfaction,
         content: evaluationForm.content
       })
-
+      const msgData = {
+        taskId: currentRecord.requestId,
+      }
+      const msgResponse = await sendRepairEvaluateCompleteNotification(msgData)
+      if (msgResponse.code !== 200) {
+        ElMessage.error(msgResponse.msg)
+      }
       ElMessage.success('评价提交成功！')
       evaluationDialogVisible.value = false
       await conditionRepairHistory()
@@ -358,7 +371,7 @@ const submitEvaluation = async () => {
           </div>
 
           <!-- 维修记录列表 -->
-          <el-card class="records-card">
+          <el-card class="records-card" v-loading="taskListLoading">
             <template #header>
               <div class="card-header">
                 <span>维修记录详情</span>

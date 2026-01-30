@@ -115,3 +115,9 @@ export function addFollow(followeeId) {
     formData.append('followeeId', followeeId)
     return request.post("/users/follow", formData, {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function addProfileView(userId){
+    let data = new FormData()
+    data.append('userId', userId)
+    return request.post("/users/addProfileView", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

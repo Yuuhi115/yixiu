@@ -1,5 +1,6 @@
 package gdufs.yixiu.controller;
 
+import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.community.request.PostFilterDto;
 import gdufs.yixiu.dto.community.request.RequestPostDto;
@@ -49,7 +50,16 @@ public class PostController {
                                       HttpServletRequest request){
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        return Result.success(postService.listPostByFilter(postFilterDto, pageNum, pageSize, userId));
+        if (postFilterDto.getPostId() != null){
+            PageInfo<ResponsePostDto> result = new PageInfo<>();
+            List<ResponsePostDto> responsePostDtos = new ArrayList<>();
+            responsePostDtos.add(postService.getPostByPostId(postFilterDto.getPostId(), userId));
+            result.setList(responsePostDtos);
+            result.setTotal(1);
+            return Result.success(result);
+        }else {
+            return Result.success(postService.listPostByFilter(postFilterDto, pageNum, pageSize, userId));
+        }
     }
     @UserLoginToken
     @GetMapping("/allTags")
@@ -144,5 +154,14 @@ public class PostController {
         int userId = jwtUtils.getInfoFromToken(token).getId();
         postService.clearFollowUpdate(userId, uploaderId);
         return Result.success(null);
+    }
+    @UserLoginToken
+    @GetMapping("/getFavoritePostInfo")
+    public Result getFavoritePostInfo(@RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                      @RequestParam(name = "pageSize", defaultValue = "20") Integer pageSize,
+            HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        return Result.success(postService.listFavoritePost(userId, pageNum, pageSize));
     }
 }

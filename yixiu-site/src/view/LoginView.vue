@@ -101,12 +101,9 @@ const sendCaptcha = async () => {
     return
   }
   if (countdown.value > 0) return // 如果正在倒计时，则不执行
-
-  if (loginMethod.value === 'email') {
-    const loadingInstance = ElLoading.service()
-    let loginResult = await sendLREmailVerificationCode(form.email);
-    loadingInstance.close()
     startCountdown() // 启动倒计时
+  if (loginMethod.value === 'email') {
+    let loginResult = await sendLREmailVerificationCode(form.email);
     if (loginResult.code === 200) {
       ElMessage.success('验证码已发送')
     } else {

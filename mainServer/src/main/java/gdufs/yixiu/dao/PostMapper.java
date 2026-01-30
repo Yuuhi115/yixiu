@@ -60,4 +60,5 @@ public interface PostMapper {
     List<Integer> getCommentIdsByUserId(Integer userId);
     List<Integer> getReplyIdsByUserId(Integer userId);
     Integer getPostsAndCommentsLikeCount(LikeListIdsVO likeListIdsVO);
+    List<Post> queryPostsByFavorite(Integer userId);
 }
