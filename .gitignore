@@ -15,6 +15,10 @@ image/
 *.ipr
 
 yixiu-site/node_modules/
+ai-server/.idea/
+ai-server/ai_service/config.py
+ai-server/ai_service/models/
+ai-server/ai_service/__pycache__
 
 mainServer/src/main/resources/application.yml
 mainServer/src/main/resources/application_L.yml

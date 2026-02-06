@@ -1,0 +1,8 @@
+flask
+flask-cors
+gunicorn
+pymysql
+requests
+numpy
+scikit-learn
+jieba

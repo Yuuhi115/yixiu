@@ -18,4 +18,5 @@ public class Result<T> {
     public static <T> Result<T> insufficientPermissions() {
         return new Result<>(403, "Permission denied", null);
     }
+    public static <T> Result<T> fail(Integer code, String msg) { return new Result<>(code, msg, null);}
 }

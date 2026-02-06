@@ -1,0 +1,21 @@
+version: "3.9"
+
+services:
+  ai-server:
+    build:
+      context: /usr/yixiuAssist/ai-server
+      dockerfile: Dockerfile
+    container_name: yixiu-ai-server
+    ports:
+      - "8084:8084"
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - /usr/yixiuAssist/ai-server/app.py:/app/app.py
+      - /usr/yixiuAssist/ai-server/config.py:/app/config.py
+      - /usr/yixiuAssist/ai-server/embedding.py:/app/embedding.py
+    deploy:
+      resources:
+        limits:
+          memory: 800M
