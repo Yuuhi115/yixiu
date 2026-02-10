@@ -108,34 +108,47 @@ def add_knowledge():
 # ========= 智能问答 =========
 @app.route("/api/v1/ai/ask", methods=["POST"])
 def ask():
-    question = request.json.get("question")
+    data = request.json
+
+    question = data.get("question")
+    conversation_id = data.get("conversationId")
 
     if not question:
         return jsonify({"code": 400, "msg": "问题不能为空"})
+
+    is_new_conversation = conversation_id is None
 
     clean_q = clean_text(question)
 
     best_id, score = query_similar(clean_q)
     print(f"最相似知识id：{best_id}, 分数:{score}")
 
-    if best_id is None or score < SIMILARITY_THRESHOLD:
+    # 新对话且未命中则不调用deepseek
+    if is_new_conversation and (best_id is None or score < SIMILARITY_THRESHOLD):
         return jsonify({
             "code": 200,
             "type": "MANUAL",
-            "answer": "该问题暂无法智能判断，建议提交人工维修申请。"
+            "answer": "该问题暂无法智能判断，建议提交人工维修申请。",
+            "headline": generate_headline(question)
         })
 
-    conn = get_db()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
-    cursor.execute(
-        "SELECT problem, solution FROM ai_knowledge WHERE knowledge_id=%s",
-        (best_id,)
-    )
-    row = cursor.fetchone()
-    cursor.close()
-    conn.close()
+    history_messages = []
+    if not is_new_conversation:
+        history_messages = fetch_recent_messages(conversation_id)
 
-    context = f"""
+    context = ""
+    if best_id is not None and score >= SIMILARITY_THRESHOLD:
+        conn = get_db()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute(
+            "SELECT problem, solution FROM ai_knowledge WHERE knowledge_id=%s",
+            (best_id,)
+        )
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        context = f"""
 电脑故障/问题：
 {row['problem']}
 
@@ -143,35 +156,65 @@ def ask():
 {row['solution']}
 """.strip()
     print("上下文：", context)
-    answer = call_deepseek_chat(context, question)
+    answer = call_deepseek_chat_with_history(
+        history_messages=history_messages,
+        context=context,
+        question=question
+    )
 
-    return jsonify({
+    result = {
         "code": 200,
         "type": "AI",
         "answer": answer,
-        "similarity": round(score, 3)
-    })
+        "similarity": round(score, 3) if best_id else None,
+        "hit_knowledge_id": best_id
+    }
+
+    if is_new_conversation:
+        result["headline"] = generate_headline(question)
+
+    return jsonify(result)
 
 
-def call_deepseek_chat(context: str, question: str) -> str:
+def call_deepseek_chat_with_history(history_messages, context, question):
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
     }
 
+    messages = [
+        {
+            "role": "system",
+            "content": "你是一名高校电脑维修助手，请结合上下文与对话历史帮助学生解决问题。"
+        }
+    ]
+
+    # 历史对话
+    if history_messages:
+        for msg in history_messages:
+            messages.append({
+                "role": msg["role"],
+                "content": msg["content"]
+            })
+
+    # 命中知识库才给 context
+    if context:
+        messages.append({
+            "role": "system",
+            "content": context
+        })
+
+    # 当前问题
+    messages.append({
+        "role": "user",
+        "content": question
+    })
+
     payload = {
         "model": "deepseek-chat",
-        "messages": [
-            {
-                "role": "system",
-                "content": "你是一名高校电脑维修助手，请基于提供的维修案例回答问题。"
-            },
-            {
-                "role": "user",
-                "content": f"{context}\n\n学生问题：{question}"
-            }
-        ]
+        "messages": messages
     }
+    print("payload:", payload)
 
     resp = requests.post(
         f"{DEEPSEEK_URL}/chat/completions",
@@ -182,6 +225,56 @@ def call_deepseek_chat(context: str, question: str) -> str:
     resp.raise_for_status()
 
     return resp.json()["choices"][0]["message"]["content"]
+
+def generate_headline(question: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "deepseek-chat",
+        "messages": [
+            {
+                "role": "system",
+                "content": "你是一个助手，请将用户的问题概括成不超过15字的对话标题。"
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+        ]
+    }
+
+    resp = requests.post(
+        f"{DEEPSEEK_URL}/chat/completions",
+        headers=headers,
+        json=payload,
+        timeout=15
+    )
+    resp.raise_for_status()
+
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
+def fetch_recent_messages(conversation_id, limit=6):
+    conn = get_db()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    cursor.execute("""
+        SELECT role, content
+        FROM ai_chat_message
+        WHERE conversation_id = %s
+        ORDER BY message_id ASC
+        LIMIT %s
+    """, (conversation_id, limit))
+
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    print(f"最近对话：{rows}")
+
+    # 反转顺序（最早 → 最新）
+    return list(rows)
 
 
 if __name__ == "__main__":

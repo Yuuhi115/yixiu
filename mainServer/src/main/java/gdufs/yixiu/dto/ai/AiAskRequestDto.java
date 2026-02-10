@@ -9,4 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AiAskRequestDto {
     private String question;
+    private Integer conversationId;
 }

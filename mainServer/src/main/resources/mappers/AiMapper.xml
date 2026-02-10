@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="gdufs.yixiu.dao.AiMapper">
+    <!-- SQL映射语句在此定义 -->
+    <select id="getAllKnowledge" resultType="gdufs.yixiu.pojo.AiKnowledge">
+        select knowledge_id, source_type, source_id, problem, solution, status, create_time, update_time from ai_knowledge
+    </select>
+    <select id="getChatSessionByUserId" resultType="gdufs.yixiu.pojo.AiChatSession"
+            parameterType="java.lang.Integer">
+        select * from ai_chat_session where user_id = #{userId}
+        order by create_time desc
+    </select>
+    <select id="getChatMessageByConversationId" resultType="gdufs.yixiu.pojo.AiChatMessage"
+            parameterType="java.lang.Integer">
+        select * from ai_chat_message where conversation_id = #{conversationId}
+        order by message_id desc
+    </select>
+    <select id="getChatSessionById" resultType="gdufs.yixiu.pojo.AiChatSession"
+            parameterType="java.lang.Integer">
+        select * from ai_chat_session where conversation_id = #{conversationId}
+    </select>
+    <insert id="addChatSession" parameterType="gdufs.yixiu.pojo.AiChatSession" useGeneratedKeys="true" keyProperty="conversationId" keyColumn="conversation_id">
+        insert into ai_chat_session(user_id, headline) values(#{userId}, #{headline})
+    </insert>
+    <insert id="addChatMessage" parameterType="gdufs.yixiu.pojo.AiChatMessage">
+        insert into ai_chat_message(conversation_id, role, content) values(#{conversationId}, #{role}, #{content})
+    </insert>
+    <insert id="addQuestionLog" parameterType="gdufs.yixiu.pojo.AiQuestionLog">
+        insert into ai_question_log(user_id, question, matched_knowledge_id, similarity)
+        values(#{userId}, #{question}, #{matchedKnowledgeId}, #{similarity})
+    </insert>
+</mapper>

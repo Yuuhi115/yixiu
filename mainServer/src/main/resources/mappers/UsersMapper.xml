@@ -126,6 +126,10 @@
     <select id="findProfileViewCount" resultType="java.lang.Integer">
         select sum(view_count) from user_profile_view where viewed_user_id = #{viewedId}
     </select>
+    <select id="findUserInfoVOById" resultType="gdufs.yixiu.dto.community.vo.UserInfoVO"
+            parameterType="java.lang.Integer">
+        select user_id,username,avatar,user_signature from users where user_id = #{userId}
+    </select>
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

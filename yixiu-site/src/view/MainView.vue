@@ -12,10 +12,11 @@ import {
   Message,
   Search,
   Star,
+  Clock
 } from '@element-plus/icons-vue'
 import {UserFilled} from '@element-plus/icons-vue'
 
-import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount, provide} from 'vue'
+import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount, provide, nextTick} from 'vue'
 import {ElMessage} from 'element-plus'
 import {getUserInfo} from "../api/userApi.js";
 import Cookie from "js-cookie";
@@ -25,6 +26,8 @@ import {getUnreadNotifyCount} from "../api/notificationApi.js";
 import {AcceptAdmin, AcceptVolunteer} from "../utils/roleCheckUtils.js";
 import {JumpToRepairForm, JumpToTaskList} from "../utils/redirectUtils.js";
 import {useNotificationStore} from "../stores/notificationInit.js";
+import {getChatHistory, getChatSession, sendChatMessage} from "../api/AiApi.js";
+import {formatTime} from "../utils/timeUtils.js";
 
 const userInfoRef = ref()
 
@@ -67,6 +70,7 @@ onMounted(async () => {
       notificationStore.syncUnreadCount()
     ])
     await saveRole()
+    await loadHistoryConversations()
   } finally {
     isLoading.value = false
   }
@@ -110,6 +114,130 @@ const logout = async () => {
   Cookie.remove('Authorization')
   await notificationStore.stopPolling()
   await router.push('/login')
+}
+
+/*ai智能问答*/
+const messagePagination = reactive({
+  pageNum: 1,
+  pageSize: 10
+})
+const chatSessionPagination = reactive({
+  pageNum: 1,
+  pageSize: 20
+})
+const conversationId = ref(null)
+
+const messages = ref([
+  { role: 'assistant', content: '您好！我是您的电脑维修智能助手，请问有什么可以帮助您的吗？', createTime: new Date() }
+])
+const inputMessage = ref('')
+const scrollbarRef = ref(null)
+
+const currentAiAnswer = ref()
+
+// 发送消息函数
+const sendMessage = async () => {
+  if (!inputMessage.value.trim()) return
+
+  // 添加用户消息
+  messages.value.push({ role: 'user', content: inputMessage.value, createTime: new Date() })
+
+  // 清空输入框
+  const userMessage = inputMessage.value
+  inputMessage.value = ''
+
+  try {
+    // 调用后端接口发送消息
+    let data = {
+      question: userMessage,
+      conversationId: conversationId.value || null // 如果没有 conversationId，则不传
+    }
+    const response = await sendChatMessage(data)
+    if (response.code === 200) {
+      if (!conversationId.value) {
+        conversationId.value = response.data.conversationId
+        Object.assign(currentAiAnswer, response.data)
+      }
+
+      const cleanedAnswer = response.data.answer.replace(/\*/g, '')
+
+      // 添加 AI 回复
+      messages.value.push({
+        role: 'assistant',
+        content: cleanedAnswer,
+        createTime: response.data.createTime,
+      })
+      // 滚动到底部
+      scrollToBottom()
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    ElMessage.error('发送失败，请稍后再试')
+  }
+}
+
+// 滚动到底部
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (scrollbarRef.value) {
+      scrollbarRef.value.setScrollTop(scrollbarRef.value.wrapRef.scrollHeight)
+    }
+  })
+}
+
+// 获取历史会话列表
+const historyConversations = ref([])
+const loadHistoryConversations = async () => {
+  try {
+    let params = {
+      pageNum: chatSessionPagination.pageNum,
+      pageSize: chatSessionPagination.pageSize
+    }
+    const response = await getChatSession(params)
+    if (response.code === 200) {
+      historyConversations.value = response.data.list
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    ElMessage.error('加载历史会话失败')
+  }
+}
+
+const selectedConversation = ref(null)
+
+// 切换历史会话
+const switchConversation = (id) => {
+  conversationId.value = id
+  messagePagination.pageNum = 1
+  // 加载该会话的消息记录
+  loadMessagesByConversation(id)
+}
+
+// 根据 conversationId 加载消息记录
+const loadMessagesByConversation = async (conversationId) => {
+  try {
+    let params = {
+      pageNum: messagePagination.pageNum,
+      pageSize: messagePagination.pageSize,
+      conversationId: conversationId
+    }
+    // console.log("params:", params)
+    const response = await getChatHistory(params)
+    if (response.code === 200) {
+      messages.value = response.data.list.map(msg => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.role === 'assistant' ? msg.content.replace(/\*/g, '') : msg.content,
+        createTime: msg.createTime
+      }))
+      scrollToBottom()
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    ElMessage.error('加载消息失败')
+  }
 }
 </script>
 
@@ -247,7 +375,75 @@ const logout = async () => {
         </el-aside>
         <el-container>
           <!--主栏-->
-          <el-main></el-main>
+          <el-main>
+            <!-- AI 智能问答聊天界面 -->
+            <el-card class="chat-container" shadow="never">
+              <!-- 聊天标题 -->
+              <div class="chat-title">广外义修智能AI小助手</div>
+              <!-- 历史会话图标按钮 -->
+              <div class="history-selector">
+                <el-dropdown @command="switchConversation">
+                  <div class="history-btn">
+                    <el-icon><Clock /></el-icon>
+                  </div>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item
+                          v-for="conv in historyConversations"
+                          :key="conv.conversationId"
+                          :command="conv.conversationId"
+                      >
+                        <div class="conversation-item">
+                          <div class="headline">{{ conv.headline }}</div>
+                          <div class="create-time">{{ conv.createTime }}</div>
+                        </div>
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+
+              <!-- 消息展示区域 -->
+              <el-scrollbar class="chat-messages" ref="scrollbarRef">
+                <div
+                    v-for="(msg, index) in messages"
+                    :key="index"
+                    class="message-wrapper"
+                >
+                  <!-- 时间显示 -->
+                  <div class="message-time-centered">{{ formatTime(msg.createTime) }}</div>
+
+                  <!-- 消息容器 -->
+                  <div :class="['message-container', msg.role === 'user' ? 'user-container' : 'ai-container']">
+                    <!-- AI头像 -->
+                    <div v-if="msg.role === 'assistant'" class="avatar ai-avatar">
+                      <img src="../assets/yixiu-ai.png" alt="AI头像" />
+                    </div>
+                    <!-- 消息气泡 -->
+                    <div :class="['message-bubble', msg.role === 'user' ? 'user-message' : 'ai-message']">
+                      <div class="message-content">{{ msg.content }}</div>
+                    </div>
+                    <!-- 用户头像 -->
+                    <div v-if="msg.role === 'user'" class="avatar user-avatar">
+                      <img :src="userInfo.avatar" alt="用户头像" />
+                    </div>
+                  </div>
+                </div>
+              </el-scrollbar>
+
+              <!-- 输入区域 -->
+              <div class="chat-input-area">
+                <el-input
+                    v-model="inputMessage"
+                    placeholder="Please Enter..."
+                    @keyup.enter="sendMessage"
+                    size="large"
+                    class="input-message"
+                />
+                <el-button type="primary" @click="sendMessage" size="large">发送</el-button>
+              </div>
+            </el-card>
+          </el-main>
           <!--底部栏-->
 <!--          <el-footer>Footer</el-footer>-->
         </el-container>
@@ -299,6 +495,194 @@ const logout = async () => {
 .item {
   margin-top: 10px;
   margin-right: 30px;
+}
+.chat-container {
+  width: 80%;
+  max-width: 1000px;
+  margin-top: 10px;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.chat-title {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.chat-messages {
+  justify-content: flex-start;
+  height: 400px;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 水平居中 */
+  margin: 15px 0;
+}
+
+.message-time-centered {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin-bottom: 5px; /* 与下方内容的间距 */
+}
+
+.message-container {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.ai-container {
+  justify-content: flex-start;
+}
+
+.user-container {
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  margin: 0 10px;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ai-avatar {
+  order: 1;
+}
+
+.user-avatar {
+  order: 3;
+}
+
+.message-bubble {
+  max-width: 65%;
+  padding: 12px 15px;
+  border-radius: 15px;
+  margin: 0 10px;
+  white-space: pre-wrap;
+}
+
+.ai-message {
+  text-align: left;
+  background-color: #f0f2f5;
+  color: #333;
+  border-radius: 15px 15px 15px 5px;
+  padding: 12px 15px;
+  order: 2;
+}
+
+.user-message {
+  text-align: right;
+  background-color: #409eff;
+  color: white;
+  border-radius: 15px 15px 5px 15px;
+  padding: 12px 15px;
+  order: 2;
+}
+
+.message-content {
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+
+.chat-input-area {
+  background-color: #fff;
+  border-radius: 95px;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+.history-selector {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.headline {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.create-time {
+  font-size: 12px;
+  color: #999;
+}
+
+.history-btn {
+  height: 30px;
+  width: 30px;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  border: none !important;
+  outline: none !important;
+}
+
+.history-btn:hover {
+  background-color: #f5f5f5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-btn:active {
+  transform: translateY(0);
+  background-color: #ebebeb;
+}
+
+.history-btn .el-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-message {
+  .el-input-group__prepend {
+    border-radius: 95px;
+    border: 0;
+    box-shadow: 0 0 0 0;
+  }
+
+  .el-input__wrapper {
+    border-radius: 95px;
+    border: 0;
+    box-shadow: 0 0 0 0;
+  }
+
+  .el-input-group__append {
+    border-radius: 95px;
+    border: 0;
+    box-shadow: 0 0 0 0;
+  }
 }
 
 </style>

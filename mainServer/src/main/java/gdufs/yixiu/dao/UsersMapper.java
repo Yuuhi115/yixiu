@@ -29,6 +29,7 @@ public interface UsersMapper {
     Users findUserRealNameAndAvatarById(Integer userId);
     List<Users> findUserByName(String name);
     List<UserInfoVO> findUserNameAndAvatarByIds(@Param("userIds") List<Integer> userIds);
+    UserInfoVO findUserInfoVOById(Integer userId);
 
     // 社区
     int addUserFollow(UserFollow userFollow);
