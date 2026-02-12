@@ -3,11 +3,11 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="gdufs.yixiu.dao.CommentMapper">
     <!-- SQL映射语句在此定义 -->
-    <insert id="addComment" parameterType="gdufs.yixiu.dto.community.request.RequestCommentDto">
+    <insert id="addComment" useGeneratedKeys="true" keyColumn="comment_id" keyProperty="commentId" parameterType="gdufs.yixiu.dto.community.request.RequestCommentDto">
         insert into post_comment(post_id, user_id, content)
         values(#{postId}, #{userId}, #{content})
     </insert>
-    <insert id="addReply" parameterType="gdufs.yixiu.dto.community.request.RequestReplyDto">
+    <insert id="addReply" useGeneratedKeys="true" keyColumn="reply_id" keyProperty="replyId" parameterType="gdufs.yixiu.dto.community.request.RequestReplyDto">
         insert into post_comment_reply(comment_id, from_user_id, to_user_id, parent_reply_id, content)
         values(#{commentId}, #{fromUserId}, #{toUserId}, #{parentReplyId}, #{content})
     </insert>

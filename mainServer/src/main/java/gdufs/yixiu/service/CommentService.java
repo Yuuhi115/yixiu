@@ -17,8 +17,8 @@ public interface CommentService {
     int addComment(RequestCommentDto requestCommentDto);
 
     int addReply(RequestReplyDto requestReplyDto);
-    PageInfo<ResponseCommentDto> listComments(Integer postId, Integer userId, Integer pageNum, Integer pageSize);
-    PageInfo<ResponseReplyDto> listReplies(Integer commentId, Integer userId, Integer pageNum, Integer pageSize);
+    PageInfo<ResponseCommentDto> listComments(Integer postId, Integer commentId, Integer userId, Integer pageNum, Integer pageSize);
+    PageInfo<ResponseReplyDto> listReplies(Integer commentId, Integer replyId, Integer userId, Integer pageNum, Integer pageSize);
     int deleteComment(Integer commentId);
     int deleteReply(Integer replyId);
     int countCommentsNum(Integer postId);

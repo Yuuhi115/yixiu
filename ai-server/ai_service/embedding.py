@@ -42,6 +42,7 @@ def init_tfidf(corpus: list[str], ids: list[int]):
     _knowledge_ids = ids
 
     print(f"[TF-IDF+jieba] 已加载知识条数：{len(ids)}")
+    print(f"知识库矩阵数据大小 ({_knowledge_matrix.data.nbytes / 1024 :.2f}KB):")
 
 
 def query_similar(text: str):

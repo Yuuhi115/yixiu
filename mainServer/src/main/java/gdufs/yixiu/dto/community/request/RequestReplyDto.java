@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RequestReplyDto {
+    private Integer replyId;
     private Integer fromUserId;
     private Integer toUserId;
     private Integer parentReplyId;

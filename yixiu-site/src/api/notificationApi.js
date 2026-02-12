@@ -50,3 +50,15 @@ export function sendRepairCompleteNotification(data){
 export function sendRepairEvaluateCompleteNotification(data){
     return request.post("/notify/taskEvaluateComplete", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+/*社区通知*/
+export function sendCommentNotify(data){
+    return request.post("/notify/comment", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function sendReplyNotify(data){
+    if (data.parentReplyId){
+        return request.post("/notify/replyToReply", data, {headers: {Authorization: Cookie.get("Authorization")}})
+    }else {
+        return request.post("/notify/replyToComment", data, {headers: {Authorization: Cookie.get("Authorization")}})
+    }
+}

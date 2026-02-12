@@ -37,12 +37,16 @@ public class CommentServiceImpl implements CommentService {
     }
     @Override
     public int addComment(RequestCommentDto requestCommentDto) {
-        return commentMapper.addComment(requestCommentDto);
+        int row = commentMapper.addComment(requestCommentDto);
+        Integer commentId = requestCommentDto.getCommentId();
+        return row > 0 ? commentId : -1;
     }
 
     @Override
     public int addReply(RequestReplyDto requestReplyDto) {
-        return commentMapper.addReply(requestReplyDto);
+        int row = commentMapper.addReply(requestReplyDto);
+        Integer replyId = requestReplyDto.getReplyId();
+        return row > 0 ? replyId : -1;
     }
 
     @Override
@@ -203,11 +207,30 @@ public class CommentServiceImpl implements CommentService {
 
 
     @Override
-    public PageInfo<ResponseCommentDto> listComments(Integer postId, Integer userId, Integer pageNum, Integer pageSize) {
+    public PageInfo<ResponseCommentDto> listComments(Integer postId, Integer commentId, Integer userId, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
         List<PostComment> postComments = commentMapper.listComments(postId);
         PageInfo<PostComment> originalCommentList = new PageInfo<>(postComments);
-        List<ResponseCommentDto> responseCommentDtos = postCommentToResponseCommentDto(originalCommentList.getList(), userId);
+        if (commentId != 0){
+            PostComment priorComment = commentMapper.getCommentByCommentId(commentId);
+            if (priorComment != null) {
+                // 检查 postComments 中是否已存在 priorComment
+                boolean exists = postComments.stream()
+                        .anyMatch(comment -> comment.getCommentId().equals(priorComment.getCommentId()));
+                if (exists) {
+                    // 如果存在，将其移动到第一位
+                    postComments.removeIf(comment -> comment.getCommentId().equals(priorComment.getCommentId()));
+                    postComments.addFirst(priorComment);
+                } else {
+                    // 如果不存在，插入到第一位并删除最后一条评论
+                    postComments.addFirst(priorComment);
+                    if (postComments.size() > pageSize) {
+                        postComments.removeLast();
+                    }
+                }
+            }
+        }
+        List<ResponseCommentDto> responseCommentDtos = postCommentToResponseCommentDto(postComments, userId);
         PageInfo<ResponseCommentDto> resultPageInfo = new PageInfo<>(responseCommentDtos);
         resultPageInfo.setTotal(originalCommentList.getTotal());
         resultPageInfo.setPages(originalCommentList.getPages());
@@ -217,7 +240,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageInfo<ResponseReplyDto> listReplies(Integer commentId, Integer userId, Integer pageNum, Integer pageSize) {
+    public PageInfo<ResponseReplyDto> listReplies(Integer commentId, Integer replyId, Integer userId, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
 
         List<PostCommentReply> replies =
@@ -226,6 +249,27 @@ public class CommentServiceImpl implements CommentService {
 
         if (replies.isEmpty()) {
             return new PageInfo<>(List.of());
+        }
+
+        // 处理 priorReply 逻辑
+        if (replyId != 0) {
+            PostCommentReply priorReply = commentMapper.getReplyByReplyId(replyId);
+            if (priorReply != null) {
+                // 检查 replies 中是否已存在 priorReply
+                boolean exists = replies.stream()
+                        .anyMatch(reply -> reply.getReplyId().equals(priorReply.getReplyId()));
+                if (exists) {
+                    // 如果存在，将其移动到第一位
+                    replies.removeIf(reply -> reply.getReplyId().equals(priorReply.getReplyId()));
+                    replies.addFirst(priorReply);
+                } else {
+                    // 如果不存在，插入到第一位并删除最后一条回复
+                    replies.addFirst(priorReply);
+                    if (replies.size() > pageSize) {
+                        replies.removeLast();
+                    }
+                }
+            }
         }
 
         Map<Integer, List<ResponseReplyDto>> group =

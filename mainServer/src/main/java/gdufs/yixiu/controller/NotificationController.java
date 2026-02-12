@@ -4,18 +4,18 @@ import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.SuperAdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
+import gdufs.yixiu.dao.CommentMapper;
 import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dto.NotifySubmitDto;
 import gdufs.yixiu.dto.RoleChangeDto;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UserModifyDto;
+import gdufs.yixiu.dto.community.response.ResponsePostDto;
 import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
-import gdufs.yixiu.pojo.Notification;
-import gdufs.yixiu.pojo.RepairRequest;
-import gdufs.yixiu.service.NotificationService;
+import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.pojo.*;
+import gdufs.yixiu.service.*;
 
-import gdufs.yixiu.service.TaskService;
-import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.EmailUtils;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
@@ -45,6 +45,12 @@ public class NotificationController {
     private TaskService taskService;
     @Autowired
     private TaskMapper taskMapper;
+    @Autowired
+    private CommentService commentService;
+    @Autowired
+    private CommentMapper commentMapper;
+    @Autowired
+    private PostService postService;
     @PostMapping("/roleChange")
     @SuperAdminLoginToken
     public Result roleChange(@RequestBody RoleChangeDto roleChangeDto,
@@ -201,6 +207,112 @@ public class NotificationController {
             notificationService.saveAndPush(notification);
             log.info("用户(id:{})的电脑报修申请(申请单号:{})已完成评价，已发送评价完成通知给队员(id:{})", userId, notifySubmitDto.getTaskId(), notification.getReceiverId());
         }
+        return Result.success("操作成功");
+    }
+    /*社区通知*/
+    @UserLoginToken
+    @PostMapping("/comment")
+    public Result comment(@RequestBody NotifySubmitDto notifySubmitDto,
+                          HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        if (
+                notifySubmitDto.getCommentId() == null ||
+                notifySubmitDto.getPostId() == null ||
+                notifySubmitDto.getCommentContent() == null
+        ){
+            return Result.fail("参数错误");
+        }
+        ResponsePostDto responsePostDto = postService.getPostByPostId(notifySubmitDto.getPostId(), userId);
+        if (responsePostDto == null){
+            return Result.fail("回复的帖子不存在");
+        }
+        if (responsePostDto.getUserId().equals(userId)){
+            return Result.success(null);
+        }
+        Integer postUserId = responsePostDto.getUserId();
+        Notification notification = new Notification();
+        UserInfoVO userInfo = usersService.queryUserInfoVOById(userId);
+        notification.setTitle("回复了我的帖子");
+        notification.setContent(
+                "用户 " + userInfo.getUsername() + " 回复了您的帖子: " + responsePostDto.getTitle() + "，说：" + notifySubmitDto.getCommentContent());
+        notification.setSenderId(userId);
+        notification.setType("USER");
+        notification.setReceiverId(postUserId);
+        notification.setLink("/community?postId=" + notifySubmitDto.getPostId() + "&commentId=" + notifySubmitDto.getCommentId());
+        notificationService.saveAndPush(notification);
+        log.info("用户(id:{})在帖子(id:{})的评论(id:{})中回复了用户(id:{})的帖子，已发送通知给用户(id:{})", userId, notifySubmitDto.getPostId(), notifySubmitDto.getCommentId(), postUserId, notification.getReceiverId());
+        return Result.success("操作成功");
+    }
+    @UserLoginToken
+    @PostMapping("/replyToComment")
+    public Result replyToComment(@RequestBody NotifySubmitDto notifySubmitDto,
+                        HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        if (
+                notifySubmitDto.getReplyId() == null ||
+                notifySubmitDto.getCommentId() == null ||
+                notifySubmitDto.getPostId() == null ||
+                notifySubmitDto.getReplyContent() == null
+        ){
+            return Result.fail("参数错误");
+        }
+        PostComment postComment = commentService.getCommentByCommentId(notifySubmitDto.getCommentId());
+        if (postComment == null){
+            return Result.fail("回复的评论不存在");
+        }
+        if (postComment.getUserId().equals(userId)){
+            return Result.success(null);
+        }
+        Integer commentUserId = postComment.getUserId();
+        UserInfoVO userInfo = usersService.queryUserInfoVOById(userId);
+        Notification notification = new Notification();
+        notification.setTitle("回复了你的评论");
+        notification.setContent(
+                "用户 " + userInfo.getUsername() + " 回复了您的评论: " + postComment.getContent() + "，说：" + notifySubmitDto.getReplyContent());
+        notification.setSenderId(userId);
+        notification.setType("USER");
+        notification.setReceiverId(commentUserId);
+        notification.setLink("/community?postId=" + notifySubmitDto.getPostId() + "&commentId=" + notifySubmitDto.getCommentId() + "&replyId=" + notifySubmitDto.getReplyId());
+        notificationService.saveAndPush(notification);
+        log.info("用户(id:{})在帖子(id:{})的评论(id:{})中回复了用户(id:{})的评论，已发送通知给用户(id:{})", userId, notifySubmitDto.getPostId(), notifySubmitDto.getCommentId(), commentUserId, notification.getReceiverId());
+        return Result.success("操作成功");
+    }
+    @UserLoginToken
+    @PostMapping("/replyToReply")
+    public Result replyToReply(@RequestBody NotifySubmitDto notifySubmitDto,
+                        HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        if (
+                notifySubmitDto.getReplyId() == null ||
+                notifySubmitDto.getCommentId() == null ||
+                notifySubmitDto.getPostId() == null ||
+                notifySubmitDto.getReplyContent() == null ||
+                notifySubmitDto.getParentReplyId() == null
+        ){
+            return Result.fail("参数错误");
+        }
+        PostCommentReply postCommentReply = commentService.getReplyByReplyId(notifySubmitDto.getParentReplyId());
+        if (postCommentReply == null){
+            return Result.fail("回复的回复不存在");
+        }
+        if (postCommentReply.getFromUserId().equals(userId)){
+            return Result.success(null);
+        }
+        Integer replyUserId = postCommentReply.getFromUserId();
+        UserInfoVO userInfo = usersService.queryUserInfoVOById(userId);
+        Notification notification = new Notification();
+        notification.setTitle("回复了你的回复信息");
+        notification.setContent(
+                "用户 " + userInfo.getUsername() + " 回复了您的回复: " + postCommentReply.getContent() + "，说：" + notifySubmitDto.getReplyContent());
+        notification.setSenderId(userId);
+        notification.setType("USER");
+        notification.setReceiverId(replyUserId);
+        notification.setLink("/community?postId=" + notifySubmitDto.getPostId() + "&commentId=" + notifySubmitDto.getCommentId() + "&replyId=" + notifySubmitDto.getReplyId());
+        notificationService.saveAndPush(notification);
+        log.info("用户(id:{})在帖子(id:{})的评论(id:{})中回复了用户(id:{})的回复，已发送通知给用户(id:{})", userId, notifySubmitDto.getPostId(), notifySubmitDto.getCommentId(), replyUserId, notification.getReceiverId());
         return Result.success("操作成功");
     }
 }

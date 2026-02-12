@@ -24,6 +24,7 @@ import {Message, Delete} from "@element-plus/icons-vue";
 import {useNotificationStore} from "../../stores/notificationInit.js";
 import {formatTime} from "../../utils/timeUtils.js";
 import {JumpToUserProfile} from "../../utils/redirectUtils.js";
+import {sendCommentNotify, sendReplyNotify} from "../../api/notificationApi.js";
 
 const notificationStore = useNotificationStore()
 
@@ -77,6 +78,12 @@ onMounted(async () => {
   if (route.query.postId) {
     postFilterForm.postId = route.query.postId
   }
+  if (route.query.commentId) {
+    postFilterForm.commentId = route.query.commentId
+  }
+  if (route.query.replyId) {
+    postFilterForm.replyId = route.query.replyId
+  }
   if (route.query.orderType) {
     postFilterForm.orderType = route.query.orderType
   }
@@ -95,6 +102,24 @@ onMounted(async () => {
   await loadAllTags()
   await handlePostFilter()
   await notificationStore.syncUnreadCount()
+
+  // 如果路由中有 postId 和 commentId，自动打开该帖子的评论区
+  if (route.query.postId && route.query.commentId && route.query.replyId) {
+    const targetPost = postList.value.find(post => post.postId === parseInt(route.query.postId))
+    if (targetPost) {
+      await goToComment(targetPost)
+      // 展开第一条回复
+      const firstComment = targetPost.comments[0]
+      if (firstComment) {
+        await toggleReplies(targetPost, firstComment)
+      }
+    }
+  } else if (route.query.postId && route.query.commentId) {
+    const targetPost = postList.value.find(post => post.postId === parseInt(route.query.postId))
+    if (targetPost) {
+      await goToComment(targetPost)
+    }
+  }
 })
 
 const postFilterForm = reactive({
@@ -104,7 +129,9 @@ const postFilterForm = reactive({
   postUserId: '',
   status: 0,
   keyword: '',
-  postId: ''
+  postId: '',
+  commentId: '',
+  replyId: ''
 })
 
 // 控制搜索框显示状态
@@ -300,7 +327,6 @@ const selectTag = (tagId) => {
 const changeOrderType = (type) => {
   postFilterForm.orderType = type
   updateRouteParams()
-
 }
 
 // 切换排序方向
@@ -355,6 +381,9 @@ const updateRouteParams = () => {
   if (postFilterForm.postId) {
     params.postId = postFilterForm.postId
   }
+  if (postFilterForm.commentId) {
+    params.commentId = postFilterForm.commentId
+  }
 
   router.push({
     name: 'CommunityCenter',
@@ -390,6 +419,14 @@ watch(() => route.query, (newQuery) => {
     postFilterForm.postId = newQuery.postId || ''
     changed = true
   }
+  if (newQuery.commentId !== postFilterForm.commentId) {
+    postFilterForm.commentId = newQuery.commentId || ''
+    changed = true
+  }
+  if (newQuery.replyId !== postFilterForm.replyId) {
+    postFilterForm.replyId = newQuery.replyId || ''
+    changed = true
+  }
 
   if (changed) {
     loadTaskListCondition()
@@ -411,6 +448,10 @@ const loadComments = async (post, reset = true) => {
       postId: post.postId,
       pageNum: pageNum,
       pageSize: commentPagination.pageSize
+    }
+    // 如果有 commentId，优先加载该评论
+    if (postFilterForm.commentId) {
+      params.commentId = postFilterForm.commentId;
     }
     const response = await getCommentListByPostId(params)
     if (response.code === 200) {
@@ -463,6 +504,10 @@ const loadReplies = async (post, comment, reset = true) => {
       pageNum: pageNum,
       pageSize: replyPagination.pageSize
     };
+    // 如果有 replyId，优先加载该回复
+    if (postFilterForm.replyId) {
+      params.replyId = postFilterForm.replyId;
+    }
     const response = await getReplyByCommentId(params);
     if (response.code === 200) {
       const replies = response.data.list || []
@@ -530,11 +575,15 @@ const goToComment = async (post) => {
   // 显示评论区并加载评论
   post.showComments = true
   commentLoadStates.loading[post.postId] = true
-  await loadComments(post)
+  try {
+    await loadComments(post)
+  } finally {
+    commentLoadStates.loading[post.postId] = false  // 确保加载状态被正确关闭
+  }
 }
 
 // 提交评论函数
-const submitComment = async (post, parentCommentId = null, replyToUserId = null) => {
+const submitComment = async (post, parentCommentId = null, replyToUserId = null, parentReplyId = null) => {
   if (!post.commentInput.trim()) {
     ElMessage.warning('请输入评论内容')
     return
@@ -550,6 +599,7 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
     if (post.replyingTo) {
       parentCommentId = post.replyingTo.parentCommentId;
       replyToUserId = post.replyingTo.replyToUserId;
+      parentReplyId = post.replyingTo.parentReplyId;
       delete post.replyingTo; // 清除临时信息
     }
 
@@ -557,6 +607,7 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
     if (post.replySwitch) {
       commentData.commentId = parentCommentId
       commentData.toUserId = replyToUserId
+      commentData.parentReplyId = parentReplyId
       const response = await addReply(commentData)
       if (response.code === 200) {
         ElMessage.success('回复成功')
@@ -577,6 +628,21 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
         // 更新帖子的评论数
         post.commentNum += 1
         post.replySwitch = false
+        commentData.replyId = response.data.replyId
+        // 发送通知
+        const notifyData = {
+          postId: commentData.postId,
+          commentId: commentData.commentId,
+          replyId: commentData.replyId,
+          replyContent: commentData.content,
+        }
+        if (commentData.parentReplyId){
+          notifyData.parentReplyId = commentData.parentReplyId
+        }
+        const notifyResponse = await sendReplyNotify(notifyData)
+        if (notifyResponse.code !== 200){
+          ElMessage.error(notifyResponse.msg)
+        }
       } else {
         ElMessage.error(response.msg)
       }
@@ -585,12 +651,22 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
       const response = await addComment(commentData)
       if (response.code === 200) {
         ElMessage.success('评论成功')
-        post.commentInput = ''
         // 重新加载评论
         await loadComments(post)
-
         // 更新帖子的评论数
         post.commentNum += 1
+        commentData.commentId = response.data.commentId
+        // 发送通知
+        const notifyData = {
+          postId: commentData.postId,
+          commentId: commentData.commentId,
+          commentContent: commentData.content,
+        }
+        const notifyResponse = await sendCommentNotify(notifyData)
+        if (notifyResponse.code !== 200){
+          ElMessage.error(notifyResponse.msg)
+        }
+        post.commentInput = ''
       } else {
         ElMessage.error(response.msg)
       }
@@ -717,6 +793,17 @@ const publishPost = async () => {
 
 // 处理图片上传
 const handleImageUpload = (file, fileList) => {
+  // 检查文件大小（再次校验）
+  const isLt2M = file.raw?.size / 1024 / 1024 < 2;
+  if (!isLt2M) {
+    ElMessage.error('上传图片大小不能超过 2MB!');
+    return;
+  }
+  const fileLen = postImages.value.length;
+  if (fileLen >= 9) {
+    ElMessage.warning('最多只能上传 9 张图片！');
+    return;
+  }
   // 检查文件是否存在
   if (file && file.raw) {
     // 如果有 raw 属性，说明是 Element Plus 封装的对象，取 raw 获取原始文件
@@ -736,6 +823,20 @@ const handleImageUpload = (file, fileList) => {
     });
   }
 }
+
+// 检查文件大小（限制为2MB）
+const beforeUpload = (file) => {
+  const isLt2M = file.size / 1024 / 1024 < 2;
+  if (!isLt2M) {
+    ElMessage.error('上传图片大小不能超过 2MB!');
+  }
+  return isLt2M;
+};
+
+// 处理超出上传数量限制的情况
+const handleExceed = () => {
+  ElMessage.warning('最多只能上传 9 张图片！');
+};
 
 // 删除指定索引的图片
 const removeImage = (index) => {
@@ -835,6 +936,7 @@ const toggleFavorite = async (post) => {
                 :on-change="handleImageUpload"
                 multiple
                 list-type="text"
+                :limit="9"
             >
               <el-button type="primary" size="small" plain>上传图片</el-button>
             </el-upload>

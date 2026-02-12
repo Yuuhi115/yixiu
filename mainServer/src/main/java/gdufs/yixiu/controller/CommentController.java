@@ -12,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/community/comment")
@@ -28,27 +31,36 @@ public class CommentController {
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         requestCommentDto.setUserId(userId);
         int result = commentService.addComment(requestCommentDto);
-        return result == 1 ? Result.success(null) : Result.fail("添加失败");
+        if (result == -1){
+            return Result.fail("添加失败");
+        }else {
+            Map<String, Integer> map = new HashMap<>();
+            map.put("commentId", result);
+            return Result.success(map);
+        }
     }
     @UserLoginToken
     @GetMapping("/listByPostId")
     public Result commentListByPostId(@RequestParam("postId") Integer postId,
                                       @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                       @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize,
+                                      @RequestParam(value = "commentId", defaultValue = "0") Integer commentId,
                                       HttpServletRequest request){
+        // commentId不为0时，表示优先获取该评论
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        return Result.success(commentService.listComments(postId, userId, pageNum, pageSize));
+        return Result.success(commentService.listComments(postId, commentId, userId, pageNum, pageSize));
     }
     @UserLoginToken
     @GetMapping("/replyListByCommentId")
     public Result repliesPageByCommentId(@RequestParam("commentId") Integer commentId,
                                          @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
                                          @RequestParam(value = "pageSize", defaultValue = "20") Integer pageSize,
+                                         @RequestParam(value = "replyId", defaultValue = "0") Integer replyId,
                                          HttpServletRequest request){
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
-        return Result.success(commentService.listReplies(commentId, userId, pageNum, pageSize));
+        return Result.success(commentService.listReplies(commentId, replyId, userId, pageNum, pageSize));
     }
     @UserLoginToken
     @PostMapping("/addReply")
@@ -58,7 +70,13 @@ public class CommentController {
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         requestReplyDto.setFromUserId(userId);
         int result = commentService.addReply(requestReplyDto);
-        return result == 1 ? Result.success(null) : Result.fail("添加失败");
+        if (result == -1){
+            return Result.fail("添加失败");
+        }else {
+            Map<String, Integer> map = new HashMap<>();
+            map.put("replyId", result);
+            return Result.success(map);
+        }
     }
     @UserLoginToken
     @PostMapping("/modifyCommentLike")

@@ -16,4 +16,11 @@ public class NotifySubmitDto {
     private String content;
     private String type;
     private String link;
+
+    private Integer postId;
+    private Integer commentId;
+    private Integer replyId;
+    private Integer parentReplyId;
+    private String commentContent;
+    private String replyContent;
 }

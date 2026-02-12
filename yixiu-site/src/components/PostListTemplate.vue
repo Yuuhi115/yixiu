@@ -15,6 +15,7 @@ import {
 } from '../api/communityApi.js'
 import { ElMessage } from "element-plus"
 import { formatTime } from "../utils/timeUtils.js";
+import {sendCommentNotify, sendReplyNotify} from "../api/notificationApi.js";
 
 // 定义 props，允许父组件传入自定义参数
 const props = defineProps({
@@ -450,7 +451,7 @@ const goToComment = async (post) => {
 }
 
 // 提交评论函数
-const submitComment = async (post, parentCommentId = null, replyToUserId = null) => {
+const submitComment = async (post, parentCommentId = null, replyToUserId = null, parentReplyId = null) => {
   if (!post.commentInput.trim()) {
     ElMessage.warning('请输入评论内容')
     return
@@ -466,6 +467,7 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
     if (post.replyingTo) {
       parentCommentId = post.replyingTo.parentCommentId;
       replyToUserId = post.replyingTo.replyToUserId;
+      parentReplyId = post.replyingTo.parentReplyId;
       delete post.replyingTo; // 清除临时信息
     }
 
@@ -473,6 +475,7 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
     if (post.replySwitch) {
       commentData.commentId = parentCommentId
       commentData.toUserId = replyToUserId
+      commentData.parentReplyId = parentReplyId
       const response = await addReply(commentData)
       if (response.code === 200) {
         ElMessage.success('回复成功')
@@ -498,6 +501,21 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
         // 更新帖子的评论数
         post.commentNum += 1
         post.replySwitch = false
+        commentData.replyId = response.data.replyId
+        // 发送通知
+        const notifyData = {
+          postId: commentData.postId,
+          commentId: commentData.commentId,
+          replyId: commentData.replyId,
+          replyContent: commentData.content,
+        }
+        if (commentData.parentReplyId){
+          notifyData.parentReplyId = commentData.parentReplyId
+        }
+        const notifyResponse = await sendReplyNotify(notifyData)
+        if (notifyResponse.code !== 200){
+          ElMessage.error(notifyResponse.msg)
+        }
       } else {
         ElMessage.error(response.msg)
       }
@@ -506,12 +524,24 @@ const submitComment = async (post, parentCommentId = null, replyToUserId = null)
       const response = await addComment(commentData)
       if (response.code === 200) {
         ElMessage.success('评论成功')
-        post.commentInput = ''
+
         // 重新加载评论
         await loadComments(post)
 
         // 更新帖子的评论数
         post.commentNum += 1
+        commentData.commentId = response.data.commentId
+        // 发送通知
+        const notifyData = {
+          postId: commentData.postId,
+          commentId: commentData.commentId,
+          commentContent: commentData.content,
+        }
+        const notifyResponse = await sendCommentNotify(notifyData)
+        if (notifyResponse.code !== 200){
+          ElMessage.error(notifyResponse.msg)
+        }
+        post.commentInput = ''
       } else {
         ElMessage.error(response.msg)
       }
@@ -950,12 +980,21 @@ const toggleFavorite = async (post) => {
           </el-collapse-transition>
         </div>
       </div>
-      <div v-else-if="!loading" class="no-posts">
-        <el-empty description="暂无帖子"/>
+      <!-- 加载更多按钮 -->
+      <div v-if="hasMore && !isLoadingMore" class="load-more-container">
+        <el-button type="text" @click="loadMorePosts" class="load-more-btn">
+          点击加载更多帖子
+        </el-button>
       </div>
-      <!-- 加载更多 -->
-      <div v-if="loading" class="loading-more">
-        <el-skeleton :rows="4" animated/>
+
+      <!-- 加载中提示 -->
+      <div v-if="isLoadingMore" class="loading-more">
+        <el-skeleton :rows="2" animated />
+      </div>
+
+      <!-- 没有更多数据提示 -->
+      <div v-if="!hasMore && !isLoadingMore && postList.length > 0" class="no-more-data">
+        <p style="text-align: center; color: #999;padding-top: 10px">没有更多数据了</p>
       </div>
     </div>
   </div>
@@ -1356,6 +1395,38 @@ const toggleFavorite = async (post) => {
 .reply-actions .el-button {
   padding: 2px 4px;
   margin-right: 10px;
+}
+
+.load-more-container {
+  background-color: white;
+  border-radius: 10px;
+  height: 45px;
+}
+
+.load-more-btn {
+  margin-top: 5px;
+  font-size: 16px;
+  color: #409eff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+  color: #66b1ff;
+  transform: translateY(-2px);
+}
+
+.loading-more {
+  padding: 20px;
+  text-align: center;
+}
+
+.no-more-data {
+  background-color: white;
+  border-radius: 10px;
+  text-align: center;
+  color: #999;
+  height: 45px;
 }
 
 .loading-replies {

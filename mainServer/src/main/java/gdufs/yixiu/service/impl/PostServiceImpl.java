@@ -14,11 +14,13 @@ import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
 import gdufs.yixiu.dto.community.vo.PostIdJudgeVO;
 import gdufs.yixiu.dto.community.vo.TagVO;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.pojo.Notification;
 import gdufs.yixiu.pojo.Post;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.CommentService;
 import gdufs.yixiu.service.ImgUploadService;
+import gdufs.yixiu.service.NotificationService;
 import gdufs.yixiu.service.PostService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,8 @@ public class PostServiceImpl implements PostService {
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private ImgUploadService imgUploadService;
+    @Autowired
+    private NotificationService notificationService;
     private String serviceCommunityUrl;
     @Value("${resources-path.service-community-url}")
     public void setServiceCommunityUrl(String serviceCommunityUrl) {
@@ -85,10 +89,19 @@ public class PostServiceImpl implements PostService {
             return 500;
         }
         if (role.equals("admin") || role.equals("super_admin")){
+            imgUploadService.deletePostImg(postId);
             int row = postMapper.deletePost(postId);
             if (row == 1){
                 log.info("管理员(id:{})删除帖子成功，帖子id为：{}",userId, postId);
-                imgUploadService.deletePostImg(postId);
+                if (!post.getUserId().equals(userId)){
+                    Notification notification = new Notification();
+                    notification.setSenderId(userId);
+                    notification.setReceiverId(post.getUserId());
+                    notification.setTitle("帖子删除通知");
+                    notification.setContent("您的帖子(post_id: " + postId + ", Title: " + post.getTitle() + ")已被管理员删除，详情请联系管理员");
+                    notification.setType("USER");
+                    notificationService.saveAndPush(notification);
+                }
                 return 200;
             }else {
                 log.info("管理员(id:{})删除帖子失败，帖子id为：{}",userId, postId);

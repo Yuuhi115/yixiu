@@ -15,4 +15,6 @@ public class PostFilterDto {
     private String order; // desc asc, 默认为desc
     private String keyword; // 搜索关键字
     private Integer postId;
+    private Integer commentId;
+    private Integer replyId;
 }

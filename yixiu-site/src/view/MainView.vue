@@ -12,7 +12,8 @@ import {
   Message,
   Search,
   Star,
-  Clock
+  Clock,
+  CirclePlus,
 } from '@element-plus/icons-vue'
 import {UserFilled} from '@element-plus/icons-vue'
 
@@ -141,7 +142,7 @@ const sendMessage = async () => {
 
   // 添加用户消息
   messages.value.push({ role: 'user', content: inputMessage.value, createTime: new Date() })
-
+  scrollToBottom()
   // 清空输入框
   const userMessage = inputMessage.value
   inputMessage.value = ''
@@ -213,6 +214,17 @@ const switchConversation = (id) => {
   messagePagination.pageNum = 1
   // 加载该会话的消息记录
   loadMessagesByConversation(id)
+}
+
+// 开始新对话
+const startNewConversation = () => {
+  // 清空当前会话 ID 和消息列表
+  conversationId.value = null
+  messages.value = [
+    { role: 'assistant', content: '您好！我是您的电脑维修智能助手，请问有什么可以帮助您的吗？', createTime: new Date() }
+  ]
+  // 滚动到底部
+  scrollToBottom()
 }
 
 // 根据 conversationId 加载消息记录
@@ -380,8 +392,20 @@ const loadMessagesByConversation = async (conversationId) => {
             <el-card class="chat-container" shadow="never">
               <!-- 聊天标题 -->
               <div class="chat-title">广外义修智能AI小助手</div>
-              <!-- 历史会话图标按钮 -->
+
               <div class="history-selector">
+                <!--新对话按钮-->
+                <el-tooltip
+                    class="box-item"
+                    effect="dark"
+                    content="创建新对话"
+                    placement="top-start"
+                >
+                  <div class="history-btn" @click="startNewConversation">
+                    <el-icon><CirclePlus /></el-icon>
+                  </div>
+                </el-tooltip>
+                <!-- 历史会话图标按钮 -->
                 <el-dropdown @command="switchConversation">
                   <div class="history-btn">
                     <el-icon><Clock /></el-icon>
@@ -395,7 +419,7 @@ const loadMessagesByConversation = async (conversationId) => {
                       >
                         <div class="conversation-item">
                           <div class="headline">{{ conv.headline }}</div>
-                          <div class="create-time">{{ conv.createTime }}</div>
+                          <div class="create-time">{{ formatTime(conv.createTime) }}</div>
                         </div>
                       </el-dropdown-item>
                     </el-dropdown-menu>
