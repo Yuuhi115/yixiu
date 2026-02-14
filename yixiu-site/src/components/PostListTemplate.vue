@@ -1,8 +1,19 @@
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { watchEffect, watch } from 'vue'
-import { Star, ChatRound, Position, StarFilled, Promotion, ArrowDown, SortDown, SortUp, Search } from "@element-plus/icons-vue";
-import { ElCollapseTransition } from 'element-plus';
+import {
+  Star,
+  ChatRound,
+  Position,
+  StarFilled,
+  Promotion,
+  ArrowDown,
+  SortDown,
+  SortUp,
+  Search,
+  More
+} from "@element-plus/icons-vue";
+import {ElCollapseTransition, ElDropdown, ElDropdownItem, ElDropdownMenu, ElMessageBox} from 'element-plus';
 import {
   getPostList,
   getAllPostTags,
@@ -11,11 +22,12 @@ import {
   getCommentListByPostId,
   addComment,
   addReply,
-  getReplyByCommentId, addCommentLike, addReplyLike, getPostListByFilter
+  getReplyByCommentId, addCommentLike, addReplyLike, getPostListByFilter, deletePostByPostId
 } from '../api/communityApi.js'
 import { ElMessage } from "element-plus"
 import { formatTime } from "../utils/timeUtils.js";
 import {sendCommentNotify, sendReplyNotify} from "../api/notificationApi.js";
+import {AcceptAdmin} from "../utils/roleCheckUtils.js";
 
 // 定义 props，允许父组件传入自定义参数
 const props = defineProps({
@@ -658,6 +670,45 @@ const toggleFavorite = async (post) => {
     ElMessage.error(response.msg)
   }
 }
+
+// 处理帖子more组件操作
+const handlePostAction = (command, postId) => {
+  switch (command) {
+    case 'delete':
+      ElMessageBox.confirm('确定要删除这个帖子吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deletePost(postId);
+      }).catch(() => {
+        ElMessage.info('已取消删除');
+      });
+      break;
+    case 'forward':
+      ElMessage.info('Api开发中')
+      break;
+    default:
+      break;
+  }
+};
+
+// 删除帖子
+const deletePost = async (postId) => {
+  try {
+    const response = await deletePostByPostId(postId)
+    if (response.code === 200) {
+      ElMessage.success('帖子删除成功')
+      // 从列表中移除该帖子
+      postList.value = postList.value.filter(p => p.postId !== postId)
+    } else {
+      ElMessage.error(response.msg)
+    }
+  } catch (error) {
+    console.error('删除帖子失败:', error)
+    ElMessage.error('删除帖子失败')
+  }
+}
 </script>
 
 <template>
@@ -755,7 +806,33 @@ const toggleFavorite = async (post) => {
             <el-avatar :size="40" :src="post.avatar"/>
             <div class="user-details">
               <div class="username">{{ post.username }}</div>
-              <div class="time">{{ formatTime(post.createTime) }}</div>
+              <div class="time-and-actions">
+                <div class="time">{{ formatTime(post.createTime) }}</div>
+                <el-dropdown trigger="click">
+                  <el-icon class="more-icon">
+                    <More />
+                  </el-icon>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item
+                          command="delete"
+                          v-if="AcceptAdmin(props.initialFilters.viewerInfo)
+                          || props.initialFilters.viewerInfo.userId === post.userId"
+                          @click="handlePostAction('delete', post.postId)"
+                      >
+                        删除帖子
+                      </el-dropdown-item>
+                      <!-- 转发功能暂时不实现 -->
+                      <el-dropdown-item
+                          command="forward"
+                          @click="handlePostAction('forward', post.postId)"
+                      >
+                        转发帖子
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
             </div>
           </div>
 
@@ -1465,5 +1542,22 @@ const toggleFavorite = async (post) => {
 
 .load-more-btn-reply:hover {
   color: #66b1ff;
+}
+
+.time-and-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.more-icon {
+  cursor: pointer;
+  font-size: 18px;
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.more-icon:hover {
+  color: #409eff;
 }
 </style>

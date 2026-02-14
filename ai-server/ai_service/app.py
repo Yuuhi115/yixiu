@@ -124,13 +124,13 @@ def ask():
     print(f"最相似知识id：{best_id}, 分数:{score}")
 
     # 新对话且未命中则不调用deepseek
-    if is_new_conversation and (best_id is None or score < SIMILARITY_THRESHOLD):
-        return jsonify({
-            "code": 200,
-            "type": "MANUAL",
-            "answer": "该问题暂无法智能判断，建议提交人工维修申请。",
-            "headline": generate_headline(question)
-        })
+    # if is_new_conversation and (best_id is None or score < SIMILARITY_THRESHOLD):
+    #     return jsonify({
+    #         "code": 200,
+    #         "type": "MANUAL",
+    #         "answer": "该问题暂无法智能判断，建议提交人工维修申请。",
+    #         "headline": generate_headline(question)
+    #     })
 
     history_messages = []
     if not is_new_conversation:

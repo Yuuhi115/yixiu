@@ -39,8 +39,8 @@ export function addPostFavorite(postId){
     formData.append('postId', postId)
     return request.post("/community/post/modifyFavorite", formData ,{headers: {Authorization: Cookie.get("Authorization")}})
 }
-export function deletePost(postId){
-    return request.put("/community/post/delete", {postId: postId}, {headers: {Authorization: Cookie.get("Authorization")}})
+export function deletePostByPostId(postId){
+    return request.delete("/community/post/delete", {params: {postId: postId}, headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*
 * 获取数据库中的所有标签

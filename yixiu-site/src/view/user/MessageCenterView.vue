@@ -8,6 +8,7 @@ import {changeToRead, getNotifyByFilter, getNotifyList} from "../../api/notifica
 import router from "../../router/index.js"
 import {useNotificationStore} from "../../stores/notificationInit.js";
 import {formatTime} from "../../utils/timeUtils.js";
+import {JumpToUserProfile} from "../../utils/redirectUtils.js";
 
 const defaultAvatar = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
@@ -414,7 +415,7 @@ const getContentPreview = (content) => {
       </el-main>
     </el-container>
 
-    <!-- 消息详情对话框（类似聊天框） -->
+    <!-- 消息详情对话框 -->
     <el-dialog
         v-model="detailDialogVisible"
         :title="''"
@@ -440,7 +441,11 @@ const getContentPreview = (content) => {
               </div>
             </div>
             <div class="sender-details">
-              <div class="sender-name">{{ getSenderDisplay(currentNotification) }}</div>
+              <div class="sender-name"
+                   @click="() => JumpToUserProfile(currentNotification.senderId)"
+              >
+                {{ getSenderDisplay(currentNotification) }}
+              </div>
               <div class="message-type">
                 <el-tag :type="getTypeTagType(currentNotification.type)" size="small">
                   {{ getTypeDisplayName(currentNotification.type) }}
@@ -602,6 +607,22 @@ const getContentPreview = (content) => {
 .sender-name {
   font-weight: bold;
   color: #409eff;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;  /* 添加圆角 */
+  display: inline-block;  /* 使内边距生效 */
+}
+
+.sender-name:hover {
+  background-color: #f0f9ff;  /* 悬浮时背景色 */
+  color: #66b1ff;
+  transform: translateY(-1px);  /* 悬浮时轻微上移 */
+}
+
+.sender-name:active {
+  background-color: #ecf5ff;  /* 点击时背景色 */
+  transform: translateY(0);  /* 点击时回到原位 */
 }
 
 .message-time {
@@ -675,12 +696,6 @@ const getContentPreview = (content) => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.sender-details .sender-name {
-  font-weight: 500;
-  font-size: 16px;
-  margin-bottom: 3px;
 }
 
 .message-type {

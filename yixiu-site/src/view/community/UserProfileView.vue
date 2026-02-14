@@ -250,7 +250,7 @@ const getRoleType = (role) => {
         <el-main class="post-main">
           <!-- 使用帖子列表组件，并传入用户ID作为过滤参数 -->
           <PostListTemplate v-if="currentUserId !== '0'"
-          :initial-filters="{ postUserId: currentUserId }"
+          :initial-filters="{ postUserId: currentUserId, viewerInfo: viewerInfo }"
           :enable-tag-filter="true"
           :enable-search="true"
           />

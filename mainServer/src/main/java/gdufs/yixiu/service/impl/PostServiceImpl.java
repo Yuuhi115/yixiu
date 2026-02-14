@@ -111,10 +111,10 @@ public class PostServiceImpl implements PostService {
         if (!post.getUserId().equals(userId)) {
             return 403;
         }
+        imgUploadService.deletePostImg(postId);
         int row = postMapper.deletePost(postId);
         if (row == 1){
             log.info("用户(id:{})删除帖子成功，帖子id为：{}",userId, postId);
-            imgUploadService.deletePostImg(postId);
             return 200;
         }else {
             log.info("用户(id:{})删除帖子失败，帖子id为：{}",userId, postId);
