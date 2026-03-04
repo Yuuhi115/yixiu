@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AiAskRequestDto {
-    private String question;
-    private Integer conversationId;
-    private String role;
+public class KnowledgeModifyDto {
+    private Integer knowledgeId;
+    private String problem;
+    private String solution;
+    private Integer status;
 }

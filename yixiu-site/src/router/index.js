@@ -16,6 +16,7 @@ import CommunityCenterView from "../view/community/CommunityCenterView.vue";
 import FollowListView from "../view/community/FollowListView.vue";
 import MyFavoriteView from "../view/community/MyFavoriteView.vue";
 import UserProfileView from "../view/community/UserProfileView.vue";
+import AiRepositoryView from "../view/admin/AiRepositoryView.vue";
 
 // 定义路由
 const routes = [
@@ -52,7 +53,8 @@ const routes = [
         name: 'MyFavorite',
         component: MyFavoriteView,
         props: true
-    }
+    },
+    { path: '/admin/aiRepository', component: AiRepositoryView }
 ]
 
 // 创建router实例

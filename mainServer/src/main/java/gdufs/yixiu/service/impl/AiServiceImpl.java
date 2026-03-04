@@ -4,10 +4,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.AiMapper;
 import gdufs.yixiu.dao.UsersMapper;
-import gdufs.yixiu.dto.ai.AiAskRequestDto;
-import gdufs.yixiu.dto.ai.AiAskResponseDto;
-import gdufs.yixiu.dto.ai.AiKnowledgeRequestDto;
-import gdufs.yixiu.dto.ai.AiKnowledgeResponseDto;
+import gdufs.yixiu.dto.ai.*;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.AiChatMessage;
 import gdufs.yixiu.pojo.AiChatSession;
@@ -114,8 +111,43 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
+    public AiKnowledgeResponseDto rebuildKnowledge() {
+        String url = baseUrl + addKnowledgePath + "/rebuild";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<AiKnowledgeResponseDto> entity =
+                new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<AiKnowledgeResponseDto> response =
+                    restTemplate.postForEntity(
+                            url,
+                            entity,
+                            AiKnowledgeResponseDto.class
+                    );
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("AI 知识库重建失败", e);
+            AiKnowledgeResponseDto fail = new AiKnowledgeResponseDto();
+            fail.setCode(500);
+            fail.setMsg("AI 知识服务不可用，重建失败");
+            return fail;
+        }
+    }
+
+    @Override
     public List<AiKnowledge> queryAllKnowledge() {
         return aiMapper.getAllKnowledge();
+    }
+
+    @Override
+    public PageInfo<AiKnowledge> queryKnowledgePage(Integer pageNum, Integer pageSize,
+                                                    String sortBy, String sortOrder) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<AiKnowledge> aiKnowledges = aiMapper.getKnowledgeList(sortBy, sortOrder);
+        return new PageInfo<>(aiKnowledges);
     }
 
     @Override
@@ -158,5 +190,26 @@ public class AiServiceImpl implements AiService {
         PageHelper.startPage(pageNum, pageSize);
         List<AiChatSession> aiChatSessions = aiMapper.getChatSessionByUserId(userId);
         return new PageInfo<>(aiChatSessions);
+    }
+
+    @Override
+    public int modifyKnowledge(KnowledgeModifyDto knowledgeModifyDto) {
+        AiKnowledge aiKnowledge = new AiKnowledge();
+        aiKnowledge.setKnowledgeId(knowledgeModifyDto.getKnowledgeId());
+        if (knowledgeModifyDto.getProblem() != null) {
+            aiKnowledge.setProblem(knowledgeModifyDto.getProblem());
+        }
+        if (knowledgeModifyDto.getSolution() != null) {
+            aiKnowledge.setSolution(knowledgeModifyDto.getSolution());
+        }
+        if (knowledgeModifyDto.getStatus() != null) {
+            aiKnowledge.setStatus(knowledgeModifyDto.getStatus());
+        }
+        return aiMapper.updateKnowledge(aiKnowledge);
+    }
+
+    @Override
+    public int deleteKnowledge(Integer knowledgeId) {
+        return aiMapper.deleteKnowledge(knowledgeId);
     }
 }

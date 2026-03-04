@@ -38,7 +38,7 @@ def load_knowledge():
     conn = get_db()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    cursor.execute("SELECT knowledge_id, problem, solution FROM ai_knowledge")
+    cursor.execute("SELECT knowledge_id, problem, solution FROM ai_knowledge WHERE status = 1")
     rows = cursor.fetchall()
 
     cursor.close()
@@ -70,15 +70,15 @@ def add_knowledge():
     data = request.json
     problem = data.get("problem")
     solution = data.get("solution")
-    source_type = data.get("source_type")
-    source_id = data.get("source_id")
+    source_type = data.get("sourceType")
+    source_id = data.get("sourceId")
 
     if not problem or not solution:
         return jsonify({"code": 400, "msg": "problem 或 solution 不能为空", "data": None})
 
     conn = get_db()
     cursor = conn.cursor()
-    if source_id is None:
+    if source_id is None or source_id == '':
         sql = """
             INSERT INTO ai_knowledge (source_type, problem, solution)
             VALUES (%s, %s, %s)
@@ -104,6 +104,11 @@ def add_knowledge():
 
     return jsonify({"code": 200, "msg": "知识入库成功", "data": knowledge_id})
 
+# ========= 重构TF-IDF向量 =========
+@app.route("/api/v1/ai/knowledge/rebuild", methods=["POST"])
+def rebuild_tfidf():
+    load_knowledge()
+    return jsonify({"code": 200, "msg": "TF-IDF向量重建成功"})
 
 # ========= 智能问答 =========
 @app.route("/api/v1/ai/ask", methods=["POST"])
@@ -167,7 +172,7 @@ def ask():
         "type": "AI",
         "answer": answer,
         "similarity": round(score, 3) if best_id else None,
-        "hit_knowledge_id": best_id
+        "hitKnowledgeId": best_id
     }
 
     if is_new_conversation:

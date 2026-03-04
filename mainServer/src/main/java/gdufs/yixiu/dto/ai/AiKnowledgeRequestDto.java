@@ -11,8 +11,6 @@ import lombok.NoArgsConstructor;
 public class AiKnowledgeRequestDto {
     private String problem;
     private String solution;
-    @JsonProperty("source_type")
     private String sourceType;
-    @JsonProperty("source_id")
     private String sourceId; // log_id
 }

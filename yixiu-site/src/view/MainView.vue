@@ -325,15 +325,18 @@ const loadMessagesByConversation = async (conversationId) => {
                 成员管理
               </el-menu-item>
             </el-sub-menu>
-            <el-sub-menu index="3" v-if="AcceptAdmin(userInfo)">
+            <el-sub-menu index="3" v-if="AcceptVolunteer(userInfo)">
               <template #title>
                 <el-icon>
                   <icon-menu />
                 </el-icon>
                 <span>站务管理</span>
               </template>
-              <el-menu-item index="3-1" @click="() => router.push('/admin/userManage')">
+              <el-menu-item index="3-1" v-if="AcceptAdmin(userInfo)" @click="() => router.push('/admin/userManage')">
                 用户管理
+              </el-menu-item>
+              <el-menu-item index="3-2" @click="() => router.push('/admin/aiRepository')">
+                知识库管理
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="4" v-if="AcceptVolunteer(userInfo)">

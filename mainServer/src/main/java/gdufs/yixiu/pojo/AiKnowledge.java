@@ -16,6 +16,7 @@ public class AiKnowledge {
     private String problem;
     private String solution;
     private Integer status;
+    private Integer hitCount;
     private Timestamp createTime;
     private Timestamp updateTime;
 }

@@ -14,7 +14,6 @@ public class AiAskResponseDto {
     private String type;
     private String answer;
     private Double similarity;
-    @JsonProperty("hit_knowledge_id")
     private Integer hitKnowledgeId;
     private String headline;
 }

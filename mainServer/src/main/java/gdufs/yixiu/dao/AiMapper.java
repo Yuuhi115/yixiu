@@ -17,4 +17,7 @@ public interface AiMapper {
     List<AiChatSession> getChatSessionByUserId(Integer userId);
     List<AiChatMessage> getChatMessageByConversationId(Integer conversationId);
     AiChatSession getChatSessionById(Integer conversationId);
+    List<AiKnowledge> getKnowledgeList(String sortBy, String sortOrder);
+    int updateKnowledge(AiKnowledge aiKnowledge);
+    int deleteKnowledge(Integer knowledgeId);
 }
