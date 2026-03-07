@@ -11,9 +11,11 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RepairLogDto {
+    private Integer logId;
     private Integer requestId;
     private Integer volunteerId;
     private String logContent;
     private String repairDuration;
     private String solutionSummary;
+    private Integer importStatus;
 }

@@ -3,16 +3,19 @@ package gdufs.yixiu.controller;
 import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
+import gdufs.yixiu.dto.RepairLogDto;
 import gdufs.yixiu.dto.ai.*;
 import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
 import gdufs.yixiu.pojo.AiKnowledge;
 import gdufs.yixiu.pojo.AiQuestionLog;
 import gdufs.yixiu.service.AiService;
+import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -27,6 +30,8 @@ public class AiController {
     private JWTUtils jwtUtils;
     @Autowired
     private AiService aiService;
+    @Autowired
+    private TaskService taskService;
     @UserLoginToken
     @PostMapping("/ask")
     public Result ask(@RequestBody AiAskRequestDto aiAskRequestDto,
@@ -83,13 +88,29 @@ public class AiController {
     }
     @VolunteerLoginToken
     @PostMapping("/knowledge")
-    public Result addKnowledge(@RequestBody AiKnowledgeRequestDto aiKnowledgeDto,
+    public Result addKnowledge(@RequestBody @Validated AiKnowledgeRequestDto aiKnowledgeDto,
                                HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         AiKnowledgeResponseDto result = aiService.addKnowledge(aiKnowledgeDto);
         if (result.getCode() != 200){
             return Result.fail(result.getCode(), result.getMsg());
+        }
+        if (aiKnowledgeDto.getSourceId() != null){
+            String source = aiKnowledgeDto.getSourceId().split("_")[0];
+            Integer sourceId = Integer.parseInt(aiKnowledgeDto.getSourceId().split("_")[1]);
+            log.info("知识来源为{}，{}_id为{}", source, source, sourceId);
+            if (source.equals("log")){
+                RepairLogDto repairLogDto = new RepairLogDto();
+                repairLogDto.setLogId(sourceId);
+                repairLogDto.setImportStatus(1);
+                int row = taskService.updateTaskLogImportStatus(repairLogDto);
+                if (row != 1) {
+                    return Result.fail("更新报修单导入状态失败");
+                }
+            }else {
+                return Result.fail("api开发中");
+            }
         }
         log.info("志愿者(user_id:{})添加知识(knowledge_id:{})成功", userId, result.getData());
         return Result.success(result.getData());

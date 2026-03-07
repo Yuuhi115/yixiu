@@ -96,6 +96,26 @@
             request_id = #{requestId} and volunteer_id = #{volunteerId}
         </where>
     </update>
+    <update id="updateTaskLog">
+        update repair_log
+        <set>
+            <if test="logContent != null">
+                log_content = #{logContent},
+            </if>
+            <if test="repairDuration != null">
+                repair_duration = #{repairDuration},
+            </if>
+            <if test="solutionSummary != null">
+                solution_summary = #{solutionSummary},
+            </if>
+            <if test="importStatus != null">
+                import_status = #{importStatus},
+            </if>
+        </set>
+        <where>
+            log_id = #{logId}
+        </where>
+    </update>
     <delete id="deleteTaskImgByRequestId" parameterType="java.lang.Integer">
         delete from repair_request_img where request_id = #{requestId}
     </delete>

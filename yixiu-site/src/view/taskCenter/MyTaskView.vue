@@ -1,6 +1,6 @@
 <script setup>
 import { Message, Edit, Delete, Search, Plus } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import {
   getUserInfo,
@@ -23,6 +23,14 @@ import {
   ThisVolunteerIsRejectedFromApply, ThisVolunteerNeedFillLog,
   ThisVolunteerWaitingForApplyResult
 } from "../../utils/conditionJudgeUtils.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
+import {addKnowledge} from "../../api/AiApi.js";
+import {formatTime} from "../../utils/timeUtils.js";
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfoRef = ref()
 const activeNames = ref([])
@@ -89,6 +97,7 @@ onMounted(async () => {
   await queryUserInfo()
   await loadTaskList()
   await checkVolunteerPermission(localStorage.getItem("role"))
+  await notificationStore.syncUnreadCount()
 })
 
 const queryUserInfo = async () => {
@@ -419,6 +428,34 @@ const isTaskLeader = (task) => {
       assign.isLeader === 1
   )
 }
+
+//维修日志导入知识库
+const addToKnowledgeBase = async (log) => {
+  ElMessageBox.confirm(
+      `确认要将该日志录入到知识库吗？`,
+      `知识库录入确认`,
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(async () => {
+    let data = {
+      sourceType: 1,
+      sourceId: "log_" + log.logId,
+      problem: log.logContent,
+      solution: log.solutionSummary,
+    }
+    const response = await addKnowledge(data)
+    if (response.code !== 200) {
+      ElMessage.error('录入失败：' + response.msg)
+      return
+    }
+    ElMessage.success('录入成功，知识id：' + response.data)
+  }).catch(()=>{
+    ElMessage.info('操作已取消')
+  });
+}
 </script>
 
 <template>
@@ -451,8 +488,8 @@ const isTaskLeader = (task) => {
                 <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button @click="() => router.push('/user/messageCenter')" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
             </div>
@@ -647,10 +684,10 @@ const isTaskLeader = (task) => {
                         <div v-else>
                           <div v-for="(log, logIndex) in task.repairLog" :key="logIndex" class="log-item">
                             <p><strong>维修人员:</strong> {{ log.volunteerName }}</p>
-                            <p><strong>维修内容:</strong> {{ log.logContent }}</p>
+                            <p class="log-text"><strong>维修内容:</strong> {{ log.logContent }}</p>
                             <p><strong>维修时长:</strong> {{ log.repairDuration }}</p>
-                            <p><strong>解决方案:</strong> {{ log.solutionSummary }}</p>
-                            <p><strong>提交时间:</strong> {{ log.uploadTime }}</p>
+                            <p class="log-text"><strong>解决方案:</strong> {{ log.solutionSummary }}</p>
+                            <p><strong>提交时间:</strong> {{ formatTime(log.uploadTime) }}</p>
                             <div class="log-images" v-if="log.logImgUrl && log.logImgUrl.length > 0">
                               <h5>维修过程图片:</h5>
                               <el-image
@@ -663,6 +700,10 @@ const isTaskLeader = (task) => {
                                   class="log-image"
                                   lazy
                               />
+                            </div>
+                            <div style="text-align: right; margin-top: 10px;">
+                              <el-button v-if="log.importStatus !== 1" type="primary" @click="addToKnowledgeBase(log)">导入知识库</el-button>
+                              <el-text type="success" v-else>已录入知识库</el-text>
                             </div>
                           </div>
                         </div>
@@ -1058,6 +1099,13 @@ const isTaskLeader = (task) => {
   background-color: white;
   border-radius: 4px;
   border-left: 3px solid #409eff;
+  width: 300px;
+}
+
+.log-text {
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
 }
 
 .log-images {

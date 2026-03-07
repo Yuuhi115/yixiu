@@ -135,6 +135,8 @@ const inputMessage = ref('')
 const scrollbarRef = ref(null)
 
 const currentAiAnswer = ref()
+// AI思考中
+const isThinking = ref(false)
 
 // 发送消息函数
 const sendMessage = async () => {
@@ -146,6 +148,9 @@ const sendMessage = async () => {
   // 清空输入框
   const userMessage = inputMessage.value
   inputMessage.value = ''
+
+  // 设置思考状态为 true
+  isThinking.value = true
 
   try {
     // 调用后端接口发送消息
@@ -175,6 +180,8 @@ const sendMessage = async () => {
     }
   } catch (error) {
     ElMessage.error('发送失败，请稍后再试')
+  } finally {
+    isThinking.value = false
   }
 }
 
@@ -414,7 +421,7 @@ const loadMessagesByConversation = async (conversationId) => {
                     <el-icon><Clock /></el-icon>
                   </div>
                   <template #dropdown>
-                    <el-dropdown-menu>
+                    <el-dropdown-menu class="history-dropdown-menu">
                       <el-dropdown-item
                           v-for="conv in historyConversations"
                           :key="conv.conversationId"
@@ -456,6 +463,24 @@ const loadMessagesByConversation = async (conversationId) => {
                     </div>
                   </div>
                 </div>
+
+                <!-- AI 思考中的提示 -->
+                <div v-if="isThinking" class="message-wrapper">
+                  <div class="message-container ai-container">
+                    <div class="avatar ai-avatar">
+                      <img src="../assets/yixiu-ai.png" alt="AI头像" />
+                    </div>
+                    <div class="message-bubble ai-message thinking-bubble">
+                      <div class="thinking-content">
+                        <span class="thinking-dot">●</span>
+                        <span class="thinking-dot">●</span>
+                        <span class="thinking-dot">●</span>
+                        <span class="thinking-text">AI 正在思考中...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </el-scrollbar>
 
               <!-- 输入区域 -->
@@ -628,7 +653,50 @@ const loadMessagesByConversation = async (conversationId) => {
   word-wrap: break-word;
   line-height: 1.4;
 }
+.thinking-bubble {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+}
 
+.thinking-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.thinking-dot {
+  font-size: 20px;
+  color: #909399;
+  animation: thinking-bounce 1.4s infinite ease-in-out both;
+  line-height: 1;
+}
+
+.thinking-dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.thinking-dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes thinking-bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.thinking-text {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 8px;
+  font-style: italic;
+}
 
 .chat-input-area {
   background-color: #fff;
@@ -662,6 +730,11 @@ const loadMessagesByConversation = async (conversationId) => {
 .create-time {
   font-size: 12px;
   color: #999;
+}
+
+.history-dropdown-menu {
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .history-btn {

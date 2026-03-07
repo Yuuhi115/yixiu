@@ -1,6 +1,6 @@
 <script setup>
-import { Edit, Delete, Search, Plus, Download, ArrowUp, ArrowDown, Sort, SwitchButton } from "@element-plus/icons-vue";
-import { onMounted, reactive, ref } from "vue";
+import { Edit, Delete, Search, Plus, Download, ArrowUp, ArrowDown, Sort, SwitchButton, Message } from "@element-plus/icons-vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import { getUserInfo } from "../../api/userApi.js";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -8,8 +8,14 @@ import router from "../../router/index.js";
 import {AcceptAdmin, AcceptSuperAdmin} from "../../utils/roleCheckUtils.js";
 import {addKnowledge, deleteKnowledge, getKnowledgeList, rebuildKnowledge, updateKnowledge} from "../../api/AiApi.js";
 import {formatTime} from "../../utils/timeUtils.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
 
 const userInfoRef = ref()
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfo = reactive({
   userId: "",
@@ -184,6 +190,7 @@ const submitForm = () => {
             return
           }
           ElMessage.success('编辑成功')
+          await rebuildKnowledge()
         }else {
           response = await addKnowledge(data)
           if (response.code !== 200){
@@ -195,7 +202,6 @@ const submitForm = () => {
         resetForm()
         dialogVisible.value = false
         await fetchKnowledgeList()
-        await rebuildKnowledge()
       } catch (error) {
         ElMessage.error('编辑失败：' + error.message)
       } finally {
@@ -252,6 +258,7 @@ const handleAddKnowledge = () => {
 onMounted(async () => {
   await fetchKnowledgeList()
   await queryUserInfo()
+  await notificationStore.syncUnreadCount()
 })
 
 // 获取知识列表
@@ -353,8 +360,8 @@ const getStatusTagType = (status) => {
                 <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button @click="() => router.push('/user/messageCenter')" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
             </div>

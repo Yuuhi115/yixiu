@@ -470,4 +470,14 @@ public class TaskServiceImpl implements TaskService {
         taskMapper.deleteTaskLogImgByLogId(logId);
     }
 
+    @Override
+    public int updateTaskLogImportStatus(RepairLogDto repairLogDto) {
+        if (repairLogDto.getLogId() == null)
+            return 0;
+        RepairLog repairLog = new RepairLog();
+        repairLog.setLogId(repairLogDto.getLogId());
+        if (repairLogDto.getImportStatus() != null)
+            repairLog.setImportStatus(repairLogDto.getImportStatus());
+        return taskMapper.updateTaskLog(repairLog);
+    }
 }

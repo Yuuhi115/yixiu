@@ -1,6 +1,6 @@
 <script setup>
 import {Message} from "@element-plus/icons-vue";
-import {onMounted, reactive, ref} from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import {
   getRepairFormByUserId,
@@ -29,6 +29,14 @@ import {
   ThisVolunteerNotAttended,
   ThisVolunteerWaitingForApplyResult
 } from "../../utils/conditionJudgeUtils.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
+import {addKnowledge} from "../../api/AiApi.js";
+import {formatTime} from "../../utils/timeUtils.js";
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfoRef = ref()
 
@@ -96,6 +104,7 @@ onMounted(async () => {
   await queryUserInfo()
   await loadTaskList()
   await checkVolunteerPermission(localStorage.getItem("role"))
+  await notificationStore.syncUnreadCount()
 })
 
 const queryUserInfo = async () => {
@@ -507,6 +516,35 @@ const submitRejectReason = async () => {
   rejectDialogVisible.value = false
   await loadTaskListCondition()
 }
+
+//维修日志导入知识库
+const addToKnowledgeBase = async (log) => {
+  ElMessageBox.confirm(
+      `确认要将该日志录入到知识库吗？`,
+      `知识库录入确认`,
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(async () => {
+    let data = {
+      sourceType: 1,
+      sourceId: "log_" + log.logId,
+      problem: log.logContent,
+      solution: log.solutionSummary,
+    }
+    const response = await addKnowledge(data)
+    if (response.code !== 200) {
+      ElMessage.error('录入失败：' + response.msg)
+      return
+    }
+    ElMessage.success('录入成功，知识id：' + response.data)
+    await loadTaskListCondition()
+  }).catch(()=>{
+    ElMessage.info('操作已取消')
+  });
+}
 </script>
 
 <template>
@@ -539,8 +577,8 @@ const submitRejectReason = async () => {
                 <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button @click="router.push('/user/messageCenter')" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
             </div>
@@ -716,6 +754,70 @@ const submitRejectReason = async () => {
                     <div class="detail-item full-width" v-else>
                       <span class="detail-label">故障图片:</span>
                       <span class="detail-value">无图片</span>
+                    </div>
+
+                    <!-- 维修日志 -->
+                    <div class="detail-item full-width">
+                      <span class="detail-label">维修日志:</span>
+                      <div class="detail-value logs-section">
+                        <el-empty v-if="!task.repairLog || task.repairLog.length === 0" description="暂无维修日志"/>
+                        <div v-else>
+                          <div v-for="(log, logIndex) in task.repairLog" :key="logIndex" class="log-item">
+                            <p><strong>维修人员:</strong> {{ log.volunteerName }}</p>
+                            <p class="log-text"><strong>维修内容:</strong> {{ log.logContent }}</p>
+                            <p><strong>维修时长:</strong> {{ log.repairDuration }}</p>
+                            <p class="log-text"><strong>解决方案:</strong> {{ log.solutionSummary }}</p>
+                            <p><strong>提交时间:</strong> {{ formatTime(log.uploadTime) }}</p>
+                            <div class="log-images" v-if="log.logImgUrl && log.logImgUrl.length > 0">
+                              <h5>维修过程图片:</h5>
+                              <el-image
+                                  v-for="(img, imgIdx) in log.logImgUrl"
+                                  :key="imgIdx"
+                                  :src="img"
+                                  :preview-src-list="log.logImgUrl"
+                                  :initial-index="imgIdx"
+                                  fit="cover"
+                                  class="log-image"
+                                  lazy
+                              />
+                            </div>
+                            <div style="text-align: right; margin-top: 10px;">
+                              <el-button v-if="log.importStatus !== 1" type="primary" @click="addToKnowledgeBase(log)">导入知识库</el-button>
+                              <el-text type="success" v-else>已录入知识库</el-text>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- 队员信息 -->
+                    <div class="detail-item full-width">
+                      <span class="detail-label">任务队员:</span>
+                      <div class="detail-value team-section">
+                        <el-empty v-if="!task.repairAssignment || task.repairAssignment.length === 0" description="暂无队员信息"/>
+                        <div v-else>
+                          <div v-for="(member, idx) in task.repairAssignment.filter(assignment => assignment.status !== 5 && assignment.status !== 6)" :key="idx" class="team-member">
+                            <el-card class="member-card">
+                              <div class="member-info">
+                                <el-avatar :src="member.avatar" :size="40" />
+                                <div class="member-details">
+                                  <div class="member-name-status">
+                                    <span class="member-name">{{ member.volunteerName }}</span>
+                                    <el-tag :type="member.isLeader === 1 ? 'success' : 'primary'" size="small" class="member-role">
+                                      {{ member.isLeader === 1 ? '负责人' : '队员' }}
+                                    </el-tag>
+                                  </div>
+                                  <div class="member-other-info">
+                                    <p class="member-id">ID: {{ member.volunteerId }}</p>
+                                    <p class="member-class">班级: {{ member.majorClass }}</p>
+                                    <p class="member-grade">年级: {{ member.grade }}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </el-card>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     <div class="detail-footer">
@@ -1053,5 +1155,91 @@ const submitRejectReason = async () => {
   color: #909399;
   margin-top: 5px;
   margin-left: 10px;
+}
+.logs-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+.log-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: white;
+  border-radius: 4px;
+  border-left: 3px solid #409eff;
+  width: 300px;
+}
+.log-text {
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+}
+
+.log-images {
+  margin-top: 10px;
+}
+
+.log-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+.team-section, .join-requests-section {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.team-member {
+  display: inline-block;
+  margin-right: 10px;
+  margin-bottom: 5px;
+}
+
+.member-card {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.member-info {
+  display: flex;
+  align-items: center;
+}
+
+.member-info .el-avatar {
+  margin-right: 15px;
+}
+
+.member-details {
+  flex: 1;
+}
+
+.member-name-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.member-name {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.member-role {
+  margin-right: 8px;
+}
+
+.member-other-info {
+  font-size: 13px;
+  color: #606266;
+}
+
+.member-other-info p {
+  margin: 3px 0;
+  line-height: 1.4;
 }
 </style>

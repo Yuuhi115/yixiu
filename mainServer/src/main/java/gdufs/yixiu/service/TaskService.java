@@ -25,6 +25,7 @@ public interface TaskService {
     Integer addTaskLog(RepairLogDto repairLogDto);
     List<RepairLogImg> queryTaskLogImgByLogId(Integer logId);
     void deleteTaskLogImgByLogId(Integer logId);
+    int updateTaskLogImportStatus(RepairLogDto repairLogDto);
 
     PageInfo<RepairRequestDto> queryMyTaskByVolunteerId(Integer volunteerId, Integer pageNum, Integer pageSize);
     PageInfo<RepairRequestDto> queryMyTaskByFilter(TaskFilterDto taskFilterDto, Integer pageNum, Integer pageSize);

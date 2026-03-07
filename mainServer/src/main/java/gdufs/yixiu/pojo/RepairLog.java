@@ -19,5 +19,6 @@ public class RepairLog {
     private String repairDuration;
     private String solutionSummary;
     private Timestamp uploadTime;
+    private Integer importStatus;
     private List<String> logImgUrl;
 }
