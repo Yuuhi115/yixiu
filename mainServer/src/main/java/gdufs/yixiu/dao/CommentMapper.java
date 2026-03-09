@@ -1,10 +1,13 @@
 package gdufs.yixiu.dao;
 
+import gdufs.yixiu.dto.UserCommentListDto;
+import gdufs.yixiu.dto.UserReplyListDto;
 import gdufs.yixiu.dto.community.request.RequestCommentDto;
 import gdufs.yixiu.dto.community.request.RequestReplyDto;
 import gdufs.yixiu.dto.community.vo.CommentStatisticCountVO;
 import gdufs.yixiu.dto.community.vo.PostCommentStatisticVO;
 import gdufs.yixiu.dto.community.vo.ReplyStatisticCountVO;
+import gdufs.yixiu.dto.filter.UserCommentListFilter;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.PostCommentReply;
 import org.apache.ibatis.annotations.Mapper;
@@ -64,4 +67,6 @@ public interface CommentMapper {
             @Param("userId") Integer userId,
             @Param("replyIds") List<Integer> replyIds
     );
+    List<UserCommentListDto> findUserCommentListByFilter(UserCommentListFilter userCommentListFilter);
+    List<UserReplyListDto> findUserReplyListByFilter(UserCommentListFilter userCommentListFilter);
 }

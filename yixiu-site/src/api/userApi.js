@@ -121,3 +121,7 @@ export function addProfileView(userId){
     data.append('userId', userId)
     return request.post("/users/addProfileView", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
+
+export function getUsersByFilter(params){
+    return request.get("/users/getByFilter", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+}

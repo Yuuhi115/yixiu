@@ -155,9 +155,6 @@ defineProps({
                 <el-button style="margin-bottom: 10px" type="default" @click="() => router.push('/user/messageCenter')" :icon="Message" circle/>
               </el-badge>
             </div>
-            <div class="component-center">
-              <el-button type="danger" @click="logout">退出登录</el-button>
-            </div>
           </div>
         </el-col>
       </el-row>

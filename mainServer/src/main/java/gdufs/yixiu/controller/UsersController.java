@@ -1,5 +1,6 @@
 package gdufs.yixiu.controller;
 
+import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.dto.UserBasicInfoDto;
@@ -9,6 +10,7 @@ import gdufs.yixiu.dto.community.request.FollowListFilterDto;
 import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
 import gdufs.yixiu.dto.community.response.ProfileDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.filter.UserListFilter;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.UsersService;
@@ -211,5 +213,12 @@ public class UsersController {
         Integer viewerId = jwtUtils.getInfoFromToken(token).getId();
         ProfileDto profileDto = usersService.queryProfileDtoByUserId(userId, viewerId);
         return Result.success(profileDto);
+    }
+    @AdminLoginToken
+    @GetMapping("/getByFilter")
+    public Result queryUserListByFilter(@RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                        @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+                                        UserListFilter userListFilter){
+        return Result.success(usersService.queryUserListByFilter(pageNum, pageSize, userListFilter));
     }
 }

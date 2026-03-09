@@ -144,5 +144,116 @@
             parameterType="java.lang.Integer">
         select * from post_comment_reply where reply_id = #{replyId}
     </select>
-
+    <select id="findUserCommentListByFilter" resultType="gdufs.yixiu.dto.UserCommentListDto"
+            parameterType="gdufs.yixiu.dto.filter.UserCommentListFilter">
+        select
+        pc.user_id as userId,
+        pc.comment_id as commentId,
+        pc.post_id as postId,
+        pc.content as content,
+        pc.status as status,
+        pc.create_time as createTime,
+        COALESCE(like_count.get_like_count, 0) as likeCount,
+        COALESCE(reply_count.get_reply_count, 0) as replyCount
+        from post_comment pc
+        left join (
+        select comment_id, count(*) as get_like_count
+        from comment_like
+        group by comment_id
+        ) like_count on pc.comment_id = like_count.comment_id
+        left join (
+        select comment_id, count(*) as get_reply_count
+        from post_comment_reply
+        where status = 0
+        group by comment_id
+        ) reply_count on pc.comment_id = reply_count.comment_id
+        <where>
+            pc.user_id = #{userId}
+            <if test="status != null">
+                AND pc.status = #{status}
+            </if>
+        </where>
+        <if test="sortBy != null">
+            <choose>
+                <when test="sortBy == 1">
+                    ORDER BY pc.create_time
+                </when>
+                <when test="sortBy == 2">
+                    ORDER BY replyCount
+                </when>
+                <when test="sortBy == 3">
+                    ORDER BY likeCount
+                </when>
+                <otherwise>
+                    ORDER BY pc.create_time
+                </otherwise>
+            </choose>
+        </if>
+        <if test="sortOrder != null">
+            <choose>
+                <when test="sortOrder == 1">
+                    ASC
+                </when>
+                <when test="sortOrder == 2">
+                    DESC
+                </when>
+            </choose>
+        </if>
+    </select>
+    <select id="findUserReplyListByFilter" resultType="gdufs.yixiu.dto.UserReplyListDto"
+            parameterType="gdufs.yixiu.dto.filter.UserCommentListFilter">
+        select
+        r.from_user_id as userId,
+        r.reply_id as replyId,
+        r.comment_id as commentId,
+        c.post_id as postId,
+        r.status as status,
+        r.content as content,
+        r.create_time as createTime,
+        COALESCE(like_count.like_count, 0) as likeCount,
+        COALESCE(reply_count.reply_count, 0) as replyCount
+        from post_comment_reply r
+        inner join post_comment c on r.comment_id = c.comment_id
+        left join (
+        select reply_id, count(*) as like_count
+        from reply_like
+        group by reply_id
+        ) like_count on r.reply_id = like_count.reply_id
+        left join (
+        select r2.parent_reply_id, count(*) as reply_count
+        from post_comment_reply r2
+        where r2.status = 0 and r2.parent_reply_id is not null
+        group by r2.parent_reply_id
+        ) reply_count on r.reply_id = reply_count.parent_reply_id
+        <where>
+            r.from_user_id = #{userId}
+            <if test="status != null">
+                AND r.status = #{status}
+            </if>
+        </where>
+        <choose>
+            <when test="sortBy == 1">
+                ORDER BY r.create_time
+            </when>
+            <when test="sortBy == 2">
+                ORDER BY replyCount
+            </when>
+            <when test="sortBy == 3">
+                ORDER BY likeCount
+            </when>
+            <otherwise>
+                ORDER BY r.create_time
+            </otherwise>
+        </choose>
+        <if test="sortOrder != null">
+            <choose>
+                <when test="sortOrder == 1">
+                    ASC
+                </when>
+                <when test="sortOrder == 2">
+                    DESC
+                </when>
+            </choose>
+        </if>
+    </select>
 </mapper>

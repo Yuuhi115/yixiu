@@ -4,6 +4,8 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.CommentMapper;
 import gdufs.yixiu.dao.UsersMapper;
+import gdufs.yixiu.dto.UserCommentListDto;
+import gdufs.yixiu.dto.UserReplyListDto;
 import gdufs.yixiu.dto.community.request.RequestCommentDto;
 import gdufs.yixiu.dto.community.request.RequestReplyDto;
 import gdufs.yixiu.dto.community.vo.CommentStatisticCountVO;
@@ -11,6 +13,7 @@ import gdufs.yixiu.dto.community.vo.ReplyStatisticCountVO;
 import gdufs.yixiu.dto.community.response.ResponseCommentDto;
 import gdufs.yixiu.dto.community.response.ResponseReplyDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.filter.UserCommentListFilter;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.PostCommentReply;
 import gdufs.yixiu.service.CommentService;
@@ -203,6 +206,20 @@ public class CommentServiceImpl implements CommentService {
                         UserInfoVO::getUserId,
                         Function.identity()
                 ));
+    }
+
+    @Override
+    public PageInfo<UserCommentListDto> getUserCommentList(UserCommentListFilter userCommentListFilter, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<UserCommentListDto> userCommentList = commentMapper.findUserCommentListByFilter(userCommentListFilter);
+        return new PageInfo<>(userCommentList);
+    }
+
+    @Override
+    public PageInfo<UserReplyListDto> getUserReplyList(UserCommentListFilter userCommentListFilter, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<UserReplyListDto> userCommentList = commentMapper.findUserReplyListByFilter(userCommentListFilter);
+        return new PageInfo<>(userCommentList);
     }
 
 

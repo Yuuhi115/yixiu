@@ -6,6 +6,7 @@ import gdufs.yixiu.dao.PostMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
+import gdufs.yixiu.dto.UserListDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.community.request.FollowListFilterDto;
@@ -14,6 +15,7 @@ import gdufs.yixiu.dto.community.response.ProfileDto;
 import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
 import gdufs.yixiu.dto.community.vo.LikeListIdsVO;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.filter.UserListFilter;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.UserFollow;
 import gdufs.yixiu.pojo.Users;
@@ -251,6 +253,16 @@ public class UsersServiceImpl implements UsersService {
         profileDto.setVisitedNum(usersMapper.findProfileViewCount(userId));
         profileDto.setRole(user.getRole());
         return profileDto;
+    }
+
+    @Override
+    public PageInfo<UserListDto> queryUserListByFilter(Integer pageNum, Integer pageSize, UserListFilter userListFilter) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<UserListDto> usersList = usersMapper.findUserListByFilter(userListFilter);
+        for (UserListDto userListDto : usersList){
+            userListDto.setAvatar(avatarPath + userListDto.getAvatar());
+        }
+        return new PageInfo<>(usersList);
     }
 
     @Override

@@ -783,9 +783,9 @@ const addToKnowledgeBase = async (log) => {
                     </div>
                     <div class="detail-footer">
                       <div class="time-info">
-                        <span>创建时间: {{ task.createTime }}</span>
-                        <span>完成时间: {{ task.completeTime }}</span>
-                        <span>更新时间: {{ task.updateTime }}</span>
+                        <span>创建时间: {{ formatTime(task.createTime) }}</span>
+                        <span>完成时间: {{ formatTime(task.completeTime) }}</span>
+                        <span>更新时间: {{ formatTime(task.updateTime) }}</span>
                       </div>
 
                       <!-- 操作按钮 -->

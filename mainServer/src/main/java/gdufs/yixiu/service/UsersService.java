@@ -2,6 +2,7 @@ package gdufs.yixiu.service;
 
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.UserBasicInfoDto;
+import gdufs.yixiu.dto.UserListDto;
 import gdufs.yixiu.dto.UserModifyDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.community.request.FollowListFilterDto;
@@ -9,6 +10,7 @@ import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
 import gdufs.yixiu.dto.community.response.ProfileDto;
 import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.filter.UserListFilter;
 import gdufs.yixiu.pojo.UserFollow;
 import gdufs.yixiu.pojo.Users;
 
@@ -36,4 +38,6 @@ public interface UsersService {
     UserInfoVO queryUserInfoVOById(Integer userId);
     int addProfileView(Integer viewerId, Integer userId, String ip);
     ProfileDto queryProfileDtoByUserId(Integer userId, Integer viewerId);
+
+    PageInfo<UserListDto> queryUserListByFilter(Integer pageNum, Integer pageSize, UserListFilter userListFilter);
 }

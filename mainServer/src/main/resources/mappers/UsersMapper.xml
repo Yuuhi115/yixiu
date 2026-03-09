@@ -130,6 +130,100 @@
             parameterType="java.lang.Integer">
         select user_id,username,avatar,user_signature from users where user_id = #{userId}
     </select>
+    <select id="findUserListByFilter" resultType="gdufs.yixiu.dto.UserListDto"
+            parameterType="gdufs.yixiu.dto.filter.UserListFilter">
+        select
+        u.user_id,
+        u.username,
+        u.avatar,
+        u.real_name,
+        u.email,
+        u.role,
+        u.user_signature,
+        u.status,
+        u.create_time,
+        u.update_time,
+        u.last_login,
+        COALESCE(like_count.get_like_count, 0) as getLikeCount,
+        COALESCE(post_count.post_count, 0) as postCount,
+        COALESCE(comment_count.comment_count, 0) as commentCount,
+        COALESCE(reply_count.reply_count, 0) as replyCount
+        from users u
+        left join (
+        select user_id, count(*) as get_like_count
+        from (
+        select user_id from post_like
+        union all
+        select user_id from comment_like
+        union all
+        select user_id from reply_like
+        ) all_likes
+        group by user_id
+        ) like_count on u.user_id = like_count.user_id
+        left join (
+        select user_id, count(*) as post_count
+        from post
+        where status = 0
+        group by user_id
+        ) post_count on u.user_id = post_count.user_id
+        left join (
+        select user_id, count(*) as comment_count
+        from post_comment
+        where status = 0
+        group by user_id
+        ) comment_count on u.user_id = comment_count.user_id
+        left join (
+        select from_user_id, count(*) as reply_count
+        from post_comment_reply
+        where status = 0
+        group by from_user_id
+        ) reply_count on u.user_id = reply_count.from_user_id
+        <where>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
+            <if test="searchName != null and searchName != ''">
+                AND (u.username like CONCAT('%', #{searchName}, '%')
+                OR u.real_name like CONCAT('%', #{searchName}, '%'))
+            </if>
+            <if test="role != null">
+                AND u.role = #{role}
+            </if>
+        </where>
+        <if test="sortBy != null">
+            <choose>
+                <when test="sortBy == 1">
+                    ORDER BY u.create_time
+                </when>
+                <when test="sortBy == 2">
+                    ORDER BY u.last_login
+                </when>
+                <when test="sortBy == 3">
+                    ORDER BY getLikeCount
+                </when>
+                <when test="sortBy == 4">
+                    ORDER BY postCount
+                </when>
+                <when test="sortBy == 5">
+                    ORDER BY commentCount
+                </when>
+                <when test="sortBy == 6">
+                    ORDER BY replyCount
+                </when>
+            </choose>
+            <if test="sortOrder != null">
+                <choose>
+                    <when test="sortOrder == 1">
+                        ASC
+                    </when>
+                    <when test="sortOrder == 2">
+                        DESC
+                    </when>
+                </choose>
+            </if>
+        </if>
+    </select>
+
     <update id="updateUser" parameterType="gdufs.yixiu.pojo.Users">
         update users
         <set>

@@ -1,18 +1,25 @@
 package gdufs.yixiu.controller;
 
+import com.github.pagehelper.PageInfo;
+import gdufs.yixiu.annotation.AdminLoginToken;
 import gdufs.yixiu.annotation.UserLoginToken;
+import gdufs.yixiu.dto.UserCommentListDto;
 import gdufs.yixiu.dto.community.request.CommentReplyDto;
 import gdufs.yixiu.dto.community.request.RequestCommentDto;
 import gdufs.yixiu.dto.community.request.RequestReplyDto;
+import gdufs.yixiu.dto.filter.UserCommentListFilter;
+import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.service.CommentService;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -122,5 +129,21 @@ public class CommentController {
             result = commentService.deleteReply(commentReplyDto.getReplyId());
         }
         return result == 1 ? Result.success(null) : Result.fail("删除失败");
+    }
+    @AdminLoginToken
+    @GetMapping("/getByUserId")
+    public Result getCommentByUserId(@RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                     @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+                                     @Validated UserCommentListFilter userCommentListFilter
+                                     ){
+        return Result.success(commentService.getUserCommentList(userCommentListFilter, pageNum, pageSize));
+    }
+    @AdminLoginToken
+    @GetMapping("/getReplyByUserId")
+    public Result getReplyByUserId(@RequestParam(name = "pageNum", defaultValue = "1") Integer pageNum,
+                                  @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+                                  @Validated UserCommentListFilter userCommentListFilter
+                                  ){
+        return Result.success(commentService.getUserReplyList(userCommentListFilter, pageNum, pageSize));
     }
 }

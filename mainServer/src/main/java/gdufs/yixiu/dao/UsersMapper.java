@@ -1,11 +1,15 @@
 package gdufs.yixiu.dao;
 
+import gdufs.yixiu.dto.UserCommentListDto;
+import gdufs.yixiu.dto.UserListDto;
 import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.community.request.FollowListFilterDto;
 import gdufs.yixiu.dto.community.response.CommunityStatisticDto;
 import gdufs.yixiu.dto.community.response.ResponseFollowListDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
+import gdufs.yixiu.dto.filter.UserCommentListFilter;
+import gdufs.yixiu.dto.filter.UserListFilter;
 import gdufs.yixiu.pojo.UserFollow;
 import gdufs.yixiu.pojo.Users;
 import org.apache.ibatis.annotations.Mapper;
@@ -46,4 +50,8 @@ public interface UsersMapper {
                           @Param("userId") Integer userId,
                           @Param("ip") String ip);
     Integer findProfileViewCount(@Param("viewedId") Integer viewedId);
+
+    //用户列表
+    List<UserListDto> findUserListByFilter(UserListFilter userListFilter);
+    List<UserCommentListDto> findUserCommentListByFilter(UserCommentListFilter userCommentListFilter);
 }

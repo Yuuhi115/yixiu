@@ -1,11 +1,14 @@
 package gdufs.yixiu.service;
 
 import com.github.pagehelper.PageInfo;
+import gdufs.yixiu.dto.UserCommentListDto;
+import gdufs.yixiu.dto.UserReplyListDto;
 import gdufs.yixiu.dto.community.request.RequestCommentDto;
 import gdufs.yixiu.dto.community.request.RequestReplyDto;
 import gdufs.yixiu.dto.community.response.ResponseCommentDto;
 import gdufs.yixiu.dto.community.response.ResponseReplyDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.filter.UserCommentListFilter;
 import gdufs.yixiu.pojo.PostComment;
 import gdufs.yixiu.pojo.PostCommentReply;
 
@@ -32,4 +35,6 @@ public interface CommentService {
     List<ResponseCommentDto> postCommentToResponseCommentDto(List<PostComment> postComments, Integer userId);
     Map<Integer, List<ResponseReplyDto>> buildReplyGroup(List<PostCommentReply> replies, Integer userId);
     Map<Integer, UserInfoVO> getUserInfoMap(List<Integer> userIds);
+    PageInfo<UserCommentListDto> getUserCommentList(UserCommentListFilter userCommentListFilter, Integer pageNum, Integer pageSize);
+    PageInfo<UserReplyListDto> getUserReplyList(UserCommentListFilter userCommentListFilter, Integer pageNum, Integer pageSize);
 }

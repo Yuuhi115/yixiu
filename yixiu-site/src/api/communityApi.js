@@ -62,7 +62,9 @@ export function addCommentLike(commentId){
     return request.post("/community/comment/modifyCommentLike", data ,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function deleteComment(commentId){
-    return request.put("/community/comment/delete", {commentId: commentId}, {headers: {Authorization: Cookie.get("Authorization")}})
+    let data = new FormData()
+    data.append('commentId', commentId)
+    return request.put("/community/comment/delete", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*
 * params:
@@ -135,4 +137,11 @@ export function getUserProfileByUserId(userId){
 
 export function getFavoritePostInfoList(params){
     return request.get("/community/post/getFavoritePostInfo", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+}
+
+export function getUserCommentList(params){
+    return request.get("/community/comment/getByUserId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
+}
+export function getUserReplyList(params){
+    return request.get("/community/comment/getReplyByUserId", {params: params, headers: {Authorization: Cookie.get("Authorization")}})
 }

@@ -17,6 +17,7 @@ import FollowListView from "../view/community/FollowListView.vue";
 import MyFavoriteView from "../view/community/MyFavoriteView.vue";
 import UserProfileView from "../view/community/UserProfileView.vue";
 import AiRepositoryView from "../view/admin/AiRepositoryView.vue";
+import UserManageView from "../view/admin/UserManageView.vue";
 
 // 定义路由
 const routes = [
@@ -25,6 +26,7 @@ const routes = [
     { path: '/', component: MainView },
     { path: '/user/basicInfo', component: UserBasicInfoView },
     { path: '/user/messageCenter', component: messageCenterView },
+    { path: '/admin/userManage', component: UserManageView },
     { path: '/repair/form', component: RepairFormView },
     { path: '/repair/history', component: RepairHistoryView},
     { path: '/admin/memberManage', component: MemberManageView },

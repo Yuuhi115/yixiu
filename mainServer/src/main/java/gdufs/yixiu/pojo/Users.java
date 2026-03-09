@@ -19,10 +19,6 @@ public class Users {
     private String email;
     private String avatar;
     private String userSignature;
-    private String openid;
-    private String unionid;
-    private String wxNickname;
-    private String wxAvatar;
     private String role;
     private String status;
     private Timestamp createTime;
