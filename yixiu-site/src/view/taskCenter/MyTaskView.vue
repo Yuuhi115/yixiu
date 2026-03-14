@@ -242,6 +242,21 @@ const getStatusType = (task) => {
   }
 }
 
+const getContactTypeLabel = (contactType) => {
+  switch (contactType) {
+    case 0:
+      return '手机'
+    case 1:
+      return '邮箱'
+    case 2:
+      return '微信'
+    case 3:
+      return 'QQ'
+    default:
+      return '未知联系方式'
+  }
+}
+
 // 更改任务状态
 const changeTaskStatus = (task, newStatus, action) => {
   const statusLabel = changeableStatusOptions.find(opt => opt.value === newStatus)?.label || '未知状态';
@@ -298,7 +313,7 @@ const maxImageSize = 1024 * 1024 // 1MB
 // 显示完成任务并填写维修日志对话框
 const showCompleteDialog = async (task) => {
   completeForm.taskId = task.requestId
-  completeForm.content = ''
+  completeForm.content = task.problemDescription
   completeForm.duration = ''
   completeForm.solution = ''
   maintenanceImages.value = []
@@ -621,6 +636,12 @@ const addToKnowledgeBase = async (log) => {
                       </el-col>
                       <el-col :span="12">
                         <div class="detail-item">
+                          <span class="detail-label">联系号码:</span>
+                          <span class="detail-value">{{ task.contactInfo }}</span>
+                        </div>
+                      </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
                           <span class="detail-label">预约时间:</span>
                           <span class="detail-value">{{ task.appointmentTime }}</span>
                         </div>
@@ -635,18 +656,6 @@ const addToKnowledgeBase = async (log) => {
                         <div class="detail-item">
                           <span class="detail-label">校区:</span>
                           <span class="detail-value">{{ task.campus === "0" ? '大学城校区' : '白云山校区' }}</span>
-                        </div>
-                      </el-col>
-                      <el-col :span="12">
-                        <div class="detail-item">
-                          <span class="detail-label">创建时间:</span>
-                          <span class="detail-value">{{ task.createTime }}</span>
-                        </div>
-                      </el-col>
-                      <el-col :span="12">
-                        <div class="detail-item">
-                          <span class="detail-label">完成时间:</span>
-                          <span class="detail-value">{{ task.completeTime }}</span>
                         </div>
                       </el-col>
                     </el-row>
@@ -731,6 +740,9 @@ const addToKnowledgeBase = async (log) => {
                                     <p class="member-id">ID: {{ member.volunteerId }}</p>
                                     <p class="member-class">班级: {{ member.majorClass }}</p>
                                     <p class="member-grade">年级: {{ member.grade }}</p>
+                                    <p class="member-grade">联系方式: {{ getContactTypeLabel(member.contactType) }}</p>
+                                    <p class="member-grade">联系号码:</p>
+                                    <p class="member-grade"> {{ member.contactNumber }} </p>
                                   </div>
                                 </div>
                               </div>
@@ -893,9 +905,7 @@ const addToKnowledgeBase = async (log) => {
           <el-form-item label="维修内容" prop="content" required>
             <el-input
                 v-model="completeForm.content"
-                type="textarea"
-                placeholder="请输入维修内容"
-                :rows="3">
+                disabled>
             </el-input>
           </el-form-item>
 

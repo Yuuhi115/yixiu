@@ -172,7 +172,6 @@ const submitForm = () => {
       try {
         let data = {
           sourceType: knowledgeForm.sourceType,
-          sourceId: knowledgeForm.sourceId,
           problem: knowledgeForm.problem,
           solution: knowledgeForm.solution,
           status: knowledgeForm.status
@@ -192,6 +191,9 @@ const submitForm = () => {
           ElMessage.success('编辑成功')
           await rebuildKnowledge()
         }else {
+          if (knowledgeForm.sourceType !== 3){
+            data.sourceId = knowledgeForm.sourceId
+          }
           response = await addKnowledge(data)
           if (response.code !== 200){
             ElMessage.error(response.msg)

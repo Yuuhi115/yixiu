@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -451,6 +452,7 @@ public class TaskServiceImpl implements TaskService {
             RepairRequest repairRequest = new RepairRequest();
             repairRequest.setRequestId(repairLogDto.getRequestId());
             repairRequest.setStatus(3);
+            repairRequest.setCompleteTime(new Timestamp(System.currentTimeMillis()));
             int updateRow = taskMapper.updateTask(repairRequest);
             if (updateRow == 1) {
                 return repairLog.getLogId();

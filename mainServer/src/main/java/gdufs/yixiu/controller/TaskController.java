@@ -14,6 +14,7 @@ import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,7 +39,7 @@ public class TaskController {
 
     @UserLoginToken
     @PostMapping("/add")
-    public Result addTask(@RequestBody RepairRequestDto repairRequestDto,
+    public Result addTask(@RequestBody @Validated RepairRequestDto repairRequestDto,
                           HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
