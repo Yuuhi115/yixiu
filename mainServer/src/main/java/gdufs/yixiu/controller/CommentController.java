@@ -121,6 +121,8 @@ public class CommentController {
             }
             log.info("用户(user_id:{})删除评论(comment_id:{})", userId, commentReplyDto.getCommentId());
             result = commentService.deleteComment(commentReplyDto.getCommentId());
+            Integer deleteReplyCount = commentService.deleteRepliesByCommentId(commentReplyDto.getCommentId());
+            log.info("用户(user_id:{})删除该评论下的{}条回复", userId, deleteReplyCount);
         }else {
             if (!commentService.isReplyOwner(commentReplyDto.getReplyId(), userId) && !role.equals("admin") && !role.equals("super_admin")){
                 return Result.fail("操作无权限");

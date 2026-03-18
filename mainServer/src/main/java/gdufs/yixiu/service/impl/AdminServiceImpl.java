@@ -46,7 +46,7 @@ public class AdminServiceImpl implements AdminService {
     public String loginByEmail(UsersRegisterDto userDto) {
         Users user = usersMapper.findUserByEmailAndRole(userDto.getEmail(), userDto.getRole());
         if (user == null) {
-            user = usersMapper.findSuperAdmin(userDto.getEmail());
+            user = usersMapper.findSuperAdminByEmail(userDto.getEmail());
             if (user == null) {
                 log.info("管理员-{}-未注册", userDto.getEmail());
                 return null;
@@ -87,7 +87,10 @@ public class AdminServiceImpl implements AdminService {
         user.setUserId(volunteerModifyDto.getUserId());
         user.setRealName(volunteerModifyDto.getRealName());
         user.setRole(volunteerModifyDto.getRole());
-
+        String verifiedUserRole = usersMapper.findUserById(user.getUserId()).getRole();
+        if (!verifiedUserRole.equals(user.getRole())) {
+            redisTemplate.delete("token:" + user.getUserId());
+        }
         VolunteerInfo volunteerInfo = new VolunteerInfo();
         volunteerInfo.setUserId(volunteerModifyDto.getUserId());
         volunteerInfo.setStudentNumber(volunteerModifyDto.getStudentNumber());

@@ -228,7 +228,7 @@
         <foreach collection="postIds" item="postId" open="(" separator="," close=")">
             #{postId}
         </foreach>
-
+        AND pc.status = 0
         UNION ALL
 
         -- 二级评论
@@ -239,7 +239,9 @@
         <foreach collection="postIds" item="postId" open="(" separator="," close=")">
             #{postId}
         </foreach>
+        AND pcr.status = 0
         ) t
+
         GROUP BY post_id
     </select>
     <select id="getPostIdsByUserId" resultType="java.lang.Integer">

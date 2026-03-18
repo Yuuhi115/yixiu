@@ -6,6 +6,7 @@ import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.*;
 import gdufs.yixiu.pojo.RepairEvaluate;
 import gdufs.yixiu.pojo.RepairRequest;
+import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.service.VolunteerService;
@@ -201,6 +202,11 @@ public class TaskController {
 //        if (!Arrays.asList("volunteer", "admin", "super_admin").contains(role)) {
 //            return Result.fail("权限不足");
 //        }
+        Integer volunteerId = repairAssignmentDto.getVolunteerId();
+        VolunteerInfo volunteerVerify = volunteerService.queryVolunteerInfoByVolunteerId(volunteerId);
+        if (volunteerVerify == null) {
+            return Result.fail("没有此志愿者");
+        }
         String assignId = taskService.addTaskAssignment(repairAssignmentDto);
         return assignId == null ? Result.fail("添加异常") : Result.success("添加成功(assignId: " + assignId + ")");
     }

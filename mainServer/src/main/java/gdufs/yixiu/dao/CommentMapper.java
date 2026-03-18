@@ -69,4 +69,6 @@ public interface CommentMapper {
     );
     List<UserCommentListDto> findUserCommentListByFilter(UserCommentListFilter userCommentListFilter);
     List<UserReplyListDto> findUserReplyListByFilter(UserCommentListFilter userCommentListFilter);
+
+    int updateReplyStatusByCommentId(@Param("commentId")Integer commentId, @Param("status")Integer status);
 }

@@ -25,7 +25,7 @@ public interface UsersMapper {
     Users findUserById(Integer userId);
     Users findUserByPhoneAndRole(String phone, String role);
     Users findUserByEmailAndRole(String email, String role);
-    Users findSuperAdmin(String email);
+    Users findSuperAdminByEmail(@Param("email")String email);
     int updateUser(Users users);
     List<Integer> findAllUserIds();
     List<Users> findAllVolunteersExcludeMySelf(Integer userId);

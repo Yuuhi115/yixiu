@@ -7,6 +7,7 @@ import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
 import gdufs.yixiu.pojo.Users;
+import gdufs.yixiu.pojo.VolunteerInfo;
 
 public interface VolunteerService {
     String registerByPhone(UsersRegisterDto userDto);
@@ -21,4 +22,5 @@ public interface VolunteerService {
     PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId);
     PageInfo<UserBasicInfoDto> queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto, Integer pageNum, Integer pageSize);
     VolunteerDataVO queryVolunteerDataVO(Integer userId);
+    VolunteerInfo queryVolunteerInfoByVolunteerId(Integer volunteerId);
 }

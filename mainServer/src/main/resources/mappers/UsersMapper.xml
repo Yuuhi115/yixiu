@@ -32,8 +32,8 @@
     <select id="findUserByEmailAndRole" resultType="gdufs.yixiu.pojo.Users">
         select * from users where email = #{email} and role = #{role}
     </select>
-    <select id="findSuperAdmin" resultType="gdufs.yixiu.pojo.Users">
-        select * from users where role = "super_admin"
+    <select id="findSuperAdminByEmail" resultType="gdufs.yixiu.pojo.Users">
+        select * from users where role = "super_admin" and email = #{email}
     </select>
     <select id="findAllUserIds" resultType="java.lang.Integer">
         select user_id from users

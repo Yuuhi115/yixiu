@@ -663,7 +663,7 @@ const submitExportForm = async () => {
           <el-table
               :data="volunteerList"
               v-loading="loading"
-              style="width: 100%; margin-top: 20px;"
+              style="width: 100%; margin-top: 20px; height: 350px"
               stripe
               border
           >

@@ -68,8 +68,12 @@ const countdown = ref(0)
 let timer = null
 
 const sendCaptcha = async () => {
-  if (registerMethod.value === 'phone' && !form.phone) {
-    ElMessage.warning('请输入手机号')
+  // if (registerMethod.value === 'phone' && !form.phone) {
+  //   ElMessage.warning('请输入手机号')
+  //   return
+  // }
+  if (registerMethod.value === 'phone') {
+    ElMessage.info('手机注册API开发中')
     return
   }
   if (registerMethod.value === 'email' && !form.email) {
@@ -109,6 +113,10 @@ onUnmounted(() => {
 const handleRegister = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
+      if (registerMethod.value === 'phone'){
+        ElMessage.info('手机注册API开发中')
+        return
+      }
       console.log('提交注册数据:', form)
       let registerResult;
       if (form.role === 'volunteer'){

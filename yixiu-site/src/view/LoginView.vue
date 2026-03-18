@@ -92,8 +92,12 @@ let timer = null // 再次发送定时器
 
 /*发送验证码*/
 const sendCaptcha = async () => {
-  if (loginMethod.value === 'phone' && !form.phone) {
-    ElMessage.warning('请输入手机号')
+  // if (loginMethod.value === 'phone' && !form.phone) {
+  //   ElMessage.warning('请输入手机号')
+  //   return
+  // }
+  if (loginMethod.value === 'phone') {
+    ElMessage.info('手机登录API开发中')
     return
   }
   if (loginMethod.value === 'email' && !form.email) {
@@ -133,6 +137,10 @@ onUnmounted(() => {
 })
 /* 登录逻辑 */
 const handleLogin = () => {
+  if(loginMethod === 'phone'){
+    ElMessage.info('手机登录API开发中')
+    return
+  }
   formRef.value.validate(async (valid) => {
     if (valid) {
       console.log('提交表单数据:', form)

@@ -201,4 +201,9 @@ public class VolunteerServiceImpl implements VolunteerService {
             return volunteerDataVO;
         }
     }
+
+    @Override
+    public VolunteerInfo queryVolunteerInfoByVolunteerId(Integer volunteerId) {
+        return volunteerMapper.findVolunteerInfoByVolunteerId(volunteerId);
+    }
 }

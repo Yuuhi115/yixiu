@@ -29,6 +29,7 @@ public interface CommentService {
     PostCommentReply getReplyByReplyId(Integer replyId);
     Boolean isCommentOwner(Integer commentId, Integer userId);
     Boolean isReplyOwner(Integer replyId, Integer userId);
+    int deleteRepliesByCommentId(Integer commentId);
 
     int modifyCommentLike(Integer commentId, Integer userId);
     int modifyReplyLike(Integer replyId, Integer userId);

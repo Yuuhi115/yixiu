@@ -43,6 +43,11 @@
         </set>
         where reply_id = #{replyId}
     </update>
+    <update id="updateReplyStatusByCommentId">
+        update post_comment_reply
+        set status = #{status}
+        where comment_id = #{commentId}
+    </update>
     <delete id="deleteComment" parameterType="java.lang.Integer">
         delete from post_comment where comment_id = #{commentId}
     </delete>

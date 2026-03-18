@@ -344,6 +344,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public int deleteRepliesByCommentId(Integer commentId) {
+        return commentMapper.updateReplyStatusByCommentId(commentId, 1);
+    }
+
+
+    @Override
     public int modifyCommentLike(Integer commentId, Integer userId) {
         if (commentMapper.isExistCommentLiked(commentId, userId)){
             log.info("用户(user_id:{})取消点赞评论(comment_id:{})", userId, commentId);
