@@ -45,6 +45,7 @@ public class AiController {
         log.info("aiAskRequestDto:{}", aiAskRequestDto);
 //        不是新对话就需要传会话id
         AiAskResponseDto response = aiService.ask(aiAskRequestDto);
+        log.info("aiAskResponseDto:{}", response);
         if (aiAskRequestDto.getConversationId() != null) {
             aiService.addChatMessage(aiAskRequestDto.getConversationId(), "user", aiAskRequestDto.getQuestion());
         }
@@ -76,7 +77,7 @@ public class AiController {
         if (response.getHeadline() != null){
             map.put("headline", response.getHeadline());
         }
-        if (response.getSimilarity() != null && response.getSimilarity() > 0.5){
+        if (response.getSimilarity() != null && response.getSimilarity() > 0.3){
             aiQuestionLog.setMatchedKnowledgeId(response.getHitKnowledgeId());
             aiQuestionLog.setSimilarity(response.getSimilarity());
         }

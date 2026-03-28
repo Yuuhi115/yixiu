@@ -54,7 +54,6 @@ public class AiServiceImpl implements AiService {
     @Override
     public AiAskResponseDto ask(AiAskRequestDto aiAskRequestDto) {
         String url = baseUrl + askPath;
-
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -68,9 +67,8 @@ public class AiServiceImpl implements AiService {
                             entity,
                             AiAskResponseDto.class
                     );
-
+            log.info("AI 服务调用成功");
             return response.getBody();
-
         } catch (Exception e) {
             log.error("调用 AI Flask 服务失败: {}", url, e);
             AiAskResponseDto fallback = new AiAskResponseDto();

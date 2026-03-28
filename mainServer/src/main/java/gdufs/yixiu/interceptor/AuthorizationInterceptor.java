@@ -58,13 +58,21 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
-            Users user = usersMapper.findUserById(userId);
-            if (user == null) {
-                throw new Exception("null user");
+            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String role = (String) userMap.get("role");
+            if (redisToken == null || !redisToken.equals(token)) {
+                throw new Exception("expired token");
             }
-            if (! "super_admin".equals(user.getRole())){
+            if (!"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
             }
+//            Users user = usersMapper.findUserById(userId);
+//            if (user == null) {
+//                throw new Exception("null user");
+//            }
+//            if (! "super_admin".equals(user.getRole())){
+//                throw new Exception("Insufficient Privileges");
+//            }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
             try {
@@ -83,13 +91,21 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
-            Users user = usersMapper.findUserById(userId);
-            if (user == null) {
-                throw new Exception("null user");
+            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String role = (String) userMap.get("role");
+            if (redisToken == null || !redisToken.equals(token)) {
+                throw new Exception("expired token");
             }
-            if (! "admin".equals(user.getRole()) && ! "super_admin".equals(user.getRole())){
+            if (!"admin".equals(role) && !"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
             }
+//            Users user = usersMapper.findUserById(userId);
+//            if (user == null) {
+//                throw new Exception("null user");
+//            }
+//            if (! "admin".equals(user.getRole()) && ! "super_admin".equals(user.getRole())){
+//                throw new Exception("Insufficient Privileges");
+//            }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
             try {
@@ -109,18 +125,22 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
             String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String role = (String) userMap.get("role");
             if (redisToken == null || !redisToken.equals(token)) {
                 throw new Exception("expired token");
             }
-            Users user = usersMapper.findUserById(userId);
-            if (user == null) {
-                throw new Exception("null user");
-            }
-            if (! "volunteer".equals(user.getRole()) &&
-                    !"admin".equals(user.getRole()) &&
-                    !"super_admin".equals(user.getRole())) {
+            if (!"volunteer".equals(role) && !"admin".equals(role) && !"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
             }
+//            Users user = usersMapper.findUserById(userId);
+//            if (user == null) {
+//                throw new Exception("null user");
+//            }
+//            if (! "volunteer".equals(user.getRole()) &&
+//                    !"admin".equals(user.getRole()) &&
+//                    !"super_admin".equals(user.getRole())) {
+//                throw new Exception("Insufficient Privileges");
+//            }
             // 验证 token
             JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
             try {
@@ -140,10 +160,14 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 }
                 Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
                 Integer userId = (Integer) userMap.get("id");
-                Users user = usersMapper.findUserById(userId);
-                if (user == null) {
-                    throw new Exception("null user");
+                String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+                if (redisToken == null || !redisToken.equals(token)) {
+                    throw new Exception("expired token");
                 }
+//                Users user = usersMapper.findUserById(userId);
+//                if (user == null) {
+//                    throw new Exception("null user");
+//                }
                 // 验证 token
                 JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(secretKey)).build();
                 try {
