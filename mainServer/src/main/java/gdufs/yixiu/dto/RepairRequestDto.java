@@ -39,6 +39,8 @@ public class RepairRequestDto {
     private String repairLocation;
     @NotEmpty(message = "预约时间不能为空")
     private String appointmentTime;
+//    问题类别id(软件/网络/硬件)
+    private Integer skillId;
     private String remarks;
     private Integer status;
     private List<String> imgUrl;

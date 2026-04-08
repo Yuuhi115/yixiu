@@ -23,6 +23,7 @@ public class RepairRequest {
     private String appointmentTime;
     private String remarks;
     private Integer status;
+    private Integer skillId;
     private Timestamp createTime;
     private Timestamp updateTime;
     private Timestamp completeTime;

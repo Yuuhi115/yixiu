@@ -4,8 +4,8 @@
 <mapper namespace="gdufs.yixiu.dao.TaskMapper">
     <!-- SQL映射语句在此定义 -->
     <insert id="addTask" useGeneratedKeys="true" keyColumn="request_id" keyProperty="requestId">
-        insert into repair_request (user_id,contact_type,contact_info,device_type,device_system,device_model,problem_description,campus,repair_location,appointment_time,remarks)
-        values (#{userId},#{contactType},#{contactInfo},#{deviceType},#{deviceSystem},#{deviceModel},#{problemDescription},#{campus},#{repairLocation},#{appointmentTime},#{remarks})
+        insert into repair_request (user_id,contact_type,contact_info,device_type,device_system,device_model,problem_description,campus,repair_location,appointment_time,remarks,skill_id)
+        values (#{userId},#{contactType},#{contactInfo},#{deviceType},#{deviceSystem},#{deviceModel},#{problemDescription},#{campus},#{repairLocation},#{appointmentTime},#{remarks},#{skillId})
     </insert>
     <insert id="addRequestImg" parameterType="gdufs.yixiu.pojo.RepairRequestImg">
         insert into repair_request_img (request_id,img_url) values (#{requestId},#{imgUrl})

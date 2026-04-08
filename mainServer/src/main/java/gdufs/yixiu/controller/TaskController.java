@@ -7,6 +7,7 @@ import gdufs.yixiu.dto.*;
 import gdufs.yixiu.pojo.RepairEvaluate;
 import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.pojo.VolunteerInfo;
+import gdufs.yixiu.service.AiService;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.service.VolunteerService;
@@ -32,6 +33,8 @@ public class TaskController {
     @Autowired
     private TaskService taskService;
     @Autowired
+    private AiService aiService;
+    @Autowired
     private VolunteerService volunteerService;
     @Autowired
     private JWTUtils jwtUtils;
@@ -45,6 +48,7 @@ public class TaskController {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         repairRequestDto.setUserId(userId);
+        repairRequestDto.setSkillId(aiService.getTaskSkillId(repairRequestDto.getProblemDescription()).getData());
         String requestId = taskService.addTask(repairRequestDto);
         Map<String, String> map = new HashMap<>();
         map.put("requestId", requestId);

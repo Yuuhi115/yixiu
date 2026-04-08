@@ -15,6 +15,7 @@ services:
       - /usr/yixiuAssist/ai-server/app.py:/app/app.py
       - /usr/yixiuAssist/ai-server/config.py:/app/config.py
       - /usr/yixiuAssist/ai-server/embedding.py:/app/embedding.py
+      - /usr/yixiuAssist/ai-server/scu_stopwords.txt:/app/scu_stopwords.txt
     deploy:
       resources:
         limits:

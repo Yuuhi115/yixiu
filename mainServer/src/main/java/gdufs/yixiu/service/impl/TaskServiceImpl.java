@@ -56,6 +56,7 @@ public class TaskServiceImpl implements TaskService {
         repairRequest.setRepairLocation(repairRequestDto.getRepairLocation());
         repairRequest.setAppointmentTime(repairRequestDto.getAppointmentTime());
         repairRequest.setRemarks(repairRequestDto.getRemarks());
+        repairRequest.setSkillId(repairRequestDto.getSkillId());
 
         int rows = taskMapper.addTask(repairRequest);
         Integer requestId = repairRequest.getRequestId();
@@ -390,6 +391,7 @@ public class TaskServiceImpl implements TaskService {
         repairRequestDto.setCreateTime(repairRequest.getCreateTime());
         repairRequestDto.setUpdateTime(repairRequest.getUpdateTime());
         repairRequestDto.setCompleteTime(repairRequest.getCompleteTime());
+        repairRequestDto.setSkillId(repairRequest.getSkillId());
         return repairRequestDto;
     }
     @Override

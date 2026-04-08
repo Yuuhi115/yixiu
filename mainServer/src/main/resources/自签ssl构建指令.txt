@@ -1,0 +1,7 @@
+mkdir -p /usr/yixiuAssist/ssl
+
+# 生成自签名证书
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /usr/yixiuAssist/server.key \
+  -out /usr/yixiuAssist/server.crt \
+  -subj "/C=CN/ST=Guangdong/L=Guangzhou/O=Yixiu/CN=yixiu"

@@ -5,6 +5,7 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.AiMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.ai.*;
+import gdufs.yixiu.dto.community.response.SkillCategoryResponseDto;
 import gdufs.yixiu.dto.community.vo.UserInfoVO;
 import gdufs.yixiu.pojo.AiChatMessage;
 import gdufs.yixiu.pojo.AiChatSession;
@@ -19,7 +20,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
@@ -49,6 +52,34 @@ public class AiServiceImpl implements AiService {
     private final RestTemplate restTemplate;
     public AiServiceImpl(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
+    }
+
+    @Override
+    public SkillCategoryResponseDto getTaskSkillId(String problemDescription) {
+        String url = baseUrl + askPath + "/getTaskSkillId";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Map<String, String> data = new HashMap<>();
+        data.put("problemDescription", problemDescription);
+        HttpEntity<Map<String, String>> entity =
+                new HttpEntity<>(data, headers);
+        try {
+            ResponseEntity<SkillCategoryResponseDto> response =
+                    restTemplate.postForEntity(
+                            url,
+                            entity,
+                            SkillCategoryResponseDto.class
+                    );
+            log.info("获取问题描述类别id服务调用成功");
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("调用 AI Flask 服务失败: {}", url, e);
+            SkillCategoryResponseDto fallback = new SkillCategoryResponseDto();
+            fallback.setCode(500);
+            fallback.setMsg("问题描述分类服务不可用，请提交人工维修申请。");
+            fallback.setData(null);
+            return fallback;
+        }
     }
 
     @Override

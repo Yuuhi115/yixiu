@@ -3,21 +3,44 @@ import jieba
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import os
 
 _vectorizer = None
 _knowledge_matrix = None
 _knowledge_ids = []
+_stopwords = set()
+
+def load_stopwords():
+    """
+    加载停用词表
+    """
+    global _stopwords
+    stopwords_file = os.path.join(os.path.dirname(__file__), 'scu_stopwords.txt')
+
+    try:
+        with open(stopwords_file, 'r', encoding='utf-8') as f:
+            _stopwords = set(line.strip() for line in f if line.strip())
+        print(f"[停用词] 已加载 {len(_stopwords)} 个停用词")
+    except Exception as e:
+        print(f"[停用词] 加载失败：{e}")
+        _stopwords = set()
 
 
 def jieba_tokenize(text: str) -> str:
     """
-    使用 jieba 分词，并用空格拼接
+    使用 jieba 分词，去除停用词后拼接
     """
+    if not _stopwords:
+        load_stopwords()
+
     tokens = jieba.lcut(text)
-    # 去掉长度为 1 的无意义词（可选，但推荐）
-    tokens = [t for t in tokens if len(t.strip()) > 1]
-    # print(f"tokens: {tokens}")
-    return " ".join(tokens)
+    filtered_tokens = [
+        t for t in tokens
+        if len(t.strip()) > 0
+           and t not in _stopwords
+    ]
+    print(f"[分词] {text} -> {filtered_tokens}")
+    return " ".join(filtered_tokens)
 
 
 def init_tfidf(corpus: list[str], ids: list[int]):

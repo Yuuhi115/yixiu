@@ -2,6 +2,7 @@ package gdufs.yixiu.service;
 
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.ai.*;
+import gdufs.yixiu.dto.community.response.SkillCategoryResponseDto;
 import gdufs.yixiu.pojo.AiChatMessage;
 import gdufs.yixiu.pojo.AiChatSession;
 import gdufs.yixiu.pojo.AiKnowledge;
@@ -22,4 +23,5 @@ public interface AiService {
     PageInfo<AiChatSession> queryChatSession(Integer userId, Integer pageNum, Integer pageSize);
     int modifyKnowledge(KnowledgeModifyDto knowledgeModifyDto);
     int deleteKnowledge(Integer knowledgeId);
+    SkillCategoryResponseDto getTaskSkillId(String problemDescription);
 }
