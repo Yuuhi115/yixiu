@@ -4,13 +4,15 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
 import gdufs.yixiu.dto.*;
+import gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto;
+import gdufs.yixiu.dto.community.request.skill.VolunteerScoreDto;
 import gdufs.yixiu.pojo.RepairEvaluate;
-import gdufs.yixiu.pojo.RepairRequest;
 import gdufs.yixiu.pojo.VolunteerInfo;
 import gdufs.yixiu.service.AiService;
 import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.service.VolunteerService;
+import gdufs.yixiu.util.EmailUtils;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +42,8 @@ public class TaskController {
     private JWTUtils jwtUtils;
     @Autowired
     private ImgUploadService imgUploadService;
+    @Autowired
+    private EmailUtils emailUtils;
 
     @UserLoginToken
     @PostMapping("/add")
@@ -318,6 +322,30 @@ public class TaskController {
         log.info("用户No.{} 添加维修单No.{}的评价", userId, repairEvaluate.getRequestId());
         repairEvaluate.setUserId(userId);
         Integer result = taskService.addTaskEvaluate(repairEvaluate);
-        return result == null ? Result.fail("添加异常") : Result.success("添加成功");
+        if (result == null) {
+            return Result.fail("添加异常");
+        }
+        SkillScoreCalculateDto skillScoreCalculateDto = taskService.getSkillScoreCalculateDtoByRequestId(repairEvaluate.getRequestId());
+        log.info("技能分计算参数Dto:{}",skillScoreCalculateDto);
+        Result updateSkillScoreResponse = aiService.updateVolunteerSkillScore(skillScoreCalculateDto);
+        if (updateSkillScoreResponse.getCode() == 200) {
+            List<Integer> volunteerIds = skillScoreCalculateDto.getVolunteerScoreDtoList().stream()
+                    .map(VolunteerScoreDto::getVolunteerId)
+                    .toList();
+            log.info("志愿者{}更新技能分成功",volunteerIds);
+        } else {
+            log.info("更新技能分失败");
+        }
+        return Result.success("添加成功");
+    }
+    @UserLoginToken
+    @GetMapping("/getSkillScore")
+    public Result getSkillScore(@RequestParam(name = "requestId")Integer requestId,
+                                HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("用户No.{} 获取维修单No.{}的技能分", userId, requestId);
+        SkillScoreCalculateDto skillScoreCalculateDto = taskService.getSkillScoreCalculateDtoByRequestId(requestId);
+        return skillScoreCalculateDto == null ? Result.fail("未找到此技能分") : Result.success(skillScoreCalculateDto);
     }
 }

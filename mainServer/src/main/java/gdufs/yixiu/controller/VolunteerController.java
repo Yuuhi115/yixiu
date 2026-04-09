@@ -4,12 +4,14 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.annotation.PassToken;
 import gdufs.yixiu.annotation.UserLoginToken;
 import gdufs.yixiu.annotation.VolunteerLoginToken;
+import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dto.UserBasicInfoDto;
 import gdufs.yixiu.dto.UsersRegisterDto;
 import gdufs.yixiu.dto.VolunteerFilterDto;
 import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.service.ImgUploadService;
+import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.service.VolunteerService;
 import gdufs.yixiu.util.JWTUtils;
@@ -30,6 +32,8 @@ public class VolunteerController {
     @Autowired
     private VolunteerService volunteerService;
     @Autowired
+    private TaskService taskService;
+    @Autowired
     private ImgUploadService imgUploadService;
     @Autowired
     private MessageUtils messageUtils;
@@ -37,6 +41,8 @@ public class VolunteerController {
     private RedisTemplate redisTemplate;
     @Autowired
     private JWTUtils jwtUtils;
+    @Autowired
+    private TaskMapper taskMapper;
 
     @PassToken
     @PostMapping("/loginByEmail")
@@ -130,5 +136,14 @@ public class VolunteerController {
                                           HttpServletRequest request) {
         PageInfo<UserBasicInfoDto> pageInfo = volunteerService.queryVolunteerInfoByName(pageNum, pageSize, name);
         return Result.success(pageInfo);
+    }
+    @UserLoginToken
+    @GetMapping("/skillListBySkillId")
+    public Result querySkillListBySkillId(@RequestParam(name = "skillId") Integer skillId,
+                                         HttpServletRequest request) {
+        String token = request.getHeader("Authorization");
+        int userId = jwtUtils.getInfoFromToken(token).getId();
+        log.info("志愿者(user_id:{})正在查询技能id为{}的技能列表",userId, skillId);
+        return Result.success(taskService.queryVolunteerSkillBySkillId(skillId));
     }
 }

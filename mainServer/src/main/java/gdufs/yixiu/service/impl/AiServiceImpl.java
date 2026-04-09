@@ -5,13 +5,14 @@ import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dao.AiMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dto.ai.*;
-import gdufs.yixiu.dto.community.response.SkillCategoryResponseDto;
-import gdufs.yixiu.dto.community.vo.UserInfoVO;
+import gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto;
+import gdufs.yixiu.dto.community.response.skill.SkillCategoryResponseDto;
 import gdufs.yixiu.pojo.AiChatMessage;
 import gdufs.yixiu.pojo.AiChatSession;
 import gdufs.yixiu.pojo.AiKnowledge;
 import gdufs.yixiu.pojo.AiQuestionLog;
 import gdufs.yixiu.service.AiService;
+import gdufs.yixiu.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -83,6 +84,29 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
+    public Result updateVolunteerSkillScore(SkillScoreCalculateDto skillScoreCalculateDto) {
+        String url = baseUrl + askPath + "/updateAndGetExperts";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        Result skillScoreUpdateRequest = Result.success(skillScoreCalculateDto);
+        HttpEntity<Result> entity =
+                new HttpEntity<>(skillScoreUpdateRequest, headers);
+        try {
+            ResponseEntity<Result> response =
+                    restTemplate.postForEntity(
+                            url,
+                            entity,
+                            Result.class
+                    );
+            log.info("更新技能分数服务调用成功");
+            return response.getBody();
+        }catch (Exception e){
+            log.error("调用 更新技能分数 Flask 服务失败: {}", url, e);
+            return Result.fail("更新技能分数服务不可用，请联系系统管理员。");
+        }
+    }
+
+    @Override
     public AiAskResponseDto ask(AiAskRequestDto aiAskRequestDto) {
         String url = baseUrl + askPath;
         HttpHeaders headers = new HttpHeaders();
@@ -90,7 +114,6 @@ public class AiServiceImpl implements AiService {
 
         HttpEntity<AiAskRequestDto> entity =
                 new HttpEntity<>(aiAskRequestDto, headers);
-
         try {
             ResponseEntity<AiAskResponseDto> response =
                     restTemplate.postForEntity(

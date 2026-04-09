@@ -7,6 +7,7 @@ import { ElMessage } from "element-plus"
 import router from "../../router/index.js"
 import { ElRate, ElDialog } from 'element-plus'
 import {sendRepairEvaluateCompleteNotification} from "../../api/notificationApi.js";
+import {formatTime} from "../../utils/timeUtils.js";
 
 
 const userInfoRef = ref()
@@ -285,7 +286,7 @@ const submitEvaluation = async () => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="true" class="item">
@@ -419,7 +420,7 @@ const submitEvaluation = async () => {
                       <el-col :span="12">
                         <div class="detail-item">
                           <span class="detail-label">预约时间:</span>
-                          <span class="detail-value">{{ record.appointmentTime }}</span>
+                          <span class="detail-value">{{ formatTime(record.appointmentTime) }}</span>
                         </div>
                       </el-col>
                       <el-col :span="12">
@@ -432,6 +433,12 @@ const submitEvaluation = async () => {
                         <div class="detail-item">
                           <span class="detail-label">校区:</span>
                           <span class="detail-value">{{ record.campus === "0" ? '大学城校区' : '白云山校区' }}</span>
+                        </div>
+                      </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
+                          <span class="detail-label">备注:</span>
+                          <span class="detail-value">{{ record.remarks }}</span>
                         </div>
                       </el-col>
                     </el-row>
@@ -528,9 +535,9 @@ const submitEvaluation = async () => {
 
                     <div class="detail-footer">
                       <div class="time-info">
-                        <span>创建时间: {{ record.createTime }}</span>
-                        <span>完成时间: {{ record.completeTime }}</span>
-                        <span>更新时间: {{ record.updateTime }}</span>
+                        <span>创建时间: {{ formatTime(record.createTime) }}</span>
+                        <span>完成时间: {{ formatTime(record.completeTime) }}</span>
+                        <span>更新时间: {{ formatTime(record.updateTime) }}</span>
                       </div>
                       <!-- 评价按钮 -->
                       <div class="action-buttons" v-if="record.status === 3">
@@ -834,5 +841,8 @@ const submitEvaluation = async () => {
   display: flex;
   justify-content: space-between;
   width: 100%;
+}
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

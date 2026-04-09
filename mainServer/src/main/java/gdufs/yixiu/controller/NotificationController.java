@@ -51,6 +51,8 @@ public class NotificationController {
     private CommentMapper commentMapper;
     @Autowired
     private PostService postService;
+    @Autowired
+    private VolunteerService volunteerService;
     @PostMapping("/roleChange")
     @SuperAdminLoginToken
     public Result roleChange(@RequestBody RoleChangeDto roleChangeDto,
@@ -313,6 +315,31 @@ public class NotificationController {
         notification.setLink("/community?postId=" + notifySubmitDto.getPostId() + "&commentId=" + notifySubmitDto.getCommentId() + "&replyId=" + notifySubmitDto.getReplyId());
         notificationService.saveAndPush(notification);
         log.info("用户(id:{})在帖子(id:{})的评论(id:{})中回复了用户(id:{})的回复，已发送通知给用户(id:{})", userId, notifySubmitDto.getPostId(), notifySubmitDto.getCommentId(), replyUserId, notification.getReceiverId());
+        return Result.success("操作成功");
+    }
+    @VolunteerLoginToken
+    @PostMapping("/applyToCooperate")
+    public Result applyToCooperate(@RequestBody NotifySubmitDto notifySubmitDto, HttpServletRequest request){
+        String token = request.getHeader("Authorization");
+        Integer userId = jwtUtils.getInfoFromToken(token).getId();
+        if (
+                notifySubmitDto.getReceiverId() == null ||
+                notifySubmitDto.getTaskId() == null
+        ){
+            return Result.fail("参数错误");
+        }
+        Integer volunteerId = notifySubmitDto.getReceiverId();
+        Integer receiverId = volunteerService.queryUserIdByVolunteerId(volunteerId);
+        Notification notification = new Notification();
+        notification.setTitle("申请任务合作通知");
+        notification.setContent(
+                "志愿者(user_id:" + userId + ")申请加入您负责的任务(task_id:" + notifySubmitDto.getTaskId() + ")，请前往任务详情页查看");
+        notification.setSenderId(userId);
+        notification.setReceiverId(receiverId);
+        notification.setType("USER");
+        notification.setLink("/taskCenter/myTask");
+        notificationService.saveAndPush(notification);
+        log.info("志愿者(user_id:{})申请加入任务(task_id:{})，已发送通知给维修负责人(user_id:{})", userId, notifySubmitDto.getTaskId(), receiverId);
         return Result.success("操作成功");
     }
 }

@@ -246,12 +246,15 @@
     </select>
     <select id="getPostIdsByUserId" resultType="java.lang.Integer">
         SELECT post_id FROM post WHERE user_id = #{userId}
+        and status = 0
     </select>
     <select id="getCommentIdsByUserId" resultType="java.lang.Integer">
         SELECT comment_id FROM post_comment WHERE user_id = #{userId}
+        and status = 0
     </select>
     <select id="getReplyIdsByUserId" resultType="java.lang.Integer">
         SELECT reply_id FROM post_comment_reply WHERE from_user_id = #{userId}
+        and status = 0
     </select>
     <select id="getPostsAndCommentsLikeCount" resultType="java.lang.Integer">
         SELECT

@@ -6,7 +6,7 @@ export function formatTime (time) {
 
     // 如果是今天，显示时间
     if (date.toDateString() === now.toDateString()) {
-        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        return "今天 " + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
     }
 
     // 如果是今年，显示月日时间

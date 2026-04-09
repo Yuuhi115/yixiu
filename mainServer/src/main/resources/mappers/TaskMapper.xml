@@ -221,5 +221,49 @@
                  JOIN users u ON vi.user_id = u.user_id
         WHERE ra.request_id = #{requestId};
     </select>
+    <select id="findSkillIdAndScoreByRequestId"
+            resultType="gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto">
+        SELECT
+            rr.skill_id AS skillId,
+            re.score AS score,
+            rr.request_id AS requestId
+        FROM repair_request rr
+                 LEFT JOIN repair_evaluate re ON rr.request_id = re.request_id
+        WHERE rr.request_id = #{requestId}
+    </select>
+    <select id="findTaskMemberVolunteerIdsByRequestId" resultType="java.lang.Integer">
+        SELECT vi.volunteer_id
+        FROM repair_assignment ra
+                 JOIN volunteer_info vi ON ra.volunteer_id = vi.volunteer_id
+        WHERE ra.request_id = #{requestId};
+    </select>
+    <select id="findVolunteerFinishedTaskCategoryAndScore"
+            resultType="gdufs.yixiu.dto.community.request.skill.RequestCategoryAndScoreDto">
+        SELECT DISTINCT
+            ra.request_id AS requestId,
+            rr.skill_id AS skillId,
+            re.score AS score
+        FROM repair_assignment ra
+                 INNER JOIN repair_request rr ON ra.request_id = rr.request_id
+                 LEFT JOIN repair_evaluate re ON ra.request_id = re.request_id
+        WHERE ra.volunteer_id = #{volunteerId}
+          AND rr.status = 7
+          AND rr.skill_id IS NOT NULL
+    </select>
+    <select id="findVolunteerSkillBySkillId" resultType="gdufs.yixiu.pojo.VolunteerSkill"
+            parameterType="java.lang.Integer">
+        SELECT vs.skill_rel_id,
+               vs.volunteer_id,
+               vi.user_id,
+               vs.skill_id,
+               vs.task_count,
+               vs.average_score,
+               vs.bayesian_score,
+               vs.is_expert
+        FROM volunteer_skill vs
+            INNER JOIN volunteer_info vi
+                ON vs.volunteer_id = vi.volunteer_id
+        WHERE skill_id = #{skillId}
+    </select>
 
 </mapper>

@@ -9,6 +9,8 @@ import gdufs.yixiu.dto.community.vo.VolunteerDataVO;
 import gdufs.yixiu.pojo.Users;
 import gdufs.yixiu.pojo.VolunteerInfo;
 
+import java.util.List;
+
 public interface VolunteerService {
     String registerByPhone(UsersRegisterDto userDto);
     String loginByPhone(UsersRegisterDto userDto, Integer userId);
@@ -17,10 +19,12 @@ public interface VolunteerService {
     Integer isExistVolunteerByEmail(String email);
     void updateVolunteerInfo(VolunteerModifyDto volunteerModifyDto);
     Integer queryVolunteerIdByUserId(Integer userId);
+    Integer queryUserIdByVolunteerId(Integer volunteerId);
     PageInfo<UserBasicInfoDto> queryVolunteerInfoByName(Integer pageNum, Integer pageSize, String name);
     UserBasicInfoDto userToVolunteerBasicInfoDto(Users user);
     PageInfo<UserBasicInfoDto> queryVolunteerListExcludeMyself(Integer pageNum, Integer pageSize, Integer userId);
     PageInfo<UserBasicInfoDto> queryVolunteerListByFilterExcludeMyself(VolunteerFilterDto filterDto, Integer pageNum, Integer pageSize);
     VolunteerDataVO queryVolunteerDataVO(Integer userId);
     VolunteerInfo queryVolunteerInfoByVolunteerId(Integer volunteerId);
+    List<Users> queryActiveVolunteerList(Integer userId);
 }

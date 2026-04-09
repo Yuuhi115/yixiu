@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="HttpClientEndpointsTabState">
-    <option name="requestToText" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;598c334666ef8eaceea9160dd0348d3337088ab5&quot; value=&quot;###&amp;#10;GET http://localhost:8080/api/v1/task/getMyTaskByVolunteerId?&amp;#10;    pageNum={{$random.integer(100)}}&amp;amp;&amp;#10;    pageSize={{$random.integer(100)}}&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
+    <option name="requestToText" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;7707da8e723f2c29adcef8854479b3f4a8fbdb0a&quot; value=&quot;###&amp;#10;DELETE http://localhost:8080/api/v1/ai/deleteKnowledge?&amp;#10;    knowledgeId={{$random.integer(100)}}&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
   </component>
 </project>

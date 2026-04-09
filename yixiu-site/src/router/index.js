@@ -18,6 +18,7 @@ import MyFavoriteView from "../view/community/MyFavoriteView.vue";
 import UserProfileView from "../view/community/UserProfileView.vue";
 import AiRepositoryView from "../view/admin/AiRepositoryView.vue";
 import UserManageView from "../view/admin/UserManageView.vue";
+import SystemOptionView from "../view/admin/SystemOptionView.vue";
 
 // 定义路由
 const routes = [
@@ -56,7 +57,8 @@ const routes = [
         component: MyFavoriteView,
         props: true
     },
-    { path: '/admin/aiRepository', component: AiRepositoryView }
+    { path: '/admin/aiRepository', component: AiRepositoryView },
+    { path: '/admin/systemOption', component: SystemOptionView }
 ]
 
 // 创建router实例

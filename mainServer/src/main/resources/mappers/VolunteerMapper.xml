@@ -90,4 +90,26 @@
         FROM repair_assignment
         WHERE volunteer_id = #{volunteerId}
     </select>
+    <select id="findUserIdByVolunteerId" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        SELECT user_id FROM volunteer_info
+        <where>
+            volunteer_id = #{volunteerId}
+        </where>
+    </select>
+    <select id="findExpertSkillIdsByVolunteerId" resultType="java.lang.Integer"
+            parameterType="java.lang.Integer">
+        SELECT skill_id FROM volunteer_skill
+        <where>
+            volunteer_id = #{volunteerId}
+            AND is_expert = 1
+        </where>
+    </select>
+    <select id="findActiveVolunteers" resultType="gdufs.yixiu.pojo.Users">
+        SELECT u.user_id, u.email,u.username FROM users u JOIN volunteer_info vi ON u.user_id = vi.user_id
+        <where>
+            u.role IN ('volunteer', 'admin', 'super_admin')
+            AND vi.status = 1
+            AND u.user_id != #{excludeUserId}
+        </where>
+    </select>
 </mapper>

@@ -148,7 +148,7 @@ defineProps({
         <el-col :span="6">
           <div class="grid-content ep-bg-purple">
             <div class="component-center">
-              <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+              <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
             </div>
             <div class="component-center">
               <el-badge :is-dot="unreadNotifyCount > 0" class="item">
@@ -381,5 +381,8 @@ defineProps({
 .item {
   margin-top: 10px;
   margin-right: 30px;
+}
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

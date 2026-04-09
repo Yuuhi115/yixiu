@@ -24,7 +24,7 @@ import Cookie from "js-cookie";
 import router from "../router/index.js";
 import {isPolling, startNotifyPoll, stopNotifyPoll} from "../utils/notificationUtils.js";
 import {getUnreadNotifyCount} from "../api/notificationApi.js";
-import {AcceptAdmin, AcceptVolunteer} from "../utils/roleCheckUtils.js";
+import {AcceptAdmin, AcceptSuperAdmin, AcceptVolunteer} from "../utils/roleCheckUtils.js";
 import {JumpToRepairForm, JumpToTaskList} from "../utils/redirectUtils.js";
 import {useNotificationStore} from "../stores/notificationInit.js";
 import {getChatHistory, getChatSession, sendChatMessage} from "../api/AiApi.js";
@@ -84,6 +84,9 @@ const queryUserInfo = async () => {
     ElMessage.error(response.msg)
     return
   }
+  if(response.data.role !== localStorage.getItem('role')){
+    localStorage.setItem('role', response.data.role, {expires: 7})
+  }
   // 将返回的用户信息赋值给 userInfo 对象
   Object.assign(userInfo, response.data)
   console.log(userInfo)
@@ -110,11 +113,6 @@ const handleOpen = (key, keyPath) => {
 }
 const handleClose = (key, keyPath) => {
   console.log(key, keyPath)
-}
-const logout = async () => {
-  Cookie.remove('Authorization')
-  await notificationStore.stopPolling()
-  await router.push('/login')
 }
 
 /*ai智能问答*/
@@ -280,15 +278,12 @@ const loadMessagesByConversation = async (conversationId) => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="unreadNotifyCount > 0" class="item">
                   <el-button style="margin-bottom: 10px" type="default" @click="() => router.push('/user/messageCenter')" :icon="Message" circle/>
                 </el-badge>
-              </div>
-              <div class="component-center">
-                <el-button type="danger" @click="logout">退出登录</el-button>
               </div>
             </div>
           </el-col>
@@ -373,9 +368,8 @@ const loadMessagesByConversation = async (conversationId) => {
               </el-menu-item>
               <!--            </el-menu-item-group>-->
               <!--            <el-menu-item-group title="Group Two">-->
-              <el-menu-item index="5-2">我的收藏</el-menu-item>
               <!--            </el-menu-item-group>-->
-              <el-menu-item index="5-3" @click="() => router.push('/user/messageCenter')">
+              <el-menu-item index="5-2" @click="() => router.push('/user/messageCenter')">
 <!--                <template #title>item four</template>-->
 <!--                <el-menu-item index="1-4-1">item one</el-menu-item>-->
                 消息中心
@@ -387,7 +381,7 @@ const loadMessagesByConversation = async (conversationId) => {
               </el-icon>
               <span>义修社区</span>
             </el-menu-item>
-            <el-menu-item index="7">
+            <el-menu-item index="7" v-if="AcceptSuperAdmin(userInfo)" @click="() => router.push('/admin/systemOption')">
               <el-icon>
                 <setting/>
               </el-icon>
@@ -785,4 +779,7 @@ const loadMessagesByConversation = async (conversationId) => {
   }
 }
 
+.clickable-avatar {
+  cursor: pointer;
+}
 </style>

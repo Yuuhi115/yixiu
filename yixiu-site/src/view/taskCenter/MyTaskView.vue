@@ -500,7 +500,7 @@ const addToKnowledgeBase = async (log) => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="unreadNotifyCount > 0" class="item">
@@ -604,7 +604,7 @@ const addToKnowledgeBase = async (log) => {
                       <el-tag :type="getStatusType(task)" size="small">
                         {{ getStatusLabel(task.status) }}
                       </el-tag>
-                      <span class="record-time">{{ task.updateTime }}</span>
+                      <span class="record-time">{{ formatTime(task.updateTime) }}</span>
                     </div>
                   </template>
 
@@ -656,6 +656,12 @@ const addToKnowledgeBase = async (log) => {
                         <div class="detail-item">
                           <span class="detail-label">校区:</span>
                           <span class="detail-value">{{ task.campus === "0" ? '大学城校区' : '白云山校区' }}</span>
+                        </div>
+                      </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
+                          <span class="detail-label">备注:</span>
+                          <span class="detail-value">{{ task.remarks }}</span>
                         </div>
                       </el-col>
                     </el-row>
@@ -1214,6 +1220,10 @@ const addToKnowledgeBase = async (log) => {
   display: flex;
   gap: 5px;
   margin-top: 8px;
+}
+
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>
 

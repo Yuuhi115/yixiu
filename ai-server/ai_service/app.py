@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pymysql
+import numpy as np
 import re
 import requests
+import math
+import pymysql
 
 from embedding import init_tfidf, query_similar
 from config import (
@@ -359,6 +361,144 @@ def call_deepseek_for_classification(description: str) -> str:
     raw_result = resp.json()["choices"][0]["message"]["content"].strip()
     clean_result = re.sub(r"[^\u4e00-\u9fa5]", "", raw_result)  # 只保留中文
     return clean_result
+
+
+
+
+BETA = 0.5
+
+
+@app.route("/api/v1/ai/ask/updateAndGetExperts", methods=["POST"])
+def update_and_get_experts():
+    req_data = request.get_json()
+
+    if not req_data or req_data.get("code") != 200:
+        return jsonify({"code": 400, "msg": "无效的请求数据格式", "data": None})
+
+    data = req_data.get("data", {})
+    target_skill_id = data.get("skillId")
+    volunteers_data = data.get("volunteerScoreDtoList", [])
+
+    db = get_db()
+    cursor = db.cursor(pymysql.cursors.DictCursor)
+
+    updated_results = []
+
+    try:
+        # ==========================================
+        # 1. 计算最新得分并落库 (适配新表结构)
+        # ==========================================
+        for v_data in volunteers_data:
+            v_id = v_data.get("volunteerId")
+            history_list = v_data.get("requestCategoryAndScoreList", [])
+
+            skill_stats = {}
+            for item in history_list:
+                s_id = item.get("skillId")
+                score = item.get("score", 0)
+                if s_id not in skill_stats:
+                    skill_stats[s_id] = {"task_count": 0, "total_score": 0}
+                skill_stats[s_id]["task_count"] += 1
+                skill_stats[s_id]["total_score"] += score
+
+            for s_id, stats in skill_stats.items():
+                n = stats["task_count"]
+                total_score = stats["total_score"]
+                avg_score = total_score / n if n > 0 else 0.0
+
+                # 门槛：不足 2 单，得分为 0
+                if n >= 2:
+                    bayesian_score = round(avg_score * (1 + BETA * math.log(n)))
+                else:
+                    bayesian_score = 0.000
+
+                # 使用 ON DUPLICATE KEY UPDATE，保护自增主键 skill_rel_id 不变
+                sql_upsert = """
+                    INSERT INTO volunteer_skill 
+                    (volunteer_id, skill_id, task_count, average_score, bayesian_score)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE
+                    task_count = VALUES(task_count),
+                    average_score = VALUES(average_score),
+                    bayesian_score = VALUES(bayesian_score)
+                """
+                cursor.execute(sql_upsert, (v_id, s_id, n, avg_score, bayesian_score))
+
+                if s_id == target_skill_id:
+                    updated_results.append({
+                        "volunteerId": v_id,
+                        "skillId": s_id,
+                        "newCount": n,
+                        "skilledScore": round(bayesian_score, 2),
+                        "isExpert": False
+                    })
+
+        # ==========================================
+        # 2. 统计学判定专家 (均值 + 1.5倍标准差)
+        # ==========================================
+        expert_ids = []
+        if target_skill_id is not None:
+            # 修改查询字段以匹配数据库
+            sql_scores = """
+                SELECT volunteer_id, bayesian_score 
+                FROM volunteer_skill 
+                WHERE skill_id = %s AND task_count >= 2
+            """
+            cursor.execute(sql_scores, (target_skill_id,))
+            valid_records = cursor.fetchall()
+
+            if valid_records:
+                scores = [float(record['bayesian_score']) for record in valid_records]
+
+                if len(scores) > 1:
+                    mean_score = np.mean(scores)
+                    std_dev = np.std(scores, ddof=0)
+                    threshold = mean_score + 0.52 * std_dev
+
+                    for r in valid_records:
+                        if float(r['bayesian_score']) >= threshold:
+                            expert_ids.append(r['volunteer_id'])
+                elif len(scores) == 1:
+                    expert_ids.append(valid_records[0]['volunteer_id'])
+
+            # ==========================================
+            # 3. 将专家状态同步回数据库的 is_expert 字段
+            # ==========================================
+            # 先将该领域所有人重置为非专家
+            cursor.execute(
+                "UPDATE volunteer_skill SET is_expert = 0 WHERE skill_id = %s",
+                (target_skill_id,)
+            )
+            # 再将达标的人设为专家
+            if expert_ids:
+                format_strings = ','.join(['%s'] * len(expert_ids))
+                sql_set_expert = f"UPDATE volunteer_skill SET is_expert = 1 WHERE skill_id = %s AND volunteer_id IN ({format_strings})"
+                cursor.execute(sql_set_expert, [target_skill_id] + expert_ids)
+
+            # 修正本次参与任务者的 JSON 返回标签
+            for res in updated_results:
+                if res["volunteerId"] in expert_ids:
+                    res["isExpert"] = True
+
+        db.commit()
+
+        print(f"更新结果: {updated_results}")
+
+        return jsonify({
+            "code": 200,
+            "msg": "分值更新与专家判定成功",
+            "data": {
+                "skillId": target_skill_id,
+                "expertIds": expert_ids,
+                "updatedVolunteers": updated_results
+            }
+        })
+
+    except Exception as e:
+        db.rollback()
+        return jsonify({"code": 500, "msg": f"系统错误: {str(e)}", "data": None})
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

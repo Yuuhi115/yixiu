@@ -10,6 +10,7 @@ import { ElMessage } from "element-plus";
 import { Edit, Camera, Plus } from '@element-plus/icons-vue'
 import router from "../../router/index.js";
 import {getUnreadNotifyCount} from "../../api/notificationApi.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
 
 /*头像剪裁*/
 const cropperRef = ref()
@@ -22,6 +23,8 @@ const uploadRef = ref()
 const avatarDialogVisible = ref(false)
 const tempAvatarUrl = ref('')
 const tempAvatarFile = ref(null)
+
+const notificationStore = useNotificationStore()
 
 const userInfo = reactive({
   userId: "",
@@ -331,6 +334,13 @@ const uploadAvatar = async (file) => {
     return false
   }
 }
+
+const logout = async () => {
+  Cookie.remove('Authorization')
+  localStorage.removeItem('role')
+  await notificationStore.stopPolling()
+  await router.push('/login')
+}
 </script>
 
 
@@ -355,8 +365,7 @@ const uploadAvatar = async (file) => {
                   :ellipsis="false"
               >
                 <el-menu-item index="1">基本信息</el-menu-item>
-                <el-menu-item index="2">我的收藏</el-menu-item>
-                <el-menu-item index="3" @click="() => router.push('/user/messageCenter')">消息中心</el-menu-item>
+                <el-menu-item index="2" @click="() => router.push('/user/messageCenter')">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -412,6 +421,7 @@ const uploadAvatar = async (file) => {
                     }}
                   </p>
                   <p>最后登录: {{ userInfo.lastLogin }}</p>
+                  <el-button type="danger" @click="logout">退出登录</el-button>
                 </div>
               </el-card>
             </el-col>
@@ -429,17 +439,8 @@ const uploadAvatar = async (file) => {
                   <el-descriptions-item label="用户ID">{{ userInfo.userId }}</el-descriptions-item>
                   <el-descriptions-item label="用户名">{{ userInfo.username }}</el-descriptions-item>
                   <el-descriptions-item label="真实姓名">{{ userInfo.realName }}</el-descriptions-item>
-                  <el-descriptions-item label="手机号">
-                    {{ userInfo.phone }}
-                    <el-link :underline="false" type="primary" class="right-aligned-text" @click="openEditDialog('phone')">
-                      修改
-                    </el-link>
-                  </el-descriptions-item>
                   <el-descriptions-item label="邮箱">
                     {{ userInfo.email }}
-                    <el-link :underline="false" type="primary" class="right-aligned-text" @click="openEditDialog('email')">
-                      修改
-                    </el-link>
                   </el-descriptions-item>
                   <el-descriptions-item label="角色">
                     {{

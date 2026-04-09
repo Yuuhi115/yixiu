@@ -293,22 +293,21 @@ const getContentPreview = (content) => {
           <el-col :span="12">
             <div class="grid-content ep-bg-purple">
               <el-menu
-                  default-active="3"
+                  default-active="2"
                   class="el-menu-demo"
                   mode="horizontal"
                   style="border-bottom: silver solid 1px;background-color: snow"
                   :ellipsis="false"
               >
                 <el-menu-item index="1" @click="() => router.push('/user/basicInfo')">基本信息</el-menu-item>
-                <el-menu-item index="2">我的收藏</el-menu-item>
-                <el-menu-item index="3" @click="() => router.push('/user/messageCenter')">消息中心</el-menu-item>
+                <el-menu-item index="2">消息中心</el-menu-item>
               </el-menu>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar" />
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="unreadNotifyCount > 0" class="item">
@@ -749,5 +748,9 @@ const getContentPreview = (content) => {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

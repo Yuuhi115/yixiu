@@ -1,8 +1,8 @@
 package gdufs.yixiu.dao;
 
-import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.TaskFilterDto;
-import gdufs.yixiu.dto.VolunteerStatisticsDto;
+import gdufs.yixiu.dto.community.request.skill.RequestCategoryAndScoreDto;
+import gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto;
 import gdufs.yixiu.pojo.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -47,5 +47,8 @@ public interface TaskMapper {
                                            @Param("startDate") String startDate,
                                            @Param("endDate") String endDate);
     List<Integer> findTaskMemberIdsByRequestId(Integer requestId);
-
+    SkillScoreCalculateDto findSkillIdAndScoreByRequestId(Integer requestId);
+    List<Integer> findTaskMemberVolunteerIdsByRequestId(Integer requestId);
+    List<RequestCategoryAndScoreDto> findVolunteerFinishedTaskCategoryAndScore(Integer volunteerId);
+    List<VolunteerSkill> findVolunteerSkillBySkillId(Integer skillId);
 }

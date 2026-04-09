@@ -113,6 +113,11 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
+    public Integer queryUserIdByVolunteerId(Integer volunteerId) {
+        return volunteerMapper.findUserIdByVolunteerId(volunteerId);
+    }
+
+    @Override
     public PageInfo<UserBasicInfoDto> queryVolunteerInfoByName(Integer pageNum, Integer pageSize, String name) {
         PageHelper.startPage(pageNum, pageSize);
         List<Users> volunteers = volunteerMapper.findVolunteersByName(name);
@@ -205,5 +210,10 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     public VolunteerInfo queryVolunteerInfoByVolunteerId(Integer volunteerId) {
         return volunteerMapper.findVolunteerInfoByVolunteerId(volunteerId);
+    }
+
+    @Override
+    public List<Users> queryActiveVolunteerList(Integer userId) {
+        return volunteerMapper.findActiveVolunteers(userId);
     }
 }

@@ -131,7 +131,7 @@ const handleRegister = () => {
       }
       let token = registerResult.data;
       Cookie.set('Authorization', token, { expires: 7 })
-      localStorage.setItem('role', form.role)
+      localStorage.setItem('role', form.role, { expires: 7 })
       ElMessage.success('注册成功！')
       await router.push('/')
       await notificationStore.initPolling()

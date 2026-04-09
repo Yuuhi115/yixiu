@@ -2,6 +2,7 @@ package gdufs.yixiu.service;
 
 import com.github.pagehelper.PageInfo;
 import gdufs.yixiu.dto.*;
+import gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto;
 import gdufs.yixiu.pojo.*;
 
 import java.util.List;
@@ -36,4 +37,6 @@ public interface TaskService {
 
     List<VolunteerStatisticsDto> exportRepairLogsWithDate(Integer volunteerId, String startDate, String endDate);
     List<Integer> findTaskMemberIds(Integer requestId);
+    SkillScoreCalculateDto getSkillScoreCalculateDtoByRequestId(Integer requestId);
+    List<VolunteerSkill> queryVolunteerSkillBySkillId(Integer skillId);
 }

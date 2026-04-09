@@ -18,6 +18,7 @@ import {
 } from "../../api/volunteerApi.js";
 import {checkVolunteerPermission} from "../../utils/userUtils.js"
 import {
+  sendCooperateNotify,
   sendRepairTaskAcceptNotification,
   sendRepairTaskApproveNotification,
   sendRepairTaskRejectNotification,
@@ -32,6 +33,7 @@ import {
 import {useNotificationStore} from "../../stores/notificationInit.js";
 import {addKnowledge} from "../../api/AiApi.js";
 import {formatTime} from "../../utils/timeUtils.js";
+import {sendTaskApproveEmail} from "../../api/adminApi.js";
 
 const notificationStore = useNotificationStore()
 
@@ -332,6 +334,10 @@ const approveTask = async (task) => {
       } else {
         ElMessage.error(responseMsg.msg)
       }
+      const sendEmailMsg = await sendTaskApproveEmail(task.requestId)
+      if (sendEmailMsg.code !== 200){
+        ElMessage.error(sendEmailMsg.msg)
+      }
     }
   }).catch(() => {
     ElMessage.info('操作已取消');
@@ -394,6 +400,21 @@ const applyToJoinTask = async (task) => {
     if (responseAdd.code === 200) {
       ElMessage.success(responseAdd.data)
       loadTaskListCondition()
+      // 查找负责人(isLeader=1)的志愿者ID
+      const leader = task.repairAssignment?.find(assignment => assignment.isLeader === 1)
+      if (!leader) {
+        ElMessage.error('未找到任务负责人')
+        return
+      }
+      let notificationData = {
+        taskId: task.requestId,
+        receiverId: leader.volunteerId,
+      }
+      console.log('发送通知给负责人:', notificationData)
+      const responseMsg = await sendCooperateNotify(notificationData)
+      if (responseMsg.code !== 200) {
+        ElMessage.error(responseMsg.msg)
+      }
     }else {
       ElMessage.error(responseAdd.msg)
     }
@@ -589,7 +610,7 @@ const addToKnowledgeBase = async (log) => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="unreadNotifyCount > 0" class="item">
@@ -696,7 +717,7 @@ const addToKnowledgeBase = async (log) => {
                       <el-tag :type="getStatusType(task.status)" size="small">
                         {{ getStatusLabel(task.status) }}
                       </el-tag>
-                      <span class="record-time">{{ task.createTime }}</span>
+                      <span class="record-time">{{ formatTime(task.updateTime) }}</span>
                     </div>
                   </template>
 
@@ -748,6 +769,12 @@ const addToKnowledgeBase = async (log) => {
                         <div class="detail-item">
                           <span class="detail-label">校区:</span>
                           <span class="detail-value">{{ task.campus === "0" ? '大学城校区' : '白云山校区' }}</span>
+                        </div>
+                      </el-col>
+                      <el-col :span="12">
+                        <div class="detail-item">
+                          <span class="detail-label">备注:</span>
+                          <span class="detail-value">{{ task.remarks }}</span>
                         </div>
                       </el-col>
                     </el-row>
@@ -1263,5 +1290,9 @@ const addToKnowledgeBase = async (log) => {
 .member-other-info p {
   margin: 3px 0;
   line-height: 1.4;
+}
+
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

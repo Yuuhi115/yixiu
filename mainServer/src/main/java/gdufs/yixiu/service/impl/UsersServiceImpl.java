@@ -156,7 +156,10 @@ public class UsersServiceImpl implements UsersService {
         userBasicInfoDto.setStatus(user.getStatus());
         userBasicInfoDto.setLastLogin(user.getLastLogin());
         VolunteerInfo volunteerInfo = volunteerMapper.findVolunteerInfoByUserId(userId);
-        userBasicInfoDto.setVolunteerInfo(volunteerInfo);
+        if (volunteerInfo != null) {
+            volunteerInfo.setExpertSkillIds(volunteerMapper.findExpertSkillIdsByVolunteerId(volunteerInfo.getVolunteerId()));
+            userBasicInfoDto.setVolunteerInfo(volunteerInfo);
+        }
         return userBasicInfoDto;
     }
 

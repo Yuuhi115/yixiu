@@ -67,7 +67,7 @@ const queryUserInfo = async () => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="true" class="item">
@@ -123,5 +123,8 @@ const queryUserInfo = async () => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   --el-box-shadow: ;
   background: white;
+}
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

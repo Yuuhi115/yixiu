@@ -1,4 +1,4 @@
-package gdufs.yixiu.dto.community.response;
+package gdufs.yixiu.dto.community.response.skill;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

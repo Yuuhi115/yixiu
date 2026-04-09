@@ -214,7 +214,7 @@ const resetForm = () => {
           <el-col :span="6">
             <div class="grid-content ep-bg-purple">
               <div class="component-center">
-                <el-avatar :fit="'cover'" :src="userInfo.avatar"/>
+                <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
                 <el-badge :is-dot="true" class="item">
@@ -426,5 +426,8 @@ const resetForm = () => {
   color: #909399;
   margin-top: 5px;
   margin-left: 10px;
+}
+.clickable-avatar {
+  cursor: pointer;
 }
 </style>

@@ -10,8 +10,10 @@ import lombok.NoArgsConstructor;
 public class VolunteerSkill {
     private Integer skillRelId;
     private Integer volunteerId;
+    private Integer userId;
     private Integer skillId;
     private Integer taskCount;
     private Double averageScore;
     private Double bayesianScore;
+    private Integer isExpert;
 }

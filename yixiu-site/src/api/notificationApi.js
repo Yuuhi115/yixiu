@@ -62,3 +62,7 @@ export function sendReplyNotify(data){
         return request.post("/notify/replyToComment", data, {headers: {Authorization: Cookie.get("Authorization")}})
     }
 }
+
+export function sendCooperateNotify(data){
+    return request.post("/notify/applyToCooperate", data, {headers: {Authorization: Cookie.get("Authorization")}})
+}

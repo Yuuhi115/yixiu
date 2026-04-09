@@ -6,8 +6,12 @@ import gdufs.yixiu.dao.TaskMapper;
 import gdufs.yixiu.dao.UsersMapper;
 import gdufs.yixiu.dao.VolunteerMapper;
 import gdufs.yixiu.dto.*;
+import gdufs.yixiu.dto.community.request.skill.SkillScoreCalculateDto;
+import gdufs.yixiu.dto.community.request.skill.VolunteerScoreDto;
 import gdufs.yixiu.pojo.*;
+import gdufs.yixiu.service.AiService;
 import gdufs.yixiu.service.TaskService;
+import gdufs.yixiu.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,6 +31,8 @@ public class TaskServiceImpl implements TaskService {
     private UsersMapper usersMapper;
     @Autowired
     private VolunteerMapper volunteerMapper;
+    @Autowired
+    private AiService aiService;
     private String serviceRequestUrl;
     private String serviceRepairLogUrl;
     private String serviceAvatarUrl;
@@ -331,6 +338,26 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<Integer> findTaskMemberIds(Integer requestId) {
         return taskMapper.findTaskMemberIdsByRequestId(requestId);
+    }
+
+    @Override
+    public SkillScoreCalculateDto getSkillScoreCalculateDtoByRequestId(Integer requestId) {
+        SkillScoreCalculateDto skillScoreCalculateDto = taskMapper.findSkillIdAndScoreByRequestId(requestId);
+        List<Integer> MemberVolunteerIdList = taskMapper.findTaskMemberVolunteerIdsByRequestId(requestId);
+        List<VolunteerScoreDto> volunteerScoreDtos = new ArrayList<>();
+        for (Integer volunteerId : MemberVolunteerIdList) {
+            VolunteerScoreDto volunteerScoreDto = new VolunteerScoreDto();
+            volunteerScoreDto.setVolunteerId(volunteerId);
+            volunteerScoreDto.setRequestCategoryAndScoreList(taskMapper.findVolunteerFinishedTaskCategoryAndScore(volunteerId));
+            volunteerScoreDtos.add(volunteerScoreDto);
+        }
+        skillScoreCalculateDto.setVolunteerScoreDtoList(volunteerScoreDtos);
+        return skillScoreCalculateDto;
+    }
+
+    @Override
+    public List<VolunteerSkill> queryVolunteerSkillBySkillId(Integer skillId) {
+        return taskMapper.findVolunteerSkillBySkillId(skillId);
     }
 
     @Override
