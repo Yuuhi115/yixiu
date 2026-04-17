@@ -36,7 +36,7 @@ public class UsersController {
     @Autowired
     private MessageUtils messageUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
     @Autowired
     private JWTUtils jwtUtils;
 
@@ -45,7 +45,7 @@ public class UsersController {
     public Result checkAuth(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         int userId = jwtUtils.getInfoFromToken(token).getId();
-        String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+        String redisToken = redisTemplate.opsForValue().get("token:" + userId);
         if (redisToken == null || !redisToken.equals(token)) {
             log.info("用户(id:{})检查token失败", userId);
             redisTemplate.delete("token:" + userId);
@@ -57,24 +57,28 @@ public class UsersController {
 
     @PassToken
     @PostMapping("/loginByPhone")
-    public Result loginByPhone(@RequestBody UsersRegisterDto userDto) {
+    public Result loginByPhone(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
 //        String verificationCode = (String) redisTemplate.opsForValue().get("phone_code:" + userDto.getPhone());
+        String ip = IPUtils.getClientIP(request);
         Users user = usersService.queryUserByPhoneAndRole(userDto.getPhone(), userDto.getRole());
         if (user == null) {
             log.info("手机用户{}-{}-正在进行注册", userDto.getPhone(), userDto.getRole());
-            String token = usersService.registerByPhone(userDto);
+            String token = usersService.registerByPhone(userDto, ip);
             return Result.success(token);
         }else {
             log.info("手机用户{}-{}-正在登录", userDto.getPhone(), user.getRole());
-            String token = usersService.loginByPhone(userDto, user.getUserId());
+            String token = usersService.loginByPhone(userDto, user.getUserId(), ip);
             return Result.success(token);
         }
     }
 
     @PassToken
     @PostMapping("/loginByEmail")
-    public Result loginByEmail(@RequestBody UsersRegisterDto userDto) {
-        String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+    public Result loginByEmail(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
+        log.info("输入的验证码：{}", userDto.getVerificationCode());
+        String ip = IPUtils.getClientIP(request);
+        String verificationCode = redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+        log.info("redis中的验证码：{}", verificationCode);
         if (verificationCode == null) {
             return Result.fail("验证码未发送或已过期");
         }
@@ -86,7 +90,7 @@ public class UsersController {
             return Result.fail("该邮箱未注册");
         }else {
             log.info("邮箱用户{}-{}-正在登录", userDto.getEmail(), user.getRole());
-            String token = usersService.loginByEmail(userDto, user.getUserId());
+            String token = usersService.loginByEmail(userDto, user.getUserId(), ip);
             usersService.updateUserLoginTime(user.getUserId());
             redisTemplate.delete("email_code:" + userDto.getEmail());
             return Result.success(token);
@@ -95,7 +99,8 @@ public class UsersController {
 
     @PassToken
     @PostMapping("/registerByEmail")
-    public Result registerByEmail(@RequestBody UsersRegisterDto userDto) {
+    public Result registerByEmail(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
+        String ip = IPUtils.getClientIP(request);
         String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
         if (verificationCode == null) {
             return Result.fail("验证码未发送或已过期");
@@ -108,7 +113,7 @@ public class UsersController {
             return Result.fail("该邮箱已注册");
         }
         log.info("邮箱用户{}-{}-正在进行注册", userDto.getEmail(), userDto.getRole());
-        String token = usersService.registerByEmail(userDto);
+        String token = usersService.registerByEmail(userDto, ip);
         redisTemplate.delete("email_code:" + userDto.getEmail());
         return Result.success(token);
     }

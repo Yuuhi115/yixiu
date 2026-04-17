@@ -14,8 +14,19 @@ import {
   Star,
   Clock,
   CirclePlus,
+  UserFilled,
+  Notebook,
+  Monitor,
+  ChatLineRound,
+  Avatar,
+  User,
+  Memo,
+  Files,
+  FolderChecked,
+  InfoFilled,
+  Bell,
+  Operation
 } from '@element-plus/icons-vue'
-import {UserFilled} from '@element-plus/icons-vue'
 
 import {reactive, ref, computed, onUnmounted, onMounted, onBeforeMount, provide, nextTick} from 'vue'
 import {ElMessage} from 'element-plus'
@@ -309,82 +320,74 @@ const loadMessagesByConversation = async (conversationId) => {
               <el-menu-item index="1-1" @click="JumpToRepairForm(userInfo)">
                 填写预约问卷
               </el-menu-item>
-              <el-menu-item index="1-2" @click="() => router.push('/user/basicInfo')">
-                预约信息模板管理
-              </el-menu-item>
-              <el-menu-item index="1-3" @click="() => router.push('/repair/history')">
+              <el-menu-item index="1-2" @click="() => router.push('/repair/history')">
                 预约历史
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="2" v-if="AcceptAdmin(userInfo)">
               <template #title>
-                <el-icon>
-                  <icon-menu />
-                </el-icon>
+                <el-icon><Notebook /></el-icon>
                 <span>队伍管理</span>
               </template>
               <el-menu-item index="2-1" @click="() => router.push('/admin/memberManage')">
+                <el-icon><Avatar /></el-icon>
                 成员管理
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="3" v-if="AcceptVolunteer(userInfo)">
               <template #title>
-                <el-icon>
-                  <icon-menu />
-                </el-icon>
+                <el-icon><Monitor /></el-icon>
                 <span>站务管理</span>
               </template>
               <el-menu-item index="3-1" v-if="AcceptAdmin(userInfo)" @click="() => router.push('/admin/userManage')">
+                <el-icon><User /></el-icon>
                 用户管理
               </el-menu-item>
               <el-menu-item index="3-2" @click="() => router.push('/admin/aiRepository')">
+                <el-icon><Memo /></el-icon>
                 知识库管理
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="4" v-if="AcceptVolunteer(userInfo)">
               <template #title>
-                <el-icon>
-                  <icon-menu />
-                </el-icon>
+                <el-icon><Document /></el-icon>
                 <span>任务中心</span>
               </template>
               <el-menu-item index="4-1" @click="JumpToTaskList(userInfo, '/taskCenter/list')">
+                <el-icon><Files /></el-icon>
                 任务列表
               </el-menu-item>
               <el-menu-item index="4-2" @click="JumpToTaskList(userInfo, '/taskCenter/myTask')">
+                <el-icon><FolderChecked /></el-icon>
                 我的任务
               </el-menu-item>
             </el-sub-menu>
             <el-sub-menu index="5">
               <template #title>
-                <el-icon>
-                  <location/>
-                </el-icon>
+                <el-icon><User /></el-icon>
                 <span>个人中心</span>
               </template>
               <!--            <el-menu-item-group title="Group One">-->
               <el-menu-item index="5-1" @click="() => router.push('/user/basicInfo')">
+                <el-icon><InfoFilled /></el-icon>
                 基本信息
               </el-menu-item>
               <!--            </el-menu-item-group>-->
               <!--            <el-menu-item-group title="Group Two">-->
               <!--            </el-menu-item-group>-->
               <el-menu-item index="5-2" @click="() => router.push('/user/messageCenter')">
+                <el-icon><Bell /></el-icon>
 <!--                <template #title>item four</template>-->
 <!--                <el-menu-item index="1-4-1">item one</el-menu-item>-->
                 消息中心
               </el-menu-item>
             </el-sub-menu>
             <el-menu-item index="6" @click="() => router.push('/community')">
-              <el-icon>
-                <document/>
-              </el-icon>
+              <el-icon><ChatLineRound /></el-icon>
               <span>义修社区</span>
             </el-menu-item>
             <el-menu-item index="7" v-if="AcceptSuperAdmin(userInfo)" @click="() => router.push('/admin/systemOption')">
-              <el-icon>
-                <setting/>
-              </el-icon>
+              <el-icon><Operation /></el-icon>
               <span>设置</span>
             </el-menu-item>
           </el-menu>
@@ -508,6 +511,9 @@ const loadMessagesByConversation = async (conversationId) => {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .el-menu-vertical-demo {

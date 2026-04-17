@@ -52,6 +52,8 @@ public class UsersServiceImpl implements UsersService {
     private JWTUtils jwtUtils;
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private RedisTemplate<String, String> stringRedisTemplate;
 
     private String avatarPath;
 
@@ -62,7 +64,7 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public String registerByPhone(UsersRegisterDto userDto) {
+    public String registerByPhone(UsersRegisterDto userDto, String ip) {
         Users user = new Users();
         user.setPhone(userDto.getPhone());
         user.setRole(userDto.getRole());
@@ -70,7 +72,7 @@ public class UsersServiceImpl implements UsersService {
         int row = usersMapper.addUserByPhone(user);
         int userId =  user.getUserId();
         log.info("用户{}注册成功, 用户id: {}", userDto.getPhone(), userId);
-        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
+        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
         redisTemplate.opsForValue().set("token:" + userId, token, 7, TimeUnit.DAYS);
         return token;
 //        }else {
@@ -80,12 +82,12 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public String loginByPhone(UsersRegisterDto userDto, Integer userId) {
-        return jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
+    public String loginByPhone(UsersRegisterDto userDto, Integer userId, String ip) {
+        return jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
     }
 
     @Override
-    public String registerByEmail(UsersRegisterDto userDto) {
+    public String registerByEmail(UsersRegisterDto userDto, String ip) {
         Users user = new Users();
         user.setEmail(userDto.getEmail());
         user.setRole(userDto.getRole());
@@ -93,23 +95,24 @@ public class UsersServiceImpl implements UsersService {
         int row = usersMapper.addUserByEmail(user);
         int userId =  user.getUserId();
         log.info("邮箱用户-{}-注册成功, 用户id: {}", userDto.getEmail(), userId);
-        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
-        redisTemplate.opsForValue().set("token:" + userId, token, 7, TimeUnit.DAYS);
+        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
+        stringRedisTemplate.opsForValue().set("token:" + userId, token, 7, TimeUnit.DAYS);
+        redisTemplate.delete("email_code:" + userDto.getEmail());
         return token;
     }
 
     @Override
-    public String loginByEmail(UsersRegisterDto userDto, Integer userId) {
-        String token = (String) redisTemplate.opsForValue().get("token:" + userId);
-        if (token != null) {
-            log.info("邮箱用户-{}-已在登录状态", userDto.getEmail());
-            return token;
-        }else {
-            String newToken = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
-            redisTemplate.opsForValue().set("token:" + userId, newToken, 7, TimeUnit.DAYS);
-            return newToken;
+    public String loginByEmail(UsersRegisterDto userDto, Integer userId, String ip) {
+        String oldToken = stringRedisTemplate.opsForValue().get("token:" + userId);
+        if (oldToken != null) {
+            log.info("邮箱用户-{}-存在旧登录，强制下线", userDto.getEmail());
+            redisTemplate.delete("token:" + userId);
         }
-
+        String newToken = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
+        stringRedisTemplate.opsForValue().set("token:" + userId, newToken, 7, TimeUnit.DAYS);
+        log.info("邮箱用户-{}-登录成功，登录ip:{}，用户id: {}", userDto.getEmail(), ip, userId);
+        redisTemplate.delete("email_code:" + userDto.getEmail());
+        return newToken;
     }
 
     @Override

@@ -23,4 +23,5 @@ public interface VolunteerMapper {
     Map<String, Object> getVolunteerRepairStats(@Param("volunteerId") Integer volunteerId);
     List<Integer> findExpertSkillIdsByVolunteerId(Integer volunteerId);
     List<Users> findActiveVolunteers(Integer excludeUserId);
+    Integer findTaskLeaderIdByTaskId(Integer taskId);
 }

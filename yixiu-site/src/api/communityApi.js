@@ -101,7 +101,9 @@ export function addReplyLike(replyId){
     return request.post("/community/comment/modifyCommentLike", data,{headers: {Authorization: Cookie.get("Authorization")}})
 }
 export function deleteReply(replyId){
-    return request.put("/community/comment/delete", {replyId: replyId}, {headers: {Authorization: Cookie.get("Authorization")}})
+    let data = new FormData()
+    data.append('replyId', replyId)
+    return request.put("/community/comment/delete", data, {headers: {Authorization: Cookie.get("Authorization")}})
 }
 /*
 * params:

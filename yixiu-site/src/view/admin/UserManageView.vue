@@ -9,7 +9,7 @@ import router from "../../router/index.js";
 import {AcceptSuperAdmin} from "../../utils/roleCheckUtils.js";
 import {formatTime} from "../../utils/timeUtils.js";
 import {JumpToUserProfile} from "../../utils/redirectUtils.js";
-import {deleteComment, getUserCommentList, getUserReplyList} from "../../api/communityApi.js";
+import {deleteComment, deleteReply, getUserCommentList, getUserReplyList} from "../../api/communityApi.js";
 // import {exportUserStatistics} from "../../api/exportApi.js";
 
 const userInfoRef = ref()
@@ -440,6 +440,23 @@ const deleteUserComment = async (commentId) => {
   })
 }
 
+const deleteUserReply = async (replyId) => {
+  ElMessageBox.confirm('确定要删除此回复吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    const response = await deleteReply(replyId)
+    if (response.code === 200) {
+      await loadReplyList()
+    } else {
+      ElMessage.error(response.msg)
+    }
+  }).catch(() => {
+    ElMessage.info('已取消删除')
+  })
+}
+
 </script>
 
 <template>
@@ -606,7 +623,7 @@ const deleteUserComment = async (commentId) => {
                 </el-text>
               </template>
             </el-table-column>
-            <el-table-column prop="getLikeCount" label="获赞数" width="100">
+            <el-table-column prop="getLikeCount" label="点赞数" width="100">
               <template #default="scope">
                 <el-text type="info">
                   {{ scope.row.getLikeCount }}
@@ -876,11 +893,22 @@ const deleteUserComment = async (commentId) => {
                 <template #default="scope">
                   <el-button
                       type="primary"
-                      size="small"
+                      size="default"
+                      circle
+                      :icon="InfoFilled"
+                      title="查看回复详情"
                       @click="jumpToReplyPost(scope.row.postId, scope.row.commentId, scope.row.replyId)"
                   >
-                    查看详情
                   </el-button>
+
+                  <el-button
+                      type="danger"
+                      size="default"
+                      circle
+                      :icon="Delete"
+                      title="删除回复"
+                      @click="deleteUserReply(scope.row.replyId)"
+                  />
                 </template>
               </el-table-column>
             </el-table>

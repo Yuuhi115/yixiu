@@ -9,6 +9,7 @@ import gdufs.yixiu.dto.VolunteerModifyDto;
 import gdufs.yixiu.service.AdminService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.util.EmailUtils;
+import gdufs.yixiu.util.IPUtils;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,8 +37,9 @@ public class AdminController {
     private RedisTemplate<String, String> redisTemplate;
     @PassToken
     @PostMapping("loginByEmail")
-    public Result loginByEmail(@RequestBody UsersRegisterDto userDto) {
-        String token = adminService.loginByEmail(userDto);
+    public Result loginByEmail(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
+        String ip = IPUtils.getClientIP(request);
+        String token = adminService.loginByEmail(userDto, ip);
         if (token == null) {
             return Result.fail("管理员信息不存在");
         }else {

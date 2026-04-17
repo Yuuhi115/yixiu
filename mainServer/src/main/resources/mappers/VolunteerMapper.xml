@@ -39,9 +39,20 @@
         </where>
     </select>
     <select id="findVolunteerInfoByUserId" resultType="gdufs.yixiu.pojo.VolunteerInfo">
-        select * from volunteer_info
+        select vi.*,
+        COALESCE(task_stats.handling_task_num, 0) AS handlingTaskNum,
+        COALESCE(task_stats.finished_task_num, 0) AS finishedTaskNum
+        from volunteer_info vi
+        LEFT JOIN (
+        SELECT
+        volunteer_id,
+        COUNT(CASE WHEN status = 0 THEN 1 END) AS handling_task_num,
+        COUNT(CASE WHEN status = 1 THEN 1 END) AS finished_task_num
+        FROM repair_assignment
+        GROUP BY volunteer_id
+        ) AS task_stats ON vi.volunteer_id = task_stats.volunteer_id
         <where>
-            user_id = #{userId}
+            vi.user_id = #{userId}
         </where>
     </select>
     <select id="findVolunteerIdByUserId" resultType="java.lang.Integer" parameterType="java.lang.Integer">
@@ -111,5 +122,11 @@
             AND vi.status = 1
             AND u.user_id != #{excludeUserId}
         </where>
+    </select>
+    <select id="findTaskLeaderIdByTaskId" resultType="java.lang.Integer" parameterType="java.lang.Integer">
+        SELECT vi.user_id FROM repair_assignment ra
+           INNER JOIN volunteer_info vi ON ra.volunteer_id = vi.volunteer_id
+            WHERE ra.request_id = #{taskId}
+            AND ra.is_leader = 1
     </select>
 </mapper>

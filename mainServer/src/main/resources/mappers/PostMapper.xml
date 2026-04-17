@@ -84,6 +84,7 @@
         FROM (
         SELECT post_id, COUNT(*) AS cnt
         FROM post_comment
+        WHERE status = 0
         GROUP BY post_id
 
         UNION ALL
@@ -91,6 +92,7 @@
         SELECT pc.post_id, COUNT(*) AS cnt
         FROM post_comment_reply r
         JOIN post_comment pc ON r.comment_id = pc.comment_id
+        WHERE r.status = 0
         GROUP BY pc.post_id
         ) t
         GROUP BY post_id

@@ -14,6 +14,7 @@ import gdufs.yixiu.service.ImgUploadService;
 import gdufs.yixiu.service.TaskService;
 import gdufs.yixiu.service.UsersService;
 import gdufs.yixiu.service.VolunteerService;
+import gdufs.yixiu.util.IPUtils;
 import gdufs.yixiu.util.JWTUtils;
 import gdufs.yixiu.util.MessageUtils;
 import gdufs.yixiu.util.Result;
@@ -38,7 +39,7 @@ public class VolunteerController {
     @Autowired
     private MessageUtils messageUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
@@ -46,9 +47,9 @@ public class VolunteerController {
 
     @PassToken
     @PostMapping("/loginByEmail")
-    public Result loginByEmail(@RequestBody UsersRegisterDto userDto) {
-
-        String verificationCode = (String) redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
+    public Result loginByEmail(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
+        String ip = IPUtils.getClientIP(request);
+        String verificationCode = redisTemplate.opsForValue().get("email_code:" + userDto.getEmail());
         if (verificationCode == null) {
             return Result.fail("验证码未发送或已过期");
         }
@@ -60,7 +61,7 @@ public class VolunteerController {
             return Result.fail("该邮箱未注册");
         }else {
             log.info("邮箱用户{}-{}-正在登录", userDto.getEmail(), user.getRole());
-            String token = volunteerService.loginByEmail(userDto, user.getUserId());
+            String token = volunteerService.loginByEmail(userDto, user.getUserId(), ip);
             usersService.updateUserLoginTime(user.getUserId());
             return Result.success(token);
         }
@@ -68,8 +69,8 @@ public class VolunteerController {
 
     @PassToken
     @PostMapping("/registerByEmail")
-    public Result registerByEmail(@RequestBody UsersRegisterDto userDto) {
-
+    public Result registerByEmail(@RequestBody UsersRegisterDto userDto, HttpServletRequest request) {
+        String ip = IPUtils.getClientIP(request);
         String inviteCode = (String) redisTemplate.opsForValue().get("inviteCode:email:" + userDto.getEmail());
         if (inviteCode == null) {
             return Result.fail("该邮箱没有邀请码，请更换账户");
@@ -90,7 +91,7 @@ public class VolunteerController {
             return Result.fail("该邮箱已注册志愿者/管理员账户");
         }
         log.info("邮箱用户{}-{}-正在进行注册", userDto.getEmail(), userDto.getRole());
-        String token = volunteerService.registerByEmail(userDto);
+        String token = volunteerService.registerByEmail(userDto, ip);
         return Result.success(token);
     }
     @VolunteerLoginToken

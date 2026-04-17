@@ -673,6 +673,8 @@ const submitExportForm = async () => {
                 <el-avatar :size="40" :src="scope.row.avatar"/>
               </template>
             </el-table-column>
+            <el-table-column prop="volunteerInfo.handlingTaskNum" label="进行中任务" width="120"/>
+            <el-table-column prop="volunteerInfo.finishedTaskNum" label="已完成任务" width="120"/>
             <el-table-column prop="realName" label="真实姓名" width="120"/>
             <el-table-column prop="username" label="用户名" width="120"/>
             <el-table-column prop="volunteerInfo.studentNumber" label="学号" width="120"/>

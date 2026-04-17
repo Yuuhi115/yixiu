@@ -23,7 +23,7 @@ public class SendController {
     @Autowired
     private EmailUtils emailUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
     @PassToken
     @GetMapping("/phoneVerification")
     public Result sendPhone(@RequestParam("phone") String phone) throws Exception {

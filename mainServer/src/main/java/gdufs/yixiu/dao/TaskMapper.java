@@ -47,6 +47,7 @@ public interface TaskMapper {
                                            @Param("startDate") String startDate,
                                            @Param("endDate") String endDate);
     List<Integer> findTaskMemberIdsByRequestId(Integer requestId);
+    List<Integer> findTaskMemberUnFinishedLogIdsByRequestId(Integer requestId);
     SkillScoreCalculateDto findSkillIdAndScoreByRequestId(Integer requestId);
     List<Integer> findTaskMemberVolunteerIdsByRequestId(Integer requestId);
     List<RequestCategoryAndScoreDto> findVolunteerFinishedTaskCategoryAndScore(Integer volunteerId);

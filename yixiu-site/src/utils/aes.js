@@ -1,8 +1,8 @@
 // src/utils/aes.js
 import CryptoJS from "crypto-js";
 
-const KEY = CryptoJS.enc.Utf8.parse("1234567890123456");
-const IV  = CryptoJS.enc.Utf8.parse("abcdefghijklmnop");
+const KEY = CryptoJS.enc.Utf8.parse(import.meta.env.VITE_AES_KEY);
+const IV  = CryptoJS.enc.Utf8.parse(import.meta.env.VITE_AES_IV);
 
 export function encrypt(text) {
     const encrypted = CryptoJS.AES.encrypt(

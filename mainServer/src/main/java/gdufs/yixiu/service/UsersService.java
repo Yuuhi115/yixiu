@@ -17,10 +17,10 @@ import gdufs.yixiu.pojo.Users;
 import java.util.List;
 
 public interface UsersService {
-    String registerByPhone(UsersRegisterDto userDto);
-    String loginByPhone(UsersRegisterDto userDto, Integer userId);
-    String registerByEmail(UsersRegisterDto userDto);
-    String loginByEmail(UsersRegisterDto userDto, Integer userId);
+    String registerByPhone(UsersRegisterDto userDto, String ip);
+    String loginByPhone(UsersRegisterDto userDto, Integer userId, String ip);
+    String registerByEmail(UsersRegisterDto userDto, String ip);
+    String loginByEmail(UsersRegisterDto userDto, Integer userId, String ip);
     Users queryUserByPhoneAndRole(String phone, String role);
     Users queryUserByEmailAndRole(String email, String role);
     void updateUserLoginTime(int userId);

@@ -14,8 +14,8 @@ import java.util.List;
 public interface VolunteerService {
     String registerByPhone(UsersRegisterDto userDto);
     String loginByPhone(UsersRegisterDto userDto, Integer userId);
-    String registerByEmail(UsersRegisterDto userDto);
-    String loginByEmail(UsersRegisterDto userDto, Integer userId);
+    String registerByEmail(UsersRegisterDto userDto, String ip);
+    String loginByEmail(UsersRegisterDto userDto, Integer userId, String ip);
     Integer isExistVolunteerByEmail(String email);
     void updateVolunteerInfo(VolunteerModifyDto volunteerModifyDto);
     Integer queryVolunteerIdByUserId(Integer userId);
@@ -27,4 +27,5 @@ public interface VolunteerService {
     VolunteerDataVO queryVolunteerDataVO(Integer userId);
     VolunteerInfo queryVolunteerInfoByVolunteerId(Integer volunteerId);
     List<Users> queryActiveVolunteerList(Integer userId);
+    Integer queryLeaderIdByTaskId(Integer taskId);
 }

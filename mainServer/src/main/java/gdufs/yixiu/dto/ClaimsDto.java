@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ClaimsDto {
-    int id;
-    String phone;
-    String email;
-    String role;
+    private int id;
+    private String phone;
+    private String email;
+    private String role;
+    private String ip;
 }

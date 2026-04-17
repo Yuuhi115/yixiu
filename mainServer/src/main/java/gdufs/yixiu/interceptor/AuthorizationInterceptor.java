@@ -25,7 +25,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
     @Autowired
     private UsersMapper usersMapper;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     private static String secretKey;
 
@@ -58,10 +58,13 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
-            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String redisToken = redisTemplate.opsForValue().get("token:" + userId);
             String role = (String) userMap.get("role");
-            if (redisToken == null || !redisToken.equals(token)) {
+            if (redisToken == null) {
                 throw new Exception("expired token");
+            }
+            if (!redisToken.equals(token)){
+                throw new Exception("this user's token had been replaced");
             }
             if (!"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
@@ -91,10 +94,13 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
-            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String redisToken = redisTemplate.opsForValue().get("token:" + userId);
             String role = (String) userMap.get("role");
-            if (redisToken == null || !redisToken.equals(token)) {
+            if (redisToken == null) {
                 throw new Exception("expired token");
+            }
+            if (!redisToken.equals(token)){
+                throw new Exception("this user's token had been replaced");
             }
             if (!"admin".equals(role) && !"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
@@ -124,10 +130,13 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
             }
             Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
             Integer userId = (Integer) userMap.get("id");
-            String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
+            String redisToken = redisTemplate.opsForValue().get("token:" + userId);
             String role = (String) userMap.get("role");
-            if (redisToken == null || !redisToken.equals(token)) {
+            if (redisToken == null) {
                 throw new Exception("expired token");
+            }
+            if (!redisToken.equals(token)){
+                throw new Exception("this user's token had been replaced");
             }
             if (!"volunteer".equals(role) && !"admin".equals(role) && !"super_admin".equals(role)) {
                 throw new Exception("Insufficient Privileges");
@@ -160,9 +169,12 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
                 }
                 Map<String,Object> userMap = JWT.decode(token).getClaim("claims").asMap();
                 Integer userId = (Integer) userMap.get("id");
-                String redisToken = (String) redisTemplate.opsForValue().get("token:" + userId);
-                if (redisToken == null || !redisToken.equals(token)) {
+                String redisToken = redisTemplate.opsForValue().get("token:" + userId);
+                if (redisToken == null) {
                     throw new Exception("expired token");
+                }
+                if (!redisToken.equals(token)){
+                    throw new Exception("this user's token had been replaced");
                 }
 //                Users user = usersMapper.findUserById(userId);
 //                if (user == null) {

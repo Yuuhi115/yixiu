@@ -1,6 +1,7 @@
 import axios from "axios"
 import { ElMessage } from "element-plus"
 import router from "../router/index.js"
+import Cookie from "js-cookie";
 
 const baseURL = "/api"
 
@@ -19,6 +20,15 @@ instance.interceptors.response.use(result => {
                 });
             }
             return result;
+        }
+        if (result.data.code === 401 || result.data.msg === "this user's token had been replaced") {
+            ElMessage.warning('您的账号已在其他设备登录，请重新登录')
+            localStorage.removeItem('role')
+            Cookie.remove('Authorization')
+            setTimeout(() => {
+                router.replace('/login')
+            }, 2000)
+            return Promise.reject(result.data)
         }
         // 请求成功
         return result.data

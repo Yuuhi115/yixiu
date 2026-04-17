@@ -1,13 +1,19 @@
 <script setup>
 
 import {Message, Plus} from "@element-plus/icons-vue";
-import {onMounted, reactive, ref} from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import Cookie from "js-cookie";
 import {getUserInfo, submitRepairForm, submitRepairFormImg} from "../../api/userApi.js";
 import {ElMessage} from "element-plus";
 import router from "../../router/index.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
 
 const userInfoRef = ref()
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfo = reactive({
   userId: "",
@@ -206,8 +212,7 @@ const resetForm = () => {
                   :ellipsis="false"
               >
                 <el-menu-item index="1">填写预约问卷</el-menu-item>
-                <el-menu-item index="2" @click="() => router.push('/repair/template')">预约信息模板管理</el-menu-item>
-                <el-menu-item index="3" @click="() => router.push('/repair/history')">预约历史</el-menu-item>
+                <el-menu-item index="2" @click="() => router.push('/repair/history')">预约历史</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -217,8 +222,8 @@ const resetForm = () => {
                 <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button @click="() => router.push('/user/messageCenter')" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
             </div>

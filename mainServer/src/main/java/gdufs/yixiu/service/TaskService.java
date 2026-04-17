@@ -37,6 +37,7 @@ public interface TaskService {
 
     List<VolunteerStatisticsDto> exportRepairLogsWithDate(Integer volunteerId, String startDate, String endDate);
     List<Integer> findTaskMemberIds(Integer requestId);
+    List<Integer> findTaskMemberIdsWhoUnLog(Integer requestId);
     SkillScoreCalculateDto getSkillScoreCalculateDtoByRequestId(Integer requestId);
     List<VolunteerSkill> queryVolunteerSkillBySkillId(Integer skillId);
 }

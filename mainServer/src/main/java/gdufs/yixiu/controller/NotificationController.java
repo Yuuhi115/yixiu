@@ -168,7 +168,7 @@ public class NotificationController {
         notificationService.saveAndPush(toUserNotification);
 
         String name = usersService.queryUserById(userId).getRealName();
-        List<Integer> notifyUserIds = taskService.findTaskMemberIds(notifySubmitDto.getTaskId());
+        List<Integer> notifyUserIds = taskService.findTaskMemberIdsWhoUnLog(notifySubmitDto.getTaskId());
         Notification toTaskMemberNotification = new Notification();
         toTaskMemberNotification.setTitle("维修任务日志填写通知");
         toTaskMemberNotification.setContent(
@@ -323,13 +323,11 @@ public class NotificationController {
         String token = request.getHeader("Authorization");
         Integer userId = jwtUtils.getInfoFromToken(token).getId();
         if (
-                notifySubmitDto.getReceiverId() == null ||
                 notifySubmitDto.getTaskId() == null
         ){
             return Result.fail("参数错误");
         }
-        Integer volunteerId = notifySubmitDto.getReceiverId();
-        Integer receiverId = volunteerService.queryUserIdByVolunteerId(volunteerId);
+        Integer receiverId = volunteerService.queryLeaderIdByTaskId(notifySubmitDto.getTaskId());
         Notification notification = new Notification();
         notification.setTitle("申请任务合作通知");
         notification.setContent(

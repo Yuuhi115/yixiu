@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import gdufs.yixiu.dto.ClaimsDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -13,6 +14,7 @@ import java.util.Map;
 @Slf4j
 @Component
 public class JWTUtils {
+
     private static String secretKey;
 
     @Value("${jwt.secret}")
@@ -20,11 +22,12 @@ public class JWTUtils {
         JWTUtils.secretKey = secretKey;
     }
 
-    public String generateToken(int id, String role, String verificationCode) {
+    public String generateToken(int id, String role, String verificationCode, String ip) {
         Map<String, Object> claims = new HashMap<String, Object>();
         claims.put("id", id);
         claims.put("role", role);
         claims.put("verificationCode", verificationCode);
+        claims.put("ip", ip);
         return JWT.create()
                 .withClaim("claims",claims)
                 .withExpiresAt(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 一周有效期
@@ -46,6 +49,7 @@ public class JWTUtils {
         ClaimsDto claimsDto = new ClaimsDto();
         claimsDto.setId((Integer)userMap.get("id"));
         claimsDto.setRole((String)userMap.get("role"));
+        claimsDto.setIp((String)userMap.get("ip"));
         return claimsDto;
     }
 //    public ClaimsDto getInfoFromTokenByEmail(String token) {

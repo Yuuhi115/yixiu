@@ -8,9 +8,15 @@ import router from "../../router/index.js"
 import { ElRate, ElDialog } from 'element-plus'
 import {sendRepairEvaluateCompleteNotification} from "../../api/notificationApi.js";
 import {formatTime} from "../../utils/timeUtils.js";
+import {useNotificationStore} from "../../stores/notificationInit.js";
 
 
 const userInfoRef = ref()
+
+const notificationStore = useNotificationStore()
+
+// 使用计算属性自动响应状态变化
+const unreadNotifyCount = computed(() => notificationStore.unreadCount)
 
 const userInfo = reactive({
   userId: "",
@@ -278,8 +284,7 @@ const submitEvaluation = async () => {
                   :ellipsis="false"
               >
                 <el-menu-item index="1" @click="() => router.push('/repair/form')">填写预约问卷</el-menu-item>
-                <el-menu-item index="2" @click="() => router.push('/repair/template')">预约信息模板管理</el-menu-item>
-                <el-menu-item index="3">预约历史</el-menu-item>
+                <el-menu-item index="2">预约历史</el-menu-item>
               </el-menu>
             </div>
           </el-col>
@@ -289,8 +294,8 @@ const submitEvaluation = async () => {
                 <el-avatar class="clickable-avatar" @click="() => router.push('/user/basicInfo')" :fit="'cover'" :src="userInfo.avatar"/>
               </div>
               <div class="component-center">
-                <el-badge :is-dot="true" class="item">
-                  <el-button type="default" :icon="Message" circle/>
+                <el-badge :is-dot="unreadNotifyCount > 0" class="item">
+                  <el-button @click="() => router.push('/user/messageCenter')" type="default" :icon="Message" circle/>
                 </el-badge>
               </div>
             </div>

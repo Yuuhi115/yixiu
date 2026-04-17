@@ -265,5 +265,12 @@
                 ON vs.volunteer_id = vi.volunteer_id
         WHERE skill_id = #{skillId}
     </select>
+    <select id="findTaskMemberUnFinishedLogIdsByRequestId" resultType="java.lang.Integer">
+        SELECT u.user_id
+        FROM repair_assignment ra
+                 JOIN volunteer_info vi ON ra.volunteer_id = vi.volunteer_id
+                 JOIN users u ON vi.user_id = u.user_id
+        WHERE ra.request_id = #{requestId} AND ra.status = 0;
+    </select>
 
 </mapper>

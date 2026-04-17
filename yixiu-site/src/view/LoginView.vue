@@ -12,16 +12,20 @@ const formRef = ref()
 const loginMethod = ref('email')
 const authMethod = ref('captcha')
 
+const notificationStore = useNotificationStore()
+
 onMounted(async () => {
   // 获取用户角色，并设置登录方式
   const token = Cookie.get('Authorization')
   if (token) {
       ElMessage.success('已登录，正在跳转至主页面...')
       await router.replace('/')
-    }
+    }else {
+    await notificationStore.stopPolling()
+  }
   }
 )
-const notificationStore = useNotificationStore()
+
 
 const form = reactive({
   role: 'student',

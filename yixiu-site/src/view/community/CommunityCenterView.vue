@@ -1174,6 +1174,7 @@ const deletePost = async (postId) => {
                 :src="img"
                 fit="cover"
                 class="post-image"
+                lazy
                 :preview-src-list="post.imgUrls.map(i => i)"
                 :initial-index="imgIndex"
             />

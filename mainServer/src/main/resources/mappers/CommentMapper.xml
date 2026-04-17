@@ -107,6 +107,7 @@
         <foreach collection="commentIds" item="commentId" open="(" separator="," close=")">
             #{commentId}
         </foreach>
+        AND status = 0
         GROUP BY comment_id
     </select>
     <select id="getRepliesByCommentIds" resultType="gdufs.yixiu.pojo.PostCommentReply">
@@ -138,7 +139,7 @@
     <select id="getReplyByCommentId" resultType="gdufs.yixiu.pojo.PostCommentReply">
         SELECT *
         FROM post_comment_reply
-        WHERE comment_id = #{commentId}
+        WHERE comment_id = #{commentId} AND status = 0
         ORDER BY create_time DESC
     </select>
     <select id="getCommentByCommentId" resultType="gdufs.yixiu.pojo.PostComment"

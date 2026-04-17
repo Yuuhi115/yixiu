@@ -341,6 +341,11 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<Integer> findTaskMemberIdsWhoUnLog(Integer requestId) {
+        return taskMapper.findTaskMemberUnFinishedLogIdsByRequestId(requestId);
+    }
+
+    @Override
     public SkillScoreCalculateDto getSkillScoreCalculateDtoByRequestId(Integer requestId) {
         SkillScoreCalculateDto skillScoreCalculateDto = taskMapper.findSkillIdAndScoreByRequestId(requestId);
         List<Integer> MemberVolunteerIdList = taskMapper.findTaskMemberVolunteerIdsByRequestId(requestId);

@@ -31,7 +31,7 @@ public class AdminServiceImpl implements AdminService {
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
     @Autowired
     private EmailUtils emailUtils;
 
@@ -43,7 +43,7 @@ public class AdminServiceImpl implements AdminService {
         this.avatarPath = avatarPath;
     }
     @Override
-    public String loginByEmail(UsersRegisterDto userDto) {
+    public String loginByEmail(UsersRegisterDto userDto, String ip) {
         Users user = usersMapper.findUserByEmailAndRole(userDto.getEmail(), userDto.getRole());
         if (user == null) {
             user = usersMapper.findSuperAdminByEmail(userDto.getEmail());
@@ -52,19 +52,17 @@ public class AdminServiceImpl implements AdminService {
                 return null;
             }
         }
-        String token = (String) redisTemplate.opsForValue().get("token:" + user.getUserId());
-        if (token != null) {
-            log.info("管理员-{}-已在登录状态", userDto.getEmail());
-            usersService.updateUserLoginTime(user.getUserId());
-            redisTemplate.delete("email_code:" + userDto.getEmail());
-            return token;
-        }else {
-            String newToken = jwtUtils.generateToken(user.getUserId(), user.getRole(), userDto.getVerificationCode());
-            redisTemplate.opsForValue().set("token:" + user.getUserId(), newToken, 7, TimeUnit.DAYS);
-            usersService.updateUserLoginTime(user.getUserId());
-            redisTemplate.delete("email_code:" + userDto.getEmail());
-            return newToken;
+        String oldToken = redisTemplate.opsForValue().get("token:" + user.getUserId());
+        if (oldToken != null) {
+            log.info("邮箱管理员-{}-存在旧登录，强制下线", user.getUserId());
+            redisTemplate.delete("token:" + user.getUserId());
         }
+        String newToken = jwtUtils.generateToken(user.getUserId(), user.getRole(), userDto.getVerificationCode(), ip);
+        redisTemplate.opsForValue().set("token:" + user.getUserId(), newToken, 7, TimeUnit.DAYS);
+        usersService.updateUserLoginTime(user.getUserId());
+        log.info("邮箱管理员-{}-登录成功，登录ip:{}，用户id: {}", userDto.getEmail(), ip, user.getUserId());
+        redisTemplate.delete("email_code:" + userDto.getEmail());
+        return newToken;
     }
 
     @Override

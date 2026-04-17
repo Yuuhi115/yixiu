@@ -34,7 +34,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Autowired
     private JWTUtils jwtUtils;
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, String> redisTemplate;
 
     private String avatarPath;
 
@@ -54,7 +54,7 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
-    public String registerByEmail(UsersRegisterDto userDto) {
+    public String registerByEmail(UsersRegisterDto userDto, String ip) {
         Users user = new Users();
         user.setEmail(userDto.getEmail());
         user.setRole(userDto.getRole());
@@ -66,7 +66,7 @@ public class VolunteerServiceImpl implements VolunteerService {
         int vtRow = volunteerMapper.addVolunteerInfo(volunteer);
         int vtId = volunteer.getVolunteerId();
         log.info("邮箱志愿者-{}-注册成功, 用户id: {}, 志愿者id: {}", userDto.getEmail(), userId, vtId);
-        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
+        String token = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
         redisTemplate.opsForValue().set("token:" + userId, token, 7, TimeUnit.DAYS);
         redisTemplate.delete("email_code:" + userDto.getEmail());
         redisTemplate.delete("inviteCode:email:" + userDto.getEmail());
@@ -74,17 +74,17 @@ public class VolunteerServiceImpl implements VolunteerService {
     }
 
     @Override
-    public String loginByEmail(UsersRegisterDto userDto, Integer userId) {
-        String token = (String) redisTemplate.opsForValue().get("token:" + userId);
-        if (token != null) {
-            log.info("邮箱志愿者-{}-已在登录状态", userDto.getEmail());
-            return token;
-        }else {
-            String newToken = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode());
-            redisTemplate.opsForValue().set("token:" + userId, newToken, 7, TimeUnit.DAYS);
-            redisTemplate.delete("email_code:" + userDto.getEmail());
-            return newToken;
+    public String loginByEmail(UsersRegisterDto userDto, Integer userId, String ip) {
+        String oldToken = redisTemplate.opsForValue().get("token:" + userId);
+        if (oldToken != null) {
+            log.info("邮箱志愿者-{}-存在旧登录，强制下线", userDto.getEmail());
+            redisTemplate.delete("token:" + userId);
         }
+        String newToken = jwtUtils.generateToken(userId, userDto.getRole(), userDto.getVerificationCode(), ip);
+        redisTemplate.opsForValue().set("token:" + userId, newToken, 7, TimeUnit.DAYS);
+        log.info("邮箱志愿者-{}-登录成功, 登录ip: {}, 志愿者user_id: {}", userDto.getEmail(), ip, userId);
+        redisTemplate.delete("email_code:" + userDto.getEmail());
+        return newToken;
     }
 
     @Override
@@ -215,5 +215,10 @@ public class VolunteerServiceImpl implements VolunteerService {
     @Override
     public List<Users> queryActiveVolunteerList(Integer userId) {
         return volunteerMapper.findActiveVolunteers(userId);
+    }
+
+    @Override
+    public Integer queryLeaderIdByTaskId(Integer taskId) {
+        return volunteerMapper.findTaskLeaderIdByTaskId(taskId);
     }
 }
